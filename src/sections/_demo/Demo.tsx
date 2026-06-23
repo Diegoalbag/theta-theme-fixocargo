@@ -5,29 +5,27 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { IconChip } from "@/components/ui/icon-chip";
 import { SectionHeading } from "@/components/ui/section-heading";
-import { EmptyState } from "@/lib/empty-state";
+import { BlocksSlot } from "@/lib/blocks-slot";
 import { ImageGuard } from "@/lib/image-guard";
 
 // Throwaway PRIVATE demo section (D-04/D-05) — the `_` prefix excludes it from
 // `@theme` block expansion. This is the FULL convention sweep: it renders all
 // four UI primitives (Button pill variant, Card surface + navy-dark,
-// SectionHeading, IconChip), both src/lib/ render-guard helpers (EmptyState,
-// ImageGuard), and accepts both shared @theme blocks (social-link +
-// store-badge) via renderBlocks() — proving every Phase 1 convention is real
-// before Phases 2-6 depend on them. Removed at the START of Phase 2 (not shipped).
+// SectionHeading, IconChip), the shared src/lib/ render-guard helpers
+// (BlocksSlot for zero-blocks, ImageGuard for missing images), and accepts both
+// shared @theme blocks (social-link + store-badge) via renderBlocks() — proving
+// every Phase 1 convention is real before Phases 2-6 depend on them. Removed at
+// the START of Phase 2 (not shipped).
 export interface DemoProps {
   heading?: string;
   renderBlocks?: () => React.ReactNode;
 }
 
 export const Demo = ({ heading = "Demo", renderBlocks }: DemoProps) => {
-  // CRITICAL: renderBlocks is a function prop. A `renderBlocks ? ... : ...`
-  // ternary is ALWAYS truthy when present and never reaches the EmptyState.
-  // Capture the rendered children once and branch on the COUNT so the
-  // zero-blocks EmptyState placeholder deterministically renders.
-  const children = renderBlocks?.();
-  const hasBlocks = React.Children.count(children) > 0;
-
+  // Zero-blocks handling is delegated to the shared BlocksSlot convention
+  // (src/lib/blocks-slot.tsx). It branches on the renderBlocks() return value
+  // rather than counting React children of the function prop, so the customizer
+  // slot and the published EmptyState both render correctly with no blank gap.
   return (
     <section aria-labelledby="demo-heading" className="section-padding-y">
       <div className="container-padding-x container mx-auto flex max-w-7xl flex-col gap-8">
@@ -68,13 +66,13 @@ export const Demo = ({ heading = "Demo", renderBlocks }: DemoProps) => {
             (no crash, no blank gap). */}
         <ImageGuard url={undefined} />
 
-        {/* Accepts the shared @theme blocks (social-link + store-badge).
-            Zero blocks -> EmptyState placeholder; one or more -> the blocks. */}
-        {hasBlocks ? (
-          <div className="flex flex-wrap items-center gap-4">{children}</div>
-        ) : (
-          <EmptyState />
-        )}
+        {/* Accepts the shared @theme blocks (social-link + store-badge) via the
+            shared BlocksSlot convention: zero blocks -> EmptyState (published)
+            or the working Puck slot (customizer); one or more -> the blocks. */}
+        <BlocksSlot
+          renderBlocks={renderBlocks}
+          className="flex flex-wrap items-center gap-4"
+        />
       </div>
     </section>
   );

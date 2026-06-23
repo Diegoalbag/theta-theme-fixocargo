@@ -6,7 +6,7 @@ export default defineConfig({
     globals: true,
     // Environment stays the default (node) — each test constructs its own
     // JSDOM window manually, so no global jsdom environment is needed.
-    include: ["test/**/*.test.ts"],
+    include: ["test/**/*.test.{ts,tsx}"],
     exclude: ["node_modules", "dist"],
   },
   resolve: {
