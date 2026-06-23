@@ -25,7 +25,7 @@ export const ImageGuard = ({
         className={`absolute inset-0 h-full w-full rounded-2xl object-cover ${className ?? ""}`}
       />
     ) : (
-      <div className="bg-muted text-muted-foreground absolute inset-0 flex items-center justify-center rounded-2xl text-sm">
+      <div className="bg-secondary text-muted-foreground absolute inset-0 flex items-center justify-center rounded-2xl border-2 border-dashed border-border text-sm">
         Agrega una imagen
       </div>
     )}
