@@ -24,7 +24,11 @@ import { assertContract } from "./contract-assertions";
 const pkg = JSON.parse(
   readFileSync(resolve(__dirname, "../package.json"), "utf-8"),
 );
-const EXPECTED_NAME: string = pkg.name; // read from package.json — never hardcoded
+// THEME-01: vite.config bakes __THEME_NAME__ from `process.env.THEME_NAME ||
+// pkg.name`, so the bundle registers under the platform-supplied THEME_NAME when
+// the deploy workflow sets it, and under the package.json name for local builds.
+// Mirror that exact expression so this validates the real key in both contexts.
+const EXPECTED_NAME: string = process.env.THEME_NAME || pkg.name;
 
 describe("theme registration contract", () => {
   let win: any;
@@ -61,11 +65,11 @@ describe("theme registration contract", () => {
     win.eval(bundle);
   });
 
-  it("registers under the package.json name", () => {
+  it("registers under the resolved theme name (THEME_NAME ?? package.json name)", () => {
     expect(win.__THETA_THEMES__[EXPECTED_NAME]).toBeDefined();
   });
 
-  it("registration key is NOT a stale hardcoded literal", () => {
+  it("registers under exactly one key — the resolved theme name", () => {
     expect(Object.keys(win.__THETA_THEMES__)).toEqual([EXPECTED_NAME]);
   });
 
