@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>window.tailwind=window.tailwind||{};tailwind.config={theme:{extend:{fontFamily:{display:['"Aku Kamu"','"Arial Narrow"','Impact','sans-serif'],gill:['"Gill Sans"','"Gill Sans MT"','Calibri','sans-serif'],gotham:['Gotham','Montserrat','"Helvetica Neue"','Arial','sans-serif'],opensans:['"Open Sans"','Arial','sans-serif']}}}};</script>
+<style>*{box-sizing:border-box;}body{margin:0;background:#fafafa;}</style>
+</helmet>
+<div class="w-full overflow-hidden bg-[#fafafa]">
+<div id="fc-scale" class="relative w-full overflow-hidden">
+<div id="fc-canvas" class="relative w-[1920px] h-[6116px] overflow-hidden bg-[#fafafa] origin-top-left">
+
+  <dc-import name="AnnouncementBar" hint-size="1920px,50px" style="position:absolute; left:0px; top:0px; width:1920px; height:50px;"></dc-import>
+  <dc-import name="SiteHeader" hint-size="1920px,100px" style="position:absolute; left:0px; top:50px; width:1920px; height:100px;"></dc-import>
+  <dc-import name="Hero" hint-size="1920px,560px" style="position:absolute; left:0px; top:150px; width:1920px; height:560px;"></dc-import>
+  <dc-import name="DireccionCards" hint-size="1920px,245px" style="position:absolute; left:0px; top:778px; width:1920px; height:245px;"></dc-import>
+  <dc-import name="ToolsBar" hint-size="1920px,78px" style="position:absolute; left:0px; top:1103px; width:1920px; height:78px;"></dc-import>
+  <dc-import name="Servicios" hint-size="1920px,982px" style="position:absolute; left:0px; top:1261px; width:1920px; height:982px;"></dc-import>
+  <dc-import name="Beneficios" hint-size="1920px,620px" style="position:absolute; left:0px; top:2379px; width:1920px; height:620px;"></dc-import>
+  <dc-import name="DescargaApp" hint-size="1920px,475px" style="position:absolute; left:0px; top:2999px; width:1920px; height:475px;"></dc-import>
+  <dc-import name="Sucursales" hint-size="1920px,784px" style="position:absolute; left:0px; top:3568px; width:1920px; height:784px;"></dc-import>
+  <dc-import name="EnviosNacionales" hint-size="1920px,475px" style="position:absolute; left:0px; top:4452px; width:1920px; height:475px;"></dc-import>
+  <dc-import name="Blogs" hint-size="1920px,630px" style="position:absolute; left:0px; top:5027px; width:1920px; height:630px;"></dc-import>
+  <dc-import name="Footer" hint-size="1920px,379px" style="position:absolute; left:0px; top:5737px; width:1920px; height:379px;"></dc-import>
+
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  fit = () => {
+    const c = document.getElementById('fc-canvas');
+    const w = document.getElementById('fc-scale');
+    if (!c || !w) return;
+    const avail = (w.parentElement ? w.parentElement.clientWidth : 0) || document.documentElement.clientWidth || window.innerWidth;
+    const s = Math.min(1, avail / 1920);
+    c.style.transform = 'scale(' + s + ')';
+    w.style.height = (6116 * s) + 'px';
+  };
+  componentDidMount() {
+    this.fit();
+    this._t1 = setTimeout(this.fit, 200);
+    this._t2 = setTimeout(this.fit, 800);
+    this._t3 = setTimeout(this.fit, 1600);
+    window.addEventListener('resize', this.fit);
+  }
+  componentWillUnmount() {
+    clearTimeout(this._t1); clearTimeout(this._t2); clearTimeout(this._t3);
+    window.removeEventListener('resize', this.fit);
+  }
+}
+</script>
+</body>
+</html>

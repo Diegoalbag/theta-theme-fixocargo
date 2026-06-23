@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>window.tailwind=window.tailwind||{};tailwind.config={theme:{extend:{fontFamily:{display:['"Aku Kamu"','"Arial Narrow"','Impact','sans-serif'],gill:['"Gill Sans"','"Gill Sans MT"','Calibri','sans-serif'],gotham:['Gotham','Montserrat','"Helvetica Neue"','Arial','sans-serif'],opensans:['"Open Sans"','Arial','sans-serif']}}}};</script>
+<style>*{box-sizing:border-box;}body{margin:0;}</style>
+</helmet>
+<div class="relative w-[1920px] h-[630px] bg-[#fafafa] font-gill text-[#121c31]">
+  <div class="absolute left-[300px] top-0 w-[640px] flex flex-col gap-[10px] items-start">
+    <span class="font-display italic text-[60px] leading-[62px] text-[#0e1b36]">Últimos Blogs</span>
+    <span class="font-gill text-[18px] leading-[18px] tracking-[1px] text-[#0e1b36]">Novedades, tendencias y más</span>
+  </div>
+  <div class="absolute left-[1403px] top-[21px] w-[212px] h-[48px] rounded-full bg-[#121c31] flex items-center justify-center"><span class="font-gotham font-bold text-[16px] text-white">Explora todos blogs</span></div>
+  <div class="absolute left-[300px] top-[150px] w-[1320px] h-[480px] flex items-start gap-[24px]">
+    <sc-for list="{{ posts }}" as="p" hint-placeholder-count="3">
+      <div class="w-[424px] h-[480px] rounded-[16px] bg-white shadow-[0_2px_8px_rgba(14,27,54,0.06)] overflow-hidden">
+        <div class="relative w-[424px] h-[240px] flex items-center justify-center" style="background:repeating-linear-gradient(135deg,#eaeff7 0 11px,#f3f6fb 11px 22px);">
+          <div class="absolute left-[16px] top-[16px] flex flex-col gap-[4px]">
+            <span class="rounded-[4px] bg-[#0e1b36] px-[10px] py-[4px] font-gotham font-bold text-[13px] leading-[20.8px] text-white self-start">{{ p.tagNavy }}</span>
+            <span class="rounded-[4px] bg-[#f6c016] px-[10px] py-[4px] font-gotham font-bold text-[13px] leading-[20.8px] text-[#0e1b36] self-start">{{ p.tagYellow }}</span>
+          </div>
+          <span class="opacity-70 font-gotham font-bold text-[12px] tracking-[0.96px] text-[#8a93a8]">422×240</span>
+        </div>
+        <div class="w-[424px] h-[240px] p-[24px_24px_26px] flex flex-col justify-between">
+          <div class="flex flex-col">
+            <span class="font-gill text-[14px] leading-[18px] tracking-[0.72px] text-[#8a93a8] pb-[10px]">{{ p.date }}</span>
+            <span class="font-gotham font-bold text-[20px] leading-[24px] text-[#18223a] pb-[10px]">{{ p.title }}</span>
+            <span class="font-gill text-[16px] leading-[20px] text-[#5c6883]">{{ p.body }}</span>
+          </div>
+          <div class="flex items-center gap-[8px]"><span class="font-gotham font-bold text-[16px] leading-[20px] text-[#0e1b36]">Conoce más</span><span class="text-[14px] text-[#e0a400]">→</span></div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1920,&quot;height&quot;:630}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      posts: [
+        { tagNavy: 'Aduanas', tagYellow: 'Guía', date: 'Marzo 18, 2026', title: 'Cómo calcular impuestos de tu paquete', body: 'Entender la gestión aduanal no tiene que ser complicado. Te explicamos cómo se calculan los impuestos de importación paso a paso.' },
+        { tagNavy: 'Recibe tus compras', tagYellow: 'Desde Europa', date: 'Mayo 12, 2026', title: 'Ahora puedes recibir tus compras desde Europa', body: '¿Sabías que con Fixo Cargo puedes aprovechar esa ventaja usando nuestra nueva dirección en Madrid, España?' },
+        { tagNavy: 'Cada compra', tagYellow: 'Te acerca a ganar', date: 'Marzo 30, 2026', title: 'Cada compra en Europa te acerca a ganar', body: '¡Te contamos las compras en Europa! Con Fixo Cargo, cada compra te da la oportunidad de ganar una de 3 gift cards mensuales.' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

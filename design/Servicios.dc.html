@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>window.tailwind=window.tailwind||{};tailwind.config={theme:{extend:{fontFamily:{display:['"Aku Kamu"','"Arial Narrow"','Impact','sans-serif'],gill:['"Gill Sans"','"Gill Sans MT"','Calibri','sans-serif'],gotham:['Gotham','Montserrat','"Helvetica Neue"','Arial','sans-serif'],opensans:['"Open Sans"','Arial','sans-serif']}}}};</script>
+<style>*{box-sizing:border-box;}body{margin:0;}</style>
+</helmet>
+<div class="relative w-[1920px] h-[982px] bg-[#fafafa] font-gill text-[#121c31]">
+  <div class="absolute left-[300px] top-0 w-[820px] flex flex-col gap-[10px] items-start">
+    <span class="font-display italic text-[60px] leading-[62px] text-[#0e1b36]">Nuestros Servicios</span>
+    <span class="font-gill text-[18px] leading-[18px] tracking-[1px] text-[#0e1b36]">Nuestros servicios como courier en República Dominicana incluyen</span>
+  </div>
+  <div class="absolute left-[300px] top-[150px] w-[1320px] h-[832px] flex items-start gap-[24px]">
+    <!-- left column -->
+    <div class="w-[648px] flex flex-col gap-[20px]">
+      <div class="w-[648px] rounded-[16px] bg-[#fbfbfb] shadow-[0_1px_5px_rgba(0,0,0,0.25)] p-[20px_30px] flex flex-col gap-[30px]">
+        <div class="h-[54px] flex items-center justify-between">
+          <div class="flex items-center gap-[20px]">
+            <span class="w-[54px] h-[54px] rounded-full bg-[#121c31] text-[#ffd600] flex items-center justify-center"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M21 7.5l-9-5-9 5v9l9 5 9-5v-9zM12 4.8l6.2 3.4L12 11.6 5.8 8.2 12 4.8zM5 10.1l6 3.3v6.6l-6-3.3v-6.6zm8 9.9v-6.6l6-3.3v6.6l-6 3.3z"/></svg></span>
+            <span class="font-gotham font-bold text-[24px] leading-[30px] text-[#121c31]">Envíos Nacionales</span>
+          </div>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#121c31"><path d="M7 10l5 5 5-5z"/></svg>
+        </div>
+        <div class="flex flex-col gap-[10px]">
+          <span class="font-gill text-[18px] leading-[22px] tracking-[-1px] text-[#6a6a6a]">Te ofrecemos la posibilidad de enviar paquetes entre nuestras sucursales a nivel nacional, sin necesidad de ser miembro. Solo debes acercarte al counter de la sucursal más cercana, solicitar el servicio y completar los datos requeridos.</span>
+          <span class="font-gill text-[18px] leading-[22px] tracking-[-1px] text-[#6a6a6a] underline">Conoce más</span>
+        </div>
+      </div>
+      <sc-for list="{{ collapsed }}" as="svc" hint-placeholder-count="5">
+        <div class="w-[648px] h-[94px] rounded-[16px] bg-[#fcfcfc] shadow-[0_1px_5px_rgba(0,0,0,0.25)] p-[20px_30px] flex items-center justify-between">
+          <div class="flex items-center gap-[20px]">
+            <span class="w-[54px] h-[54px] rounded-full bg-[#121c31] text-[#f3c300] flex items-center justify-center"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M21 7.5l-9-5-9 5v9l9 5 9-5v-9zM12 4.8l6.2 3.4L12 11.6 5.8 8.2 12 4.8z"/></svg></span>
+            <span class="font-gotham font-bold text-[24px] leading-[30px] text-[#121c31]">{{ svc }}</span>
+          </div>
+          <svg width="11" height="20" viewBox="0 0 11.012 20" fill="#121c31"><path d="M 10.72 9.286 L 1.726 0.295 C 1.331 -0.098 0.692 -0.098 0.296 0.295 C -0.099 0.689 -0.099 1.328 0.296 1.722 L 8.577 9.999 L 0.297 18.277 C -0.098 18.671 -0.098 19.31 0.297 19.705 C 0.692 20.098 1.332 20.098 1.727 19.705 L 10.721 10.714 C 11.109 10.324 11.109 9.675 10.72 9.286 Z"/></svg>
+        </div>
+      </sc-for>
+    </div>
+    <!-- right column banners -->
+    <div class="w-[648px] h-[832px] flex flex-col gap-[20px]">
+      <div class="relative w-[648px] h-[406px] rounded-[16px] overflow-hidden flex flex-col justify-end gap-[20px] p-[30px]" style="background:linear-gradient(180deg,rgba(18,28,49,0) 0%,#121c31 87.5%),url(assets/1bc87fbb0e2bef91.png) 30% 86%/207% 187% no-repeat;">
+        <div class="flex flex-col gap-[10px] w-[348px]">
+          <span class="font-gotham text-[16px] leading-[24px] text-white">Se parte de Fixocargo</span>
+          <span class="font-display italic text-[30px] leading-[1.1] text-white">Si te interesa ser parte de nuestra red de franquicias</span>
+        </div>
+        <div class="w-[152px] h-[48px] rounded-full bg-[#f6c016] flex items-center justify-center"><span class="font-gotham font-bold text-[16px] text-[#121c31]">Haz clic aquí</span></div>
+      </div>
+      <div class="relative w-[648px] h-[406px] rounded-[16px] overflow-hidden flex flex-col justify-end gap-[20px] p-[30px]" style="background:linear-gradient(180deg,rgba(18,28,49,0) 0%,#121c31 87.5%),url(assets/c96fa74c6396afb8.jpg) center/cover no-repeat;">
+        <div class="flex flex-col gap-[10px] w-[425px]">
+          <span class="font-gotham text-[16px] leading-[24px] text-white">FX Logistics</span>
+          <span class="font-display italic text-[30px] leading-[1.1] text-white">¿Estás considerando reservar un espacio de almacenamiento?</span>
+        </div>
+        <div class="w-[152px] h-[48px] rounded-full bg-[#f6c016] flex items-center justify-center"><span class="font-gotham font-bold text-[16px] text-[#121c31]">Haz clic aquí</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1920,&quot;height&quot;:982}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      collapsed: [
+        'Carga Aérea y Maritima - Courier',
+        'Pick Up en Estados Unidos',
+        'Gestión Aduanal',
+        'Exportación',
+        'Importación desde Europa',
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

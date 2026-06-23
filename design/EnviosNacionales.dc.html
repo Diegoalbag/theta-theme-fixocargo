@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>window.tailwind=window.tailwind||{};tailwind.config={theme:{extend:{fontFamily:{display:['"Aku Kamu"','"Arial Narrow"','Impact','sans-serif'],gill:['"Gill Sans"','"Gill Sans MT"','Calibri','sans-serif'],gotham:['Gotham','Montserrat','"Helvetica Neue"','Arial','sans-serif'],opensans:['"Open Sans"','Arial','sans-serif']}}}};</script>
+<style>*{box-sizing:border-box;}body{margin:0;}</style>
+</helmet>
+<div class="relative w-[1920px] h-[475px] bg-[#121c31] font-gill">
+  <div class="absolute left-[340px] top-[58px] w-[494px] flex flex-col gap-[30px]">
+    <div class="flex flex-col gap-[15px]">
+      <span class="font-gotham font-bold text-[14px] tracking-[1px] text-[#ffd600]">#FixoTeGuía</span>
+      <span class="font-display italic text-[80px] leading-[1.1] text-white">Envíos<br/>Nacionales</span>
+      <span class="font-gill text-[24px] leading-[32px] tracking-[-1px] text-white">Con nuestro servicio de envíos nacionales, puedes mandar paquetes entre nuestras sucursales.</span>
+    </div>
+    <div class="w-[248px] h-[48px] rounded-full bg-[#ffd600] flex items-center justify-center"><span class="font-gotham font-bold text-[16px] text-[#121c31]">Conoce más</span></div>
+  </div>
+  <div class="absolute left-[938px] top-[88px] w-[642px] flex flex-col gap-[20px]">
+    <sc-for list="{{ faqs }}" as="q" hint-placeholder-count="4">
+      <div class="w-[642px] h-[60px] rounded-full bg-white flex items-center gap-[20px] p-[10px]">
+        <span class="w-[40px] h-[40px] rounded-full bg-[#f3c300] text-white flex items-center justify-center flex-none"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M10 2a8 8 0 1 0 4.9 14.3l5.4 5.4 1.4-1.4-5.4-5.4A8 8 0 0 0 10 2zm0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12z"/></svg></span>
+        <span class="flex-1 font-gotham font-bold text-[24px] leading-[24px] tracking-[-0.5px] text-[#121c31]">{{ q }}</span>
+        <span class="w-[75px] h-[40px] rounded-full bg-[#f3c300] text-white flex items-center justify-center flex-none font-gotham font-bold text-[16px]">Buscar</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1920,&quot;height&quot;:475}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      faqs: [
+        '¿TODOS PODEMOS UTILIZARLO?',
+        '¿CUÁL ES EL COSTO POR PAQUETE?',
+        '¿QUÉ TIEMPO TARDA EN ENTREGAR?',
+        '¿CÓMO FUNCIONA?',
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
