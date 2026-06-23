@@ -18,10 +18,12 @@ const iifeGlobalName = pkg.name
 export default defineConfig({
   define: {
     // Must be JSON.stringify'd — `define` does a raw text substitution.
-    // These are the single source of truth for the theme identity: both are
-    // injected from package.json so renaming/versioning the theme is a one-line
-    // change there.
-    __THEME_NAME__: JSON.stringify(pkg.name),
+    // THEME-01: __THEME_NAME__ prefers the platform-supplied THEME_NAME (set by
+    // the deploy workflow from the Strapi theme name) so the built bundle
+    // registers on window.__THETA_THEMES__ under the SAME name the deployed site
+    // looks it up by. Falls back to package.json name for standalone/local builds.
+    // __THEME_VERSION__ stays sourced from package.json.
+    __THEME_NAME__: JSON.stringify(process.env.THEME_NAME || pkg.name),
     __THEME_VERSION__: JSON.stringify(pkg.version),
   },
   plugins: [
