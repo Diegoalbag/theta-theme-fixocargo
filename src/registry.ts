@@ -1,7 +1,7 @@
 import type React from "react";
-import { Hero, heroSettingsSchema } from "./sections/Hero";
-import { FeatureBlock, featureBlockSettingsSchema } from "./blocks/Feature";
-import { ExampleRefBlock, exampleRefBlockSettingsSchema } from "./blocks/ExampleRef";
+import { Demo, demoSettingsSchema } from "./sections/_demo";
+import { SocialLink, socialLinkSettingsSchema } from "./blocks/SocialLink";
+import { StoreBadge, storeBadgeSettingsSchema } from "./blocks/StoreBadge";
 
 // ---------------------------------------------------------------------------
 // The registry is the heart of a theme. Five maps, all keyed by the same
@@ -14,12 +14,14 @@ export const sectionsComponents: Record<
   string,
   React.ComponentType<Record<string, unknown>>
 > = {
-  hero: Hero as React.ComponentType<Record<string, unknown>>,
+  // `_demo` is private (`_` prefix) — kept only to keep this map non-empty for
+  // the registration contract; removed at the start of Phase 2.
+  _demo: Demo as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
 export const sectionSettingsSchemas = {
-  hero: heroSettingsSchema,
+  _demo: demoSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).
@@ -27,8 +29,8 @@ export const blocksComponents: Record<
   string,
   React.ComponentType<Record<string, unknown>>
 > = {
-  feature: FeatureBlock as React.ComponentType<Record<string, unknown>>,
-  "example-ref": ExampleRefBlock as React.ComponentType<Record<string, unknown>>,
+  "social-link": SocialLink as React.ComponentType<Record<string, unknown>>,
+  "store-badge": StoreBadge as React.ComponentType<Record<string, unknown>>,
 };
 
 // Block settings schemas keyed by block type.
@@ -45,8 +47,8 @@ export const blockSettingsSchemas: Record<
     metaobjectType?: string;
   }>
 > = {
-  feature: featureBlockSettingsSchema,
-  "example-ref": exampleRefBlockSettingsSchema,
+  "social-link": socialLinkSettingsSchema,
+  "store-badge": storeBadgeSettingsSchema,
 };
 
 // Per-section block config: which blocks each section accepts.
@@ -73,8 +75,8 @@ export const sectionBlocksConfig: Record<
     }>;
   }
 > = {
-  hero: {
+  _demo: {
     blocks: [{ type: "@theme" }],
-    maxBlocks: 10,
+    maxBlocks: 12,
   },
 };
