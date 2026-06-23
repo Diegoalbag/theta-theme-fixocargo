@@ -2,6 +2,82 @@
 @import "tw-animate-css";
 
 /* ---------------------------------------------------------------------------
+ * Self-hosted brand fonts (FND-04 / D-01).
+ *
+ * Family names are STABLE LOGICAL roles ("Display"/"Gill"/"Gotham"/"OpenSans")
+ * that never change. Swapping in the eventual licensed faces (Aku Kamu / Gill
+ * Sans / Gotham) later is a PURE ASSET SWAP — replace the woff2 files in
+ * src/fonts/ and re-run the metric generator for the fallback overrides; no
+ * token, component, or class edit is needed.
+ *
+ * Substitutes now (Claude's discretion, closest free match, open-licensed):
+ *   Display  -> Anton      (OFL)   — bold condensed display
+ *   Gill     -> Inter      (OFL)   — clean grotesque
+ *   Gotham   -> Archivo    (OFL)   — geometric grotesque
+ *   OpenSans -> Open Sans  (OFL)   — body
+ *
+ * Each real face is paired with an Arial-based metric-compatible fallback
+ * @font-face (size-adjust + ascent/descent/line-gap-override) to minimize CLS
+ * on the eventual font swap. Override values are hard-coded (generated once
+ * from @capsizecss/metrics data) — no build dependency added (Don't Hand-Roll).
+ * ------------------------------------------------------------------------- */
+@font-face {
+  font-family: "Display";
+  src: url("./fonts/anton.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Display Fallback";
+  src: local("Arial");
+  size-adjust: 101.27%;
+  ascent-override: 98.75%;
+  descent-override: 24.69%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Gill";
+  src: url("./fonts/inter.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gill Fallback";
+  src: local("Arial");
+  size-adjust: 98.63%;
+  ascent-override: 98.22%;
+  descent-override: 24.48%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Gotham";
+  src: url("./fonts/archivo.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gotham Fallback";
+  src: local("Arial");
+  size-adjust: 118.03%;
+  ascent-override: 84.72%;
+  descent-override: 23.55%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "OpenSans";
+  src: url("./fonts/open-sans.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ---------------------------------------------------------------------------
  * Design tokens (neutral starter palette).
  *
  * `@theme inline` maps Tailwind color/utility names to the CSS variables in
@@ -10,6 +86,11 @@
  * here restyle the whole theme.
  * ------------------------------------------------------------------------- */
 @theme inline {
+  /* FixoCargo brand color tokens -> generate bg-brand-navy / text-brand-yellow
+   * / bg-brand-yellow-bright etc. Mapped to the :root brand vars. */
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-yellow: var(--brand-yellow);
+  --color-brand-yellow-bright: var(--brand-yellow-bright);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
@@ -51,6 +132,14 @@
 
 :root {
   --radius: 0.625rem;
+
+  /* FixoCargo brand colors (hex literals are allowed ONLY in this file —
+   * components consume the generated `brand-*` token utilities, never hex).
+   * Two yellows: --brand-yellow is the canonical action yellow (PillButton);
+   * --brand-yellow-bright is the brighter highlight used sparingly on navy. */
+  --brand-navy: #121c31;
+  --brand-yellow: #f6c016;
+  --brand-yellow-bright: #ffd600;
 
   /* System font stack — no external font dependency. Swap in a custom font
    * here (and load it) when you brand the theme. */
@@ -95,6 +184,18 @@
 @theme {
   --breakpoint-xl: 80rem;
   --breakpoint-2xl: 80rem;
+
+  /* Brand font tokens -> generate font-display / font-gill / font-gotham /
+   * font-opensans utilities. The metric-compatible fallback face is listed
+   * BEFORE the generic fallbacks so CLS is minimized on the licensed-font swap
+   * (Pitfall 5). Logical family names keep the swap a pure asset replacement. */
+  --font-display: "Display", "Display Fallback", "Arial Narrow", Impact,
+    sans-serif;
+  --font-gill: "Gill", "Gill Fallback", "Gill Sans", "Gill Sans MT", Calibri,
+    sans-serif;
+  --font-gotham: "Gotham", "Gotham Fallback", Montserrat, "Helvetica Neue",
+    Arial, sans-serif;
+  --font-opensans: "OpenSans", Arial, sans-serif;
 }
 
 /* ---------------------------------------------------------------------------
