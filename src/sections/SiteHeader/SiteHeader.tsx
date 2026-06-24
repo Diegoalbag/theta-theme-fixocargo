@@ -10,15 +10,11 @@ import { Button } from "@/components/ui/button";
 // event handlers. The open/close state is managed entirely by the native
 // <details> element.
 //
-// Block rendering note (Pitfall 3 from RESEARCH.md): The mobile drawer and the
-// desktop nav are separate containers that each call BlocksSlot once. This is
-// the accepted two-call pattern for Phase 2 because the CSS-reflow single-call
-// alternative would require sharing one ReactNode instance across two mount
-// points, which is not safe in the customizer. In practice the customizer
-// drag/drop slot is always the FIRST mount in the DOM (mobile details), so
-// the customizer drag UX is unaffected. The desktop nav renders a second
-// BlocksSlot for the published/preview path. This limitation is documented
-// and tracked for future improvement.
+// Single BlocksSlot pattern (RESEARCH.md Pattern 4, Pitfall 3): BlocksSlot is
+// called exactly once inside a <nav> sibling to <details class="peer">.
+// The nav is hidden on mobile and revealed via `peer-open:flex` when the
+// details is open. On desktop (lg:) the nav is always flex-row regardless.
+// details and nav MUST be adjacent siblings for the peer selector to work.
 //
 // All text arrives as optional props (platform-validated strings).
 // Icons are decorative (aria-hidden). No state, no event handlers in this file.
@@ -44,62 +40,44 @@ export const SiteHeader = ({
   renderBlocks,
 }: SiteHeaderProps): React.ReactNode => {
   return (
-    <header className="bg-brand-navy">
-      <div className="container mx-auto container-padding-x flex items-center justify-between py-3">
+    <header className="bg-brand-navy relative">
+      <div className="container mx-auto container-padding-x flex flex-wrap items-center justify-between gap-y-0 py-3 relative">
         {/* Logo */}
-        <div className="max-w-[140px]">
+        <div className="shrink-0">
           <ImageGuard
             url={logo?.url}
             alt={logo?.alt ?? ""}
             ratio={3 / 1}
-            className="object-contain"
+            className="h-10 object-contain w-auto max-w-[140px]"
           />
         </div>
 
-        {/* Mobile hamburger — CSS-only via <details>/<summary>. No useState. */}
-        {/* details is hidden at desktop (lg:hidden). */}
-        <details className="group lg:hidden">
+        {/* Hamburger trigger — mobile only (lg:hidden). peer class enables
+            peer-open:flex on the adjacent nav sibling. summary only; no blocks
+            rendered inside details. */}
+        <details className="peer group lg:hidden shrink-0">
           <summary
             className="list-none cursor-pointer h-11 flex items-center [&::-webkit-details-marker]:hidden marker:content-[''] text-white"
             aria-label="Abrir menú"
           >
-            {/* Menu icon shown when drawer is closed */}
-            <Menu
-              aria-hidden="true"
-              className="size-6 group-open:hidden"
-            />
-            {/* X icon shown when drawer is open */}
-            <X
-              aria-hidden="true"
-              className="size-6 hidden group-open:flex"
-            />
+            <Menu aria-hidden="true" className="size-6 group-open:hidden" />
+            <X aria-hidden="true" className="size-6 hidden group-open:flex" />
           </summary>
-          {/* Mobile nav drawer — appears below the header bar */}
-          <nav
-            aria-label="Navegación móvil"
-            className="absolute left-0 right-0 top-full z-50 bg-brand-navy flex flex-col gap-1 px-4 py-3 shadow-lg"
-          >
-            {/* BlocksSlot call #1 (mobile). This is the primary slot for the
-                customizer drag/drop UX. empty={null} = no affordance when empty
-                (nav slot should be invisible when merchant has no nav links). */}
-            <BlocksSlot
-              renderBlocks={renderBlocks}
-              empty={null}
-              className="flex flex-col gap-1"
-            />
-          </nav>
         </details>
 
-        {/* Desktop nav — hidden on mobile, flex-row at lg+ */}
-        {/* BlocksSlot call #2 (desktop). See Pitfall 3 comment at top of file. */}
+        {/* SINGLE nav + SINGLE BlocksSlot — reflows via CSS for both contexts:
+            mobile: hidden by default, peer-open:flex when hamburger is open
+                    (absolute dropdown below header, flex-col)
+            desktop: always lg:flex flex-row inline, static positioning
+            details and nav must be adjacent siblings for peer-open to work. */}
         <nav
           aria-label="Navegación principal"
-          className="hidden lg:flex items-center gap-6"
+          className="hidden peer-open:flex flex-col gap-2 w-full px-4 py-3 bg-brand-navy absolute left-0 right-0 top-full z-50 shadow-lg lg:static lg:flex lg:flex-row lg:items-center lg:gap-6 lg:bg-transparent lg:p-0 lg:shadow-none lg:w-auto"
         >
           <BlocksSlot
             renderBlocks={renderBlocks}
             empty={null}
-            className="flex items-center gap-6"
+            className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-6"
           />
         </nav>
 
