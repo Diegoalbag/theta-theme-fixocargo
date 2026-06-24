@@ -9,6 +9,8 @@ import {
   direccionCardsSettingsSchema,
 } from "@/sections/DireccionCards";
 import { AddressCard, addressCardSettingsSchema } from "@/blocks/AddressCard";
+import { ToolsBar, toolsBarSettingsSchema } from "@/sections/ToolsBar";
+import { ToolPill, toolPillSettingsSchema } from "@/blocks/ToolPill";
 
 // Render-smoke tests for the Phase 3 above-the-fold sections/blocks.
 // The vitest environment is `node` (no global document), so we render DOM-free
@@ -150,5 +152,90 @@ describe("AddressCard", () => {
     const ids = addressCardSettingsSchema.map((s) => s.id);
     expect(ids).toEqual(["title", "recipientLine", "address", "phone"]);
     expect(addressCardSettingsSchema.some((s) => s.id === "icon")).toBe(false);
+  });
+});
+
+describe("ToolsBar", () => {
+  it("renders without crash with empty props", () => {
+    const html = renderToStaticMarkup(<ToolsBar />);
+    expect(typeof html).toBe("string");
+    expect(html.length).toBeGreaterThan(0);
+  });
+
+  it("renders the default EmptyState when zero blocks (D-10)", () => {
+    const html = renderToStaticMarkup(<ToolsBar />);
+    // Published-zero falls through to the default <EmptyState /> ("Sin
+    // elementos"). The plan prose said "Arrastra bloques aquí", but that
+    // string is the customizer drop-affordance hint that only appears in
+    // BlocksSlot's as-is branch (when blocks are present), not at
+    // published-zero — see 03-01/03-02 precedent and src/lib/empty-state.tsx.
+    // D-10 only requires ToolsBar keeps the default EmptyState (does NOT pass
+    // empty={null}).
+    expect(html).toContain("Sin elementos");
+  });
+
+  it("renders provided blocks inside a flex row wrapper", () => {
+    const html = renderToStaticMarkup(
+      <ToolsBar
+        renderBlocks={() => [
+          <a key="p" href="#">
+            PillContent
+          </a>,
+        ]}
+      />,
+    );
+    expect(html).toContain("PillContent");
+    expect(html).toContain("flex");
+    expect(html).toContain("md:flex-row");
+  });
+
+  it("toolsBarSettingsSchema has exactly 0 entries", () => {
+    expect(toolsBarSettingsSchema).toHaveLength(0);
+  });
+});
+
+describe("ToolPill", () => {
+  it("renders without crash with empty props (default label)", () => {
+    const html = renderToStaticMarkup(<ToolPill />);
+    expect(typeof html).toBe("string");
+    expect(html).toContain("Rastrea");
+  });
+
+  it("is a real brand-yellow anchor pill with a navy IconChip badge", () => {
+    const html = renderToStaticMarkup(<ToolPill />);
+    expect(html).toContain("bg-brand-yellow");
+    expect(html).toContain("bg-brand-navy");
+    expect(html).toContain("text-brand-yellow");
+  });
+
+  it("resolves a known icon and renders its glyph (svg)", () => {
+    const html = renderToStaticMarkup(
+      <ToolPill icon="map-pin" label="Sucursales" />,
+    );
+    expect(html).toContain("Sucursales");
+    expect(html).toContain("<svg");
+  });
+
+  it("falls back to the default glyph on an unknown icon without throwing (QA-03)", () => {
+    let html = "";
+    expect(() => {
+      html = renderToStaticMarkup(<ToolPill icon="totally-unknown" />);
+    }).not.toThrow();
+    expect(html.length).toBeGreaterThan(0);
+    expect(html).toContain("<svg");
+  });
+
+  it("renders the url as an anchor href", () => {
+    const html = renderToStaticMarkup(<ToolPill url="/rastrea" />);
+    expect(html).toContain('href="/rastrea"');
+  });
+
+  it("toolPillSettingsSchema has 3 entries [label,url,icon] with a 6-option icon select", () => {
+    expect(toolPillSettingsSchema).toHaveLength(3);
+    const ids = toolPillSettingsSchema.map((s) => s.id);
+    expect(ids).toEqual(["label", "url", "icon"]);
+    const iconSetting = toolPillSettingsSchema.find((s) => s.id === "icon");
+    expect(iconSetting?.type).toBe("select");
+    expect(iconSetting?.options).toHaveLength(6);
   });
 });
