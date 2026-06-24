@@ -3,7 +3,9 @@ import { AnnouncementBar, announcementBarSettingsSchema } from "./sections/Annou
 import { SiteHeader, siteHeaderSettingsSchema } from "./sections/SiteHeader";
 import { Footer, footerSettingsSchema } from "./sections/Footer";
 import { Hero, heroSettingsSchema } from "./sections/Hero";
+import { DireccionCards, direccionCardsSettingsSchema } from "./sections/DireccionCards";
 import { HeroSlide, heroSlideSettingsSchema } from "./blocks/HeroSlide";
+import { AddressCard, addressCardSettingsSchema } from "./blocks/AddressCard";
 import { SocialLink, socialLinkSettingsSchema } from "./blocks/SocialLink";
 import { StoreBadge, storeBadgeSettingsSchema } from "./blocks/StoreBadge";
 import { NavLink, navLinkSettingsSchema } from "./blocks/NavLink";
@@ -24,6 +26,7 @@ export const sectionsComponents: Record<
   "site-header": SiteHeader as React.ComponentType<Record<string, unknown>>,
   "footer": Footer as React.ComponentType<Record<string, unknown>>,
   "hero": Hero as React.ComponentType<Record<string, unknown>>,
+  "direccion-cards": DireccionCards as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
@@ -32,6 +35,7 @@ export const sectionSettingsSchemas = {
   "site-header": siteHeaderSettingsSchema,
   "footer": footerSettingsSchema,
   "hero": heroSettingsSchema,
+  "direccion-cards": direccionCardsSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).
@@ -122,6 +126,18 @@ export const sectionBlocksConfig: Record<
         name: "Diapositiva",
         component: HeroSlide as React.ComponentType<Record<string, unknown>>,
         settings: heroSlideSettingsSchema,
+      },
+    ],
+  },
+  "direccion-cards": {
+    blocks: [{ type: "address-card" }],
+    maxBlocks: 4,
+    localBlocks: [
+      {
+        type: "address-card",
+        name: "Tarjeta de dirección",
+        component: AddressCard as React.ComponentType<Record<string, unknown>>,
+        settings: addressCardSettingsSchema,
       },
     ],
   },
