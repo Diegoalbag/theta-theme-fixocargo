@@ -2,7 +2,6 @@ import * as React from "react";
 import { Menu, X, User } from "lucide-react";
 
 import { BlocksSlot } from "@/lib/blocks-slot";
-import { ImageGuard } from "@/lib/image-guard";
 import { Button } from "@/components/ui/button";
 
 // SiteHeader (CHR-02) — site-wide top navigation.
@@ -44,12 +43,17 @@ export const SiteHeader = ({
       <div className="container mx-auto container-padding-x flex flex-wrap items-center justify-between gap-y-0 py-3 relative">
         {/* Logo */}
         <div className="shrink-0">
-          <ImageGuard
-            url={logo?.url}
-            alt={logo?.alt ?? ""}
-            ratio={3 / 1}
-            className="h-10 object-contain w-auto max-w-[140px]"
-          />
+          {logo?.url ? (
+            <img
+              src={logo.url}
+              alt={logo.alt ?? ""}
+              className="h-10 w-auto object-contain"
+            />
+          ) : (
+            <div className="h-10 w-[120px] rounded border-2 border-dashed border-white/30 flex items-center justify-center text-white/30 text-xs">
+              Logo
+            </div>
+          )}
         </div>
 
         {/* Hamburger trigger — mobile only (lg:hidden). peer class enables

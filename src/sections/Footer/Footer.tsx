@@ -1,7 +1,6 @@
 import * as React from "react";
 
 import { BlocksSlot } from "@/lib/blocks-slot";
-import { ImageGuard } from "@/lib/image-guard";
 
 // Footer (CHR-03) — site-wide footer with logo, mixed blocks band, and legal row.
 //
@@ -52,12 +51,17 @@ export const Footer = ({
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
           {/* Logo area */}
           <div className="flex-shrink-0">
-            <ImageGuard
-              url={logo?.url}
-              alt={logo?.alt ?? "FixoCargo"}
-              ratio={3 / 1}
-              className="w-[140px]"
-            />
+            {logo?.url ? (
+              <img
+                src={logo.url}
+                alt={logo.alt ?? "FixoCargo"}
+                className="h-[54px] w-auto object-contain"
+              />
+            ) : (
+              <div className="h-[54px] w-[140px] rounded border-2 border-dashed border-white/30 flex items-center justify-center text-white/30 text-xs">
+                Logo
+              </div>
+            )}
           </div>
 
           {/* Mixed block band — single BlocksSlot for all block types.
