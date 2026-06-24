@@ -2,6 +2,8 @@ import type React from "react";
 import { AnnouncementBar, announcementBarSettingsSchema } from "./sections/AnnouncementBar";
 import { SiteHeader, siteHeaderSettingsSchema } from "./sections/SiteHeader";
 import { Footer, footerSettingsSchema } from "./sections/Footer";
+import { Hero, heroSettingsSchema } from "./sections/Hero";
+import { HeroSlide, heroSlideSettingsSchema } from "./blocks/HeroSlide";
 import { SocialLink, socialLinkSettingsSchema } from "./blocks/SocialLink";
 import { StoreBadge, storeBadgeSettingsSchema } from "./blocks/StoreBadge";
 import { NavLink, navLinkSettingsSchema } from "./blocks/NavLink";
@@ -21,6 +23,7 @@ export const sectionsComponents: Record<
   "announcement-bar": AnnouncementBar as React.ComponentType<Record<string, unknown>>,
   "site-header": SiteHeader as React.ComponentType<Record<string, unknown>>,
   "footer": Footer as React.ComponentType<Record<string, unknown>>,
+  "hero": Hero as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
@@ -28,6 +31,7 @@ export const sectionSettingsSchemas = {
   "announcement-bar": announcementBarSettingsSchema,
   "site-header": siteHeaderSettingsSchema,
   "footer": footerSettingsSchema,
+  "hero": heroSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).
@@ -106,6 +110,18 @@ export const sectionBlocksConfig: Record<
         name: "Columna del pie",
         component: FooterColumn as React.ComponentType<Record<string, unknown>>,
         settings: footerColumnSettingsSchema,
+      },
+    ],
+  },
+  "hero": {
+    blocks: [{ type: "hero-slide" }],
+    maxBlocks: 5,
+    localBlocks: [
+      {
+        type: "hero-slide",
+        name: "Diapositiva",
+        component: HeroSlide as React.ComponentType<Record<string, unknown>>,
+        settings: heroSlideSettingsSchema,
       },
     ],
   },
