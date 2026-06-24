@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, it, expect } from "vitest";
 
 import { AnnouncementBar, announcementBarSettingsSchema } from "@/sections/AnnouncementBar";
+import { SiteHeader, siteHeaderSettingsSchema } from "@/sections/SiteHeader";
 
 // Render-smoke tests for the Phase 2 chrome sections.
 // The vitest environment is `node` (no global document), so we render DOM-free
@@ -67,5 +68,55 @@ describe("AnnouncementBar", () => {
   it("announcementBarSettingsSchema ids are locationLabel, changeLabel, followLabel", () => {
     const ids = announcementBarSettingsSchema.map((s) => s.id);
     expect(ids).toEqual(["locationLabel", "changeLabel", "followLabel"]);
+  });
+});
+
+describe("SiteHeader", () => {
+  it("renders without crash with empty props", () => {
+    const html = renderToStaticMarkup(<SiteHeader />);
+    expect(typeof html).toBe("string");
+    expect(html.length).toBeGreaterThan(0);
+  });
+
+  it("renders accountLabel text when provided", () => {
+    const html = renderToStaticMarkup(<SiteHeader accountLabel="Test Cuenta" />);
+    expect(html).toContain("Test Cuenta");
+  });
+
+  it("renders mobile details element", () => {
+    const html = renderToStaticMarkup(<SiteHeader />);
+    expect(html).toContain("details");
+  });
+
+  it("renders default accountLabel when not provided", () => {
+    const html = renderToStaticMarkup(<SiteHeader />);
+    expect(html).toContain("Mi Cuenta");
+  });
+
+  it("renders accountUrl as anchor href when provided", () => {
+    const html = renderToStaticMarkup(
+      <SiteHeader accountUrl="https://example.com/account" />,
+    );
+    expect(html).toContain("https://example.com/account");
+  });
+
+  it("renders nav-link blocks when renderBlocks returns blocks", () => {
+    const html = renderToStaticMarkup(
+      <SiteHeader
+        renderBlocks={() => [
+          <a key="home" href="/home">Inicio</a>,
+        ]}
+      />,
+    );
+    expect(html).toContain("Inicio");
+  });
+
+  it("siteHeaderSettingsSchema has exactly 3 entries", () => {
+    expect(siteHeaderSettingsSchema).toHaveLength(3);
+  });
+
+  it("siteHeaderSettingsSchema ids are logo, accountLabel, accountUrl", () => {
+    const ids = siteHeaderSettingsSchema.map((s) => s.id);
+    expect(ids).toEqual(["logo", "accountLabel", "accountUrl"]);
   });
 });
