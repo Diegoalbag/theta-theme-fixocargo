@@ -4,6 +4,7 @@ import { describe, it, expect } from "vitest";
 
 import { AnnouncementBar, announcementBarSettingsSchema } from "@/sections/AnnouncementBar";
 import { SiteHeader, siteHeaderSettingsSchema } from "@/sections/SiteHeader";
+import { Footer, footerSettingsSchema } from "@/sections/Footer";
 
 // Render-smoke tests for the Phase 2 chrome sections.
 // The vitest environment is `node` (no global document), so we render DOM-free
@@ -118,5 +119,54 @@ describe("SiteHeader", () => {
   it("siteHeaderSettingsSchema ids are logo, accountLabel, accountUrl", () => {
     const ids = siteHeaderSettingsSchema.map((s) => s.id);
     expect(ids).toEqual(["logo", "accountLabel", "accountUrl"]);
+  });
+});
+
+describe("Footer", () => {
+  it("renders without crash with empty props", () => {
+    const html = renderToStaticMarkup(<Footer />);
+    expect(typeof html).toBe("string");
+    expect(html.length).toBeGreaterThan(0);
+  });
+
+  it("renders copyright text", () => {
+    const html = renderToStaticMarkup(<Footer copyright="© Test 2026" />);
+    expect(html).toContain("© Test 2026");
+  });
+
+  it("renders terms link as anchor", () => {
+    const html = renderToStaticMarkup(
+      <Footer
+        termsLabel="Términos"
+        termsUrl="https://example.com/terms"
+      />,
+    );
+    expect(html).toContain('href="https://example.com/terms"');
+  });
+
+  it("renders privacy link as anchor", () => {
+    const html = renderToStaticMarkup(
+      <Footer
+        privacyLabel="Políticas"
+        privacyUrl="https://example.com/privacy"
+      />,
+    );
+    expect(html).toContain('href="https://example.com/privacy"');
+  });
+
+  it("footerSettingsSchema has exactly 6 entries", () => {
+    expect(footerSettingsSchema).toHaveLength(6);
+  });
+
+  it("footerSettingsSchema ids are logo, copyright, termsLabel, termsUrl, privacyLabel, privacyUrl", () => {
+    const ids = footerSettingsSchema.map((s) => s.id);
+    expect(ids).toEqual([
+      "logo",
+      "copyright",
+      "termsLabel",
+      "termsUrl",
+      "privacyLabel",
+      "privacyUrl",
+    ]);
   });
 });
