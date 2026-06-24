@@ -11,8 +11,9 @@ import { ImageGuard } from "@/lib/image-guard";
 // (D-04 resolution: no type-partitioned regions). Each block's own styling
 // provides per-type visual distinction.
 //
-// BlocksSlot is used with the default EmptyState — correct per UI-SPEC.md States
-// table (Footer block slot should show EmptyState in customizer when empty).
+// BlocksSlot uses empty={null} — chrome section, no drag affordance in customizer.
+// The platform's native UI handles block addition; the dashed box is not part of
+// the design and must not appear over the footer layout.
 //
 // All text rendered as JSX text nodes — no dangerouslySetInnerHTML.
 // Legal links are real anchor elements (href attributes).
@@ -61,10 +62,11 @@ export const Footer = ({
 
           {/* Mixed block band — single BlocksSlot for all block types.
               D-04: editor list order; no type-partitioned regions.
-              Default EmptyState is intentional per UI-SPEC States table. */}
+              empty={null}: chrome section — no drag affordance overlay. */}
           <div className="flex-1">
             <BlocksSlot
               renderBlocks={renderBlocks}
+              empty={null}
               className="flex flex-wrap gap-4 lg:gap-6"
             />
           </div>
