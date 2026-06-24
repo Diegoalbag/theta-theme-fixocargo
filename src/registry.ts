@@ -1,7 +1,9 @@
 import type React from "react";
 import { AnnouncementBar, announcementBarSettingsSchema } from "./sections/AnnouncementBar";
+import { SiteHeader, siteHeaderSettingsSchema } from "./sections/SiteHeader";
 import { SocialLink, socialLinkSettingsSchema } from "./blocks/SocialLink";
 import { StoreBadge, storeBadgeSettingsSchema } from "./blocks/StoreBadge";
+import { NavLink, navLinkSettingsSchema } from "./blocks/NavLink";
 
 // ---------------------------------------------------------------------------
 // The registry is the heart of a theme. Five maps, all keyed by the same
@@ -15,11 +17,13 @@ export const sectionsComponents: Record<
   React.ComponentType<Record<string, unknown>>
 > = {
   "announcement-bar": AnnouncementBar as React.ComponentType<Record<string, unknown>>,
+  "site-header": SiteHeader as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
 export const sectionSettingsSchemas = {
   "announcement-bar": announcementBarSettingsSchema,
+  "site-header": siteHeaderSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).
@@ -76,5 +80,17 @@ export const sectionBlocksConfig: Record<
   "announcement-bar": {
     blocks: [{ type: "@theme" }],
     maxBlocks: 7,
+  },
+  "site-header": {
+    blocks: [{ type: "nav-link" }],
+    maxBlocks: 8,
+    localBlocks: [
+      {
+        type: "nav-link",
+        name: "Enlace de navegación",
+        component: NavLink as React.ComponentType<Record<string, unknown>>,
+        settings: navLinkSettingsSchema,
+      },
+    ],
   },
 };
