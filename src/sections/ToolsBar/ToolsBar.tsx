@@ -3,11 +3,13 @@ import * as React from "react";
 import { BlocksSlot } from "@/lib/blocks-slot";
 
 // ToolsBar (ATF-03) — compact above-the-fold band of quick-action pills.
-// A responsive flex row (stack mobile → row desktop, wrapping beyond maxBlocks)
-// wrapping a SINGLE BlocksSlot of section-local `tool-pill` blocks. All content
-// lives on the blocks; the section has no editable settings (empty schema). The
-// default BlocksSlot EmptyState is KEPT (do NOT pass empty={null}) so a zero-pill
-// section shows the drop affordance instead of a blank gap (D-10).
+// A SINGLE BlocksSlot of section-local `tool-pill` blocks: stacked 1-up on
+// mobile, and on desktop an equal-width row (grid-flow-col + auto-cols-fr) so
+// every pill occupies the same width and fills the band. The layout class is
+// applied to the slot itself, so the pills are its direct grid children. All
+// content lives on the blocks; the section has no editable settings (empty
+// schema). The default BlocksSlot EmptyState is KEPT (do NOT pass empty={null})
+// so a zero-pill section shows the drop affordance instead of a blank gap (D-10).
 //
 // No state, no event handlers, no hex literals, @/ imports only.
 export interface ToolsBarProps {
@@ -24,7 +26,7 @@ export const ToolsBar = ({
       <div className="container mx-auto container-padding-x">
         <BlocksSlot
           renderBlocks={renderBlocks}
-          className="flex flex-col gap-4 md:flex-row md:gap-6 md:flex-wrap"
+          className="grid grid-cols-1 gap-4 md:grid-cols-none md:auto-cols-fr md:grid-flow-col md:gap-6"
         />
       </div>
     </section>

@@ -2,8 +2,10 @@ import * as React from "react";
 
 import { Button } from "@/components/ui/button";
 
-// HeroSlide — section-local block for the Hero (ATF-01) scroll-snap carousel.
-// Each slide is a full-width snap target that paints its OWN background image
+// HeroSlide — section-local block for the Hero (ATF-01) Blaze Slider carousel.
+// Blaze sizes each slide to the full track width via `.blaze-track > *`, so the
+// article only needs height + layout here (no w-full/shrink-0/snap-start).
+// Each slide paints its OWN background image
 // (full-bleed url-guard per RESEARCH Pattern 2 — NOT ImageGuard, which boxes at
 // 16:9, Pitfall 3) behind a fixed ~50% dark overlay, then renders a left-aligned,
 // vertically-centered column of heading / optional subtitle / optional CTA.
@@ -35,7 +37,7 @@ export const HeroSlide = ({
   ctaUrl,
 }: HeroSlideProps): React.ReactNode => {
   return (
-    <article className="relative flex w-full shrink-0 snap-start items-center overflow-hidden min-h-[60vh] md:min-h-[560px]">
+    <article className="relative flex items-center overflow-hidden min-h-[60vh] md:min-h-[560px]">
       {/* Full-bleed per-slide background — url-guard (RESEARCH Pattern 2, D-04).
           When the image is set, paint it object-cover; otherwise a navy
           placeholder (no broken img, QA-01). */}

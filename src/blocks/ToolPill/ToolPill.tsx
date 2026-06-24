@@ -43,7 +43,7 @@ export const ToolPill = ({
   return (
     <a
       href={url || "#"}
-      className="flex items-center justify-between gap-4 rounded-full bg-brand-yellow px-6 h-16 md:h-20 hover:bg-brand-yellow/90 transition-colors"
+      className="flex items-center justify-center gap-4 rounded-full bg-brand-yellow px-6 h-16 md:h-20 hover:bg-brand-yellow/90 transition-colors"
     >
       <span className="font-gotham font-bold text-brand-navy">{label}</span>
       <IconChip background="navy" size="md" className="text-brand-yellow">

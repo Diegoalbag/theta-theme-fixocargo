@@ -45,12 +45,39 @@ describe("BlocksSlot", () => {
     expect(html).not.toContain("Sin elementos");
   });
 
-  it("Test E — the as-is branch renders a visible dashed drop affordance with a hint (customizer-zero)", () => {
+  it("Test E — the customizer slot element renders as-is, with no injected drop hint (Puck owns the empty affordance)", () => {
+    // The slot (Puck's DropZone) supplies its own `:empty` dashed-outline drop
+    // affordance, so BlocksSlot no longer injects its own "Arrastra…" hint —
+    // doing so would wrap the slot and push the blocks a level too deep.
     const html = renderToStaticMarkup(
       <BlocksSlot renderBlocks={() => <div>SLOT-WRAPPER</div>} />,
     );
-    expect(html).toContain("Arrastra bloques aquí");
-    expect(html).toContain("border-dashed");
+    expect(html).toContain("SLOT-WRAPPER");
+    expect(html).not.toContain("Arrastra bloques aquí");
+    expect(html).not.toContain("Sin elementos");
+  });
+
+  it("Test G — the layout className is applied to a wrapper AROUND the slot, not the slot itself", () => {
+    // The customizer slot carries inline display:contents; putting the layout on
+    // it would collapse the grid/flex. So className lives on our own wrapper and
+    // the slot's block children flow up into it.
+    const slot = () => <div style={{ display: "contents" }}>SLOT</div>;
+    const html = renderToStaticMarkup(
+      <BlocksSlot renderBlocks={slot} className="grid grid-cols-2" />,
+    );
+    expect(html).toContain("grid grid-cols-2");
+    expect(html).toContain("SLOT");
+  });
+
+  it("Test H — published array is wrapped in a layout box carrying className", () => {
+    const html = renderToStaticMarkup(
+      <BlocksSlot
+        renderBlocks={() => [<span key="a">A</span>]}
+        className="grid grid-cols-2"
+      />,
+    );
+    expect(html).toContain("grid grid-cols-2");
+    expect(html).toContain("A");
   });
 
   it("Test F — explicit empty={null} renders nothing for published-zero (WR-01)", () => {

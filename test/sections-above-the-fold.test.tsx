@@ -42,11 +42,44 @@ describe("Hero", () => {
     expect(html).toContain("Sin elementos");
   });
 
-  it("renders provided blocks when renderBlocks returns blocks", () => {
+  it("renders provided blocks inside a .blaze-track when renderBlocks returns an array (published)", () => {
+    // Published renderBlocks ignores the slot args and returns a bare array;
+    // Hero wraps it in its own .blaze-track.
     const html = renderToStaticMarkup(
       <Hero renderBlocks={() => [<div key="s">SlideContent</div>]} />,
     );
     expect(html).toContain("SlideContent");
+    expect(html).toContain("blaze-track");
+  });
+
+  it("uses the customizer slot wrapper itself as the .blaze-track (display:contents -> flex)", () => {
+    // Mimic the host customizer SlotRenderer: a single element that spreads the
+    // caller's style AFTER display:contents and applies the caller's className.
+    const slot = (props?: {
+      style?: React.CSSProperties;
+      className?: string;
+    }) => (
+      <div style={{ display: "contents", ...props?.style }} className={props?.className}>
+        <div>CustomizerSlide</div>
+      </div>
+    );
+    const html = renderToStaticMarkup(<Hero renderBlocks={slot} />);
+    expect(html).toContain("CustomizerSlide");
+    expect(html).toContain("blaze-track");
+    // display:flex overrides display:contents so the wrapper is a real track.
+    expect(html).toContain("flex");
+  });
+
+  it("renders the Blaze slider scaffold and functional prev/next/pagination controls", () => {
+    const html = renderToStaticMarkup(
+      <Hero renderBlocks={() => [<div key="s">S</div>]} />,
+    );
+    expect(html).toContain("blaze-slider");
+    expect(html).toContain("blaze-container");
+    expect(html).toContain("blaze-track-container");
+    expect(html).toContain("blaze-prev");
+    expect(html).toContain("blaze-next");
+    expect(html).toContain("blaze-pagination");
   });
 
   it("heroSettingsSchema has exactly 0 entries", () => {
@@ -174,7 +207,7 @@ describe("ToolsBar", () => {
     expect(html).toContain("Sin elementos");
   });
 
-  it("renders provided blocks inside a flex row wrapper", () => {
+  it("renders provided blocks inside an equal-width grid row wrapper", () => {
     const html = renderToStaticMarkup(
       <ToolsBar
         renderBlocks={() => [
@@ -185,8 +218,10 @@ describe("ToolsBar", () => {
       />,
     );
     expect(html).toContain("PillContent");
-    expect(html).toContain("flex");
-    expect(html).toContain("md:flex-row");
+    expect(html).toContain("grid");
+    // desktop: equal-width columns flowing in a single row
+    expect(html).toContain("md:auto-cols-fr");
+    expect(html).toContain("md:grid-flow-col");
   });
 
   it("toolsBarSettingsSchema has exactly 0 entries", () => {

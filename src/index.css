@@ -249,6 +249,84 @@
   }
 }
 
+/* ---------------------------------------------------------------------------
+ * Blaze Slider (Hero carousel, ATF-01).
+ *
+ * The core rules below are copied verbatim from `blaze-slider/dist/blaze.css`
+ * (v1.9.3) rather than imported, so the stylesheet ships through the existing
+ * bundle CSS (cssCodeSplit:false) without making a component file import a .css
+ * (which the node-env test runner does not transform). Keep them in sync if the
+ * package is upgraded. The FixoCargo control/pagination styling follows.
+ * ------------------------------------------------------------------------- */
+.blaze-slider {
+  --slides-to-show: 1;
+  --slide-gap: 0px;
+  direction: ltr;
+}
+.blaze-container {
+  position: relative;
+}
+.blaze-track-container {
+  overflow: hidden;
+}
+.blaze-track {
+  will-change: transform;
+  touch-action: pan-y;
+  display: flex;
+  gap: var(--slide-gap);
+  --slide-width: calc(
+    (100% - (var(--slides-to-show) - 1) * var(--slide-gap)) /
+      var(--slides-to-show)
+  );
+  box-sizing: border-box;
+}
+.blaze-track > * {
+  box-sizing: border-box;
+  width: var(--slide-width);
+  flex-shrink: 0;
+}
+
+/* Controls are hidden by default and only revealed when the track holds 2+
+ * slides (`:has(.blaze-track > * + *)`). This is pure CSS, so a single slide or
+ * an empty (just-being-edited) track never shows inert arrows/dots — and it
+ * needs no render-time slide count (the component is stateless). */
+.blaze-prev,
+.blaze-next,
+.blaze-pagination {
+  display: none;
+}
+.blaze-slider:has(.blaze-track > * + *) .blaze-prev,
+.blaze-slider:has(.blaze-track > * + *) .blaze-next,
+.blaze-slider:has(.blaze-track > * + *) .blaze-pagination {
+  display: flex;
+}
+
+/* Blaze appends one <button> per slide into .blaze-pagination; the active dot
+ * gets the `active` class. Styled as the design's dot row (brand-yellow active,
+ * outline inactive). */
+.blaze-pagination button {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: transparent;
+  font-size: 0;
+  line-height: 0;
+  cursor: pointer;
+}
+.blaze-pagination button.active {
+  background: var(--brand-yellow);
+  border-color: var(--brand-yellow);
+}
+
+/* loop:false end states — dim the arrow that can no longer scroll. */
+.blaze-slider.start .blaze-prev,
+.blaze-slider.end .blaze-next {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
 @media (max-width: 64rem) {
   .heading-xl {
     font-size: 1.875rem;
