@@ -53,17 +53,17 @@ export const FooterColumn = ({
   const activeLinks = allLinks.filter((entry) => !!entry.label);
 
   return (
-    <div className="flex min-w-[140px] flex-col gap-2">
+    <div className="flex min-w-[150px] flex-col gap-2">
       {title && (
-        <p className="font-gotham font-bold text-white text-base leading-tight">
+        <span className="font-gotham font-bold text-white text-[16px] leading-[24px] mb-[2px]">
           {title}
-        </p>
+        </span>
       )}
       {activeLinks.map((entry, idx) => (
         <a
           key={idx}
           href={entry.url || "#"}
-          className="text-sm font-opensans text-white hover:text-brand-yellow focus-visible:outline-2 focus-visible:outline-brand-yellow focus-visible:outline-offset-2"
+          className="text-[14px] leading-[24px] font-opensans text-white hover:text-brand-yellow focus-visible:outline-2 focus-visible:outline-brand-yellow focus-visible:outline-offset-2"
         >
           {entry.label}
         </a>

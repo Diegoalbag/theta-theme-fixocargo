@@ -64,29 +64,29 @@ export const Footer = ({
             )}
           </div>
 
-          {/* Mixed block band — single BlocksSlot for all block types.
+          {/* Footer columns block band — gap-[60px] matches design exactly.
               D-04: editor list order; no type-partitioned regions.
               empty={null}: chrome section — no drag affordance overlay. */}
           <div className="flex-1">
             <BlocksSlot
               renderBlocks={renderBlocks}
               empty={null}
-              className="flex flex-wrap gap-4 lg:gap-6"
+              className="flex flex-row flex-wrap gap-[60px]"
             />
           </div>
         </div>
 
-        {/* Divider */}
-        <hr className="my-6 border-white/20" />
+        {/* Divider — solid white, 36px margin matches design */}
+        <div className="h-px bg-white my-9" />
 
-        {/* Legal row */}
-        <div className="flex flex-col gap-2 font-opensans text-sm text-white/70 lg:flex-row lg:items-center lg:justify-between">
-          <span>{copyright || ""}</span>
-          <div className="flex items-center gap-4">
+        {/* Legal row — text-[15px]/text-[14px] and solid white matches design */}
+        <div className="flex flex-col gap-2 font-opensans text-white lg:flex-row lg:items-center lg:justify-between">
+          <span className="text-[15px] leading-[24px] tracking-[-0.2px]">{copyright || ""}</span>
+          <div className="flex items-center gap-6">
             {termsLabel && (
               <a
                 href={termsUrl || "#"}
-                className="hover:text-white focus-visible:outline-2 focus-visible:outline-brand-yellow focus-visible:outline-offset-2"
+                className="text-[14px] leading-[20px] hover:text-brand-yellow focus-visible:outline-2 focus-visible:outline-brand-yellow focus-visible:outline-offset-2"
               >
                 {termsLabel}
               </a>
@@ -94,7 +94,7 @@ export const Footer = ({
             {privacyLabel && (
               <a
                 href={privacyUrl || "#"}
-                className="hover:text-white focus-visible:outline-2 focus-visible:outline-brand-yellow focus-visible:outline-offset-2"
+                className="text-[14px] leading-[20px] hover:text-brand-yellow focus-visible:outline-2 focus-visible:outline-brand-yellow focus-visible:outline-offset-2"
               >
                 {privacyLabel}
               </a>
