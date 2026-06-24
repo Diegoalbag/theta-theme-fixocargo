@@ -1,8 +1,18 @@
-import { socialIcons } from "@/components/icons";
+import * as React from "react";
+import {
+  Facebook,
+  Instagram,
+  Linkedin,
+  Twitter,
+  Youtube,
+} from "lucide-react";
+import { WhatsApp } from "@/components/icons/social/whatsapp";
+import { TikTok } from "@/components/icons/social/tiktok";
 
 // Shared global block (FND-07): a single social network link rendered as its
-// curated inline-SVG brand mark on a real <a>. The platform injects `blockId`
-// and `blockType` alongside the schema settings.
+// icon on a real <a>. Uses Lucide icons for Facebook, Instagram, LinkedIn,
+// X/Twitter, YouTube; custom SVGs for WhatsApp and TikTok (not in Lucide).
+// Icon color is brand-yellow per design.
 export interface SocialLinkProps {
   network?: string;
   url?: string;
@@ -10,18 +20,26 @@ export interface SocialLinkProps {
   blockType?: string;
 }
 
+const iconMap: Record<string, React.FC<{ className?: string; "aria-hidden"?: boolean | "true" | "false" }>> = {
+  facebook: Facebook,
+  instagram: Instagram,
+  linkedin: Linkedin,
+  x: Twitter,
+  youtube: Youtube,
+  whatsapp: WhatsApp,
+  tiktok: TikTok,
+};
+
 export const SocialLink = ({
   network = "facebook",
   url = "#",
 }: SocialLinkProps) => {
-  // Resolve the brand mark by the curated enum value. Unknown enums resolve to
-  // undefined -> render a neutral placeholder, never crash (defensive contract).
-  const Icon = socialIcons[network] ?? null;
+  const Icon = iconMap[network] ?? null;
 
   if (!Icon) {
     return (
       <span
-        className="bg-muted text-muted-foreground inline-flex size-6 items-center justify-center rounded-full text-xs"
+        className="inline-flex size-6 items-center justify-center rounded-full bg-white/10 text-xs text-white"
         aria-hidden="true"
       >
         ?
@@ -29,14 +47,13 @@ export const SocialLink = ({
     );
   }
 
-  // The <a> carries the accessible name; the icon is decorative (FND-06).
   return (
     <a
       href={url}
       aria-label={network}
-      className="text-brand-navy hover:text-brand-yellow inline-flex items-center transition-colors"
+      className="text-brand-yellow hover:opacity-80 inline-flex items-center transition-opacity"
     >
-      <Icon aria-hidden="true" className="size-6" />
+      <Icon aria-hidden={true} className="size-5" />
     </a>
   );
 };
