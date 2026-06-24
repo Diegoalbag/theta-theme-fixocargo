@@ -1,5 +1,5 @@
 import type React from "react";
-import { Demo, demoSettingsSchema } from "./sections/_demo";
+import { AnnouncementBar, announcementBarSettingsSchema } from "./sections/AnnouncementBar";
 import { SocialLink, socialLinkSettingsSchema } from "./blocks/SocialLink";
 import { StoreBadge, storeBadgeSettingsSchema } from "./blocks/StoreBadge";
 
@@ -14,14 +14,12 @@ export const sectionsComponents: Record<
   string,
   React.ComponentType<Record<string, unknown>>
 > = {
-  // `_demo` is private (`_` prefix) — kept only to keep this map non-empty for
-  // the registration contract; removed at the start of Phase 2.
-  _demo: Demo as React.ComponentType<Record<string, unknown>>,
+  "announcement-bar": AnnouncementBar as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
 export const sectionSettingsSchemas = {
-  _demo: demoSettingsSchema,
+  "announcement-bar": announcementBarSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).
@@ -75,8 +73,8 @@ export const sectionBlocksConfig: Record<
     }>;
   }
 > = {
-  _demo: {
+  "announcement-bar": {
     blocks: [{ type: "@theme" }],
-    maxBlocks: 12,
+    maxBlocks: 7,
   },
 };
