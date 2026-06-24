@@ -1,0 +1,34 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-06-24T10:52:18.725Z",
+  "phase": "02",
+  "phase_name": "site-chrome",
+  "phase_dir": ".planning/phases/02-site-chrome",
+  "plan": 4,
+  "task": 1,
+  "total_tasks": 1,
+  "status": "paused",
+  "completed_tasks": [
+    {"id": 1, "name": "Gap fixes from session", "status": "done", "commit": "b0c4db6", "notes": "5 gap-closure commits: footer drag affordance, logo images, column layout/typography, right-align columns, social-link Lucide icons + yellow color"}
+  ],
+  "remaining_tasks": [
+    {"id": 2, "name": "Human verify — Site Chrome in live customizer", "status": "not_started", "notes": "Blocking checkpoint. Dev must load fixocargo bundle in project-theta-fe, verify all 3 chrome sections across mobile/desktop, confirm block add/remove/reorder works, then type 'approved'."}
+  ],
+  "blockers": [],
+  "async_jobs": [],
+  "human_actions_pending": [
+    {
+      "action": "Verify all 3 Site Chrome sections in live Theta customizer (project-theta-fe)",
+      "context": "Plan 02-04 is a blocking human-verify checkpoint. Run yarn build, load fixocargo bundle, check AnnouncementBar / SiteHeader / Footer across mobile+desktop. Confirm block editing works. Type 'approved' to close Phase 02.",
+      "blocking": true
+    }
+  ],
+  "decisions": [
+    {"decision": "ImageGuard not used for logos", "rationale": "AspectRatio collapses to 0x0 in flex row without explicit width — logo invisible. Plain img with h-[54px] w-auto matches design and always renders.", "phase": "02"},
+    {"decision": "Footer BlocksSlot uses empty={null}", "rationale": "Chrome section — no drag affordance overlay. Same as AnnouncementBar and SiteHeader.", "phase": "02"},
+    {"decision": "Social icons: Lucide for FB/IG/LI/Twitter/YT, custom SVG for WhatsApp/TikTok", "rationale": "Lucide 0.553 has no TikTok or WhatsApp icons.", "phase": "02"}
+  ],
+  "uncommitted_files": [".planning/PROJECT.md", ".planning/phases/02-site-chrome/02-02-PLAN.md"],
+  "next_action": "Open project-theta-fe customizer, build fixocargo bundle (yarn build), load it, verify all 3 chrome sections, type 'approved' to close Phase 02 and proceed to Phase 03.",
+  "context_notes": "Phase 02 execution (Plans 02-01 through 02-03) was done in prior sessions. This session was all gap-closure on the chrome sections based on visual review. Plan 02-04 is the final blocking human-verify step. No code changes needed — just need the developer to sign off in the live customizer."
+}
