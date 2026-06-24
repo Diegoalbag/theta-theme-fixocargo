@@ -48,6 +48,13 @@ export const BlocksSlot = ({
     return empty;
   }
 
+  // empty={null} means the caller opted out of ALL empty-state affordances,
+  // including the customizer drag hint. Chrome sections (announcement bar, nav,
+  // footer social row) use this to avoid a visible dashed box inside a compact bar.
+  if (empty === null) {
+    return <div className={className ?? ""}>{rendered}</div>;
+  }
+
   return (
     <div className="relative min-h-24">
       <div
