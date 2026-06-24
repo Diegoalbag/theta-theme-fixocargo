@@ -4,8 +4,10 @@ import { SiteHeader, siteHeaderSettingsSchema } from "./sections/SiteHeader";
 import { Footer, footerSettingsSchema } from "./sections/Footer";
 import { Hero, heroSettingsSchema } from "./sections/Hero";
 import { DireccionCards, direccionCardsSettingsSchema } from "./sections/DireccionCards";
+import { ToolsBar, toolsBarSettingsSchema } from "./sections/ToolsBar";
 import { HeroSlide, heroSlideSettingsSchema } from "./blocks/HeroSlide";
 import { AddressCard, addressCardSettingsSchema } from "./blocks/AddressCard";
+import { ToolPill, toolPillSettingsSchema } from "./blocks/ToolPill";
 import { SocialLink, socialLinkSettingsSchema } from "./blocks/SocialLink";
 import { StoreBadge, storeBadgeSettingsSchema } from "./blocks/StoreBadge";
 import { NavLink, navLinkSettingsSchema } from "./blocks/NavLink";
@@ -27,6 +29,7 @@ export const sectionsComponents: Record<
   "footer": Footer as React.ComponentType<Record<string, unknown>>,
   "hero": Hero as React.ComponentType<Record<string, unknown>>,
   "direccion-cards": DireccionCards as React.ComponentType<Record<string, unknown>>,
+  "tools-bar": ToolsBar as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
@@ -36,6 +39,7 @@ export const sectionSettingsSchemas = {
   "footer": footerSettingsSchema,
   "hero": heroSettingsSchema,
   "direccion-cards": direccionCardsSettingsSchema,
+  "tools-bar": toolsBarSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).
@@ -138,6 +142,18 @@ export const sectionBlocksConfig: Record<
         name: "Tarjeta de dirección",
         component: AddressCard as React.ComponentType<Record<string, unknown>>,
         settings: addressCardSettingsSchema,
+      },
+    ],
+  },
+  "tools-bar": {
+    blocks: [{ type: "tool-pill" }],
+    maxBlocks: 6,
+    localBlocks: [
+      {
+        type: "tool-pill",
+        name: "Botón de acción",
+        component: ToolPill as React.ComponentType<Record<string, unknown>>,
+        settings: toolPillSettingsSchema,
       },
     ],
   },
