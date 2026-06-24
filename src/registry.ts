@@ -1,9 +1,11 @@
 import type React from "react";
 import { AnnouncementBar, announcementBarSettingsSchema } from "./sections/AnnouncementBar";
 import { SiteHeader, siteHeaderSettingsSchema } from "./sections/SiteHeader";
+import { Footer, footerSettingsSchema } from "./sections/Footer";
 import { SocialLink, socialLinkSettingsSchema } from "./blocks/SocialLink";
 import { StoreBadge, storeBadgeSettingsSchema } from "./blocks/StoreBadge";
 import { NavLink, navLinkSettingsSchema } from "./blocks/NavLink";
+import { FooterColumn, footerColumnSettingsSchema } from "./blocks/FooterColumn";
 
 // ---------------------------------------------------------------------------
 // The registry is the heart of a theme. Five maps, all keyed by the same
@@ -18,12 +20,14 @@ export const sectionsComponents: Record<
 > = {
   "announcement-bar": AnnouncementBar as React.ComponentType<Record<string, unknown>>,
   "site-header": SiteHeader as React.ComponentType<Record<string, unknown>>,
+  "footer": Footer as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
 export const sectionSettingsSchemas = {
   "announcement-bar": announcementBarSettingsSchema,
   "site-header": siteHeaderSettingsSchema,
+  "footer": footerSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).
@@ -90,6 +94,18 @@ export const sectionBlocksConfig: Record<
         name: "Enlace de navegación",
         component: NavLink as React.ComponentType<Record<string, unknown>>,
         settings: navLinkSettingsSchema,
+      },
+    ],
+  },
+  "footer": {
+    blocks: [{ type: "@theme" }, { type: "footer-column" }],
+    maxBlocks: 12,
+    localBlocks: [
+      {
+        type: "footer-column",
+        name: "Columna del pie",
+        component: FooterColumn as React.ComponentType<Record<string, unknown>>,
+        settings: footerColumnSettingsSchema,
       },
     ],
   },
