@@ -10,9 +10,11 @@ import { Beneficios, beneficiosSettingsSchema } from "./sections/Beneficios";
 import { DescargaApp, descargaAppSettingsSchema } from "./sections/DescargaApp";
 import { Sucursales, sucursalesSettingsSchema } from "./sections/Sucursales";
 import { EnviosNacionales, enviosNacionalesSettingsSchema } from "./sections/EnviosNacionales";
+import { Blogs, blogsSettingsSchema } from "./sections/Blogs";
 import { HeroSlide, heroSlideSettingsSchema } from "./blocks/HeroSlide";
 import { Branch, branchSettingsSchema } from "./blocks/Branch";
 import { FaqPill, faqPillSettingsSchema } from "./blocks/FaqPill";
+import { BlogCard, blogCardSettingsSchema } from "./blocks/BlogCard";
 import { BenefitCard, benefitCardSettingsSchema } from "./blocks/BenefitCard";
 import { ServiceItem, serviceItemSettingsSchema } from "./blocks/ServiceItem";
 import { PromoBanner, promoBannerSettingsSchema } from "./blocks/PromoBanner";
@@ -45,6 +47,7 @@ export const sectionsComponents: Record<
   "descarga-app": DescargaApp as React.ComponentType<Record<string, unknown>>,
   "sucursales": Sucursales as React.ComponentType<Record<string, unknown>>,
   "envios-nacionales": EnviosNacionales as React.ComponentType<Record<string, unknown>>,
+  "blogs": Blogs as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
@@ -60,6 +63,7 @@ export const sectionSettingsSchemas = {
   "descarga-app": descargaAppSettingsSchema,
   "sucursales": sucursalesSettingsSchema,
   "envios-nacionales": enviosNacionalesSettingsSchema,
+  "blogs": blogsSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).
@@ -245,6 +249,21 @@ export const sectionBlocksConfig: Record<
         name: "Pregunta frecuente",
         component: FaqPill as React.ComponentType<Record<string, unknown>>,
         settings: faqPillSettingsSchema,
+      },
+    ],
+  },
+  "blogs": {
+    // ONE ordered slot, ONE section-local block type (D-07): blog-card is
+    // exclusive to Blogs and is NOT registered in the global block maps
+    // (blocksComponents/blockSettingsSchemas stay unchanged).
+    blocks: [{ type: "blog-card" }],
+    maxBlocks: 6,
+    localBlocks: [
+      {
+        type: "blog-card",
+        name: "Tarjeta de blog",
+        component: BlogCard as React.ComponentType<Record<string, unknown>>,
+        settings: blogCardSettingsSchema,
       },
     ],
   },

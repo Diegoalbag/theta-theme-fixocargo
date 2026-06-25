@@ -9,6 +9,8 @@ import {
   enviosNacionalesSettingsSchema,
 } from "@/sections/EnviosNacionales";
 import { FaqPill, faqPillSettingsSchema } from "@/blocks/FaqPill";
+import { Blogs, blogsSettingsSchema } from "@/sections/Blogs";
+import { BlogCard, blogCardSettingsSchema } from "@/blocks/BlogCard";
 import { sectionBlocksConfig } from "@/registry";
 
 // Render-smoke tests for the Phase 5 Info-sections sections/blocks.
@@ -228,5 +230,144 @@ describe("EnviosNacionales registry", () => {
   it("envios-nacionales caps the slot at 8 blocks (D-09)", () => {
     const cfg = sectionBlocksConfig["envios-nacionales"];
     expect(cfg.maxBlocks).toBe(8);
+  });
+});
+
+// --- Wave 3 (plan 05-03): Blogs + BlogCard ---
+
+describe("BlogCard", () => {
+  it("renders without crash with empty props (default title)", () => {
+    const html = renderToStaticMarkup(<BlogCard />);
+    expect(typeof html).toBe("string");
+    expect(html).toContain("Cómo calcular impuestos de tu paquete");
+  });
+
+  it("renders the ImageGuard placeholder and no img when image is unset", () => {
+    const html = renderToStaticMarkup(<BlogCard />);
+    expect(html).toContain("Agrega una imagen");
+    expect(html).not.toContain("<img");
+  });
+
+  it("renders an img with the url when image is set", () => {
+    const html = renderToStaticMarkup(
+      <BlogCard image={{ id: "1", url: "/cover.jpg" }} />,
+    );
+    expect(html).toContain("<img");
+    expect(html).toContain("/cover.jpg");
+  });
+
+  it("renders both tag pills (navy + yellow) when both tags are set (D-01)", () => {
+    const html = renderToStaticMarkup(
+      <BlogCard tagPrimary="Aduanas" tagSecondary="Guía" />,
+    );
+    expect(html).toContain("bg-brand-navy");
+    expect(html).toContain("bg-brand-yellow");
+    expect(html).toContain("Aduanas");
+    expect(html).toContain("Guía");
+  });
+
+  it("renders neither tag pill when both tags are unset (D-01)", () => {
+    const html = renderToStaticMarkup(<BlogCard />);
+    expect(html).not.toContain("Aduanas");
+    expect(html).not.toContain("Guía");
+  });
+
+  it("renders date and excerpt only when set", () => {
+    const html = renderToStaticMarkup(
+      <BlogCard date="12 Jun 2026" excerpt="Un resumen breve" />,
+    );
+    expect(html).toContain("12 Jun 2026");
+    expect(html).toContain("Un resumen breve");
+  });
+
+  it('renders "Conoce más" as a real anchor with the provided linkUrl', () => {
+    const html = renderToStaticMarkup(<BlogCard linkUrl="/post" />);
+    expect(html).toContain('href="/post"');
+    expect(html).toContain("Conoce más");
+  });
+
+  it("blogCardSettingsSchema has 7 entries [image,tagPrimary,tagSecondary,date,title,excerpt,linkUrl]", () => {
+    expect(blogCardSettingsSchema).toHaveLength(7);
+    const ids = blogCardSettingsSchema.map((s) => s.id);
+    expect(ids).toEqual([
+      "image",
+      "tagPrimary",
+      "tagSecondary",
+      "date",
+      "title",
+      "excerpt",
+      "linkUrl",
+    ]);
+    const imageSetting = blogCardSettingsSchema.find((s) => s.id === "image");
+    expect(imageSetting?.type).toBe("image_picker");
+    const excerptSetting = blogCardSettingsSchema.find(
+      (s) => s.id === "excerpt",
+    );
+    expect(excerptSetting?.type).toBe("textarea");
+    const linkUrlSetting = blogCardSettingsSchema.find(
+      (s) => s.id === "linkUrl",
+    );
+    expect(linkUrlSetting?.type).toBe("url");
+  });
+});
+
+describe("Blogs", () => {
+  it("renders without crash with empty props", () => {
+    const html = renderToStaticMarkup(<Blogs />);
+    expect(typeof html).toBe("string");
+    expect(html.length).toBeGreaterThan(0);
+  });
+
+  it("renders the default heading and subtitle (light variant)", () => {
+    const html = renderToStaticMarkup(<Blogs />);
+    expect(html).toContain("Últimos Blogs");
+    expect(html).toContain("Novedades, tendencias y más");
+  });
+
+  it("renders the section CTA as a real anchor with the provided ctaUrl", () => {
+    const html = renderToStaticMarkup(<Blogs ctaUrl="/b" />);
+    expect(html).toContain('href="/b"');
+    expect(html).toContain("Explora todos blogs");
+  });
+
+  it("renders the default EmptyState when zero blocks (D-08)", () => {
+    const html = renderToStaticMarkup(<Blogs />);
+    expect(html).toContain("Sin elementos");
+  });
+
+  it("renders provided blocks inside a responsive 1→3-up grid", () => {
+    const html = renderToStaticMarkup(
+      <Blogs renderBlocks={() => [<span key="a">child</span>]} />,
+    );
+    expect(html).toContain("grid-cols-1");
+    expect(html).toContain("md:grid-cols-2");
+    expect(html).toContain("lg:grid-cols-3");
+    expect(html).toContain("child");
+  });
+
+  it("blogsSettingsSchema has 4 entries [heading,subtitle,ctaLabel,ctaUrl]", () => {
+    expect(blogsSettingsSchema).toHaveLength(4);
+    const ids = blogsSettingsSchema.map((s) => s.id);
+    expect(ids).toEqual(["heading", "subtitle", "ctaLabel", "ctaUrl"]);
+    const ctaUrlSetting = blogsSettingsSchema.find((s) => s.id === "ctaUrl");
+    expect(ctaUrlSetting?.type).toBe("url");
+  });
+});
+
+describe("Blogs registry", () => {
+  it("blogs slot exposes the blog-card block in its blocks allow-list", () => {
+    const cfg = sectionBlocksConfig.blogs;
+    expect(cfg.blocks).toContainEqual({ type: "blog-card" });
+  });
+
+  it("blogs registers exactly one section-local block of type blog-card (D-07)", () => {
+    const cfg = sectionBlocksConfig.blogs;
+    expect(cfg.localBlocks).toHaveLength(1);
+    expect(cfg.localBlocks?.[0].type).toBe("blog-card");
+  });
+
+  it("blogs caps the slot at 6 blocks (D-09)", () => {
+    const cfg = sectionBlocksConfig.blogs;
+    expect(cfg.maxBlocks).toBe(6);
   });
 });
