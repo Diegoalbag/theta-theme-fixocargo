@@ -9,8 +9,10 @@ import { Servicios, serviciosSettingsSchema } from "./sections/Servicios";
 import { Beneficios, beneficiosSettingsSchema } from "./sections/Beneficios";
 import { DescargaApp, descargaAppSettingsSchema } from "./sections/DescargaApp";
 import { Sucursales, sucursalesSettingsSchema } from "./sections/Sucursales";
+import { EnviosNacionales, enviosNacionalesSettingsSchema } from "./sections/EnviosNacionales";
 import { HeroSlide, heroSlideSettingsSchema } from "./blocks/HeroSlide";
 import { Branch, branchSettingsSchema } from "./blocks/Branch";
+import { FaqPill, faqPillSettingsSchema } from "./blocks/FaqPill";
 import { BenefitCard, benefitCardSettingsSchema } from "./blocks/BenefitCard";
 import { ServiceItem, serviceItemSettingsSchema } from "./blocks/ServiceItem";
 import { PromoBanner, promoBannerSettingsSchema } from "./blocks/PromoBanner";
@@ -42,6 +44,7 @@ export const sectionsComponents: Record<
   "beneficios": Beneficios as React.ComponentType<Record<string, unknown>>,
   "descarga-app": DescargaApp as React.ComponentType<Record<string, unknown>>,
   "sucursales": Sucursales as React.ComponentType<Record<string, unknown>>,
+  "envios-nacionales": EnviosNacionales as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
@@ -56,6 +59,7 @@ export const sectionSettingsSchemas = {
   "beneficios": beneficiosSettingsSchema,
   "descarga-app": descargaAppSettingsSchema,
   "sucursales": sucursalesSettingsSchema,
+  "envios-nacionales": enviosNacionalesSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).
@@ -226,6 +230,21 @@ export const sectionBlocksConfig: Record<
         name: "Sucursal",
         component: Branch as React.ComponentType<Record<string, unknown>>,
         settings: branchSettingsSchema,
+      },
+    ],
+  },
+  "envios-nacionales": {
+    // ONE ordered slot, ONE section-local block type (D-07): faq-pill is
+    // exclusive to EnviosNacionales and is NOT registered in the global block
+    // maps (blocksComponents/blockSettingsSchemas stay unchanged).
+    blocks: [{ type: "faq-pill" }],
+    maxBlocks: 8,
+    localBlocks: [
+      {
+        type: "faq-pill",
+        name: "Pregunta frecuente",
+        component: FaqPill as React.ComponentType<Record<string, unknown>>,
+        settings: faqPillSettingsSchema,
       },
     ],
   },
