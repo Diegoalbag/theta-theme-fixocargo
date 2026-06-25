@@ -5,7 +5,10 @@ import { Footer, footerSettingsSchema } from "./sections/Footer";
 import { Hero, heroSettingsSchema } from "./sections/Hero";
 import { DireccionCards, direccionCardsSettingsSchema } from "./sections/DireccionCards";
 import { ToolsBar, toolsBarSettingsSchema } from "./sections/ToolsBar";
+import { Servicios, serviciosSettingsSchema } from "./sections/Servicios";
 import { HeroSlide, heroSlideSettingsSchema } from "./blocks/HeroSlide";
+import { ServiceItem, serviceItemSettingsSchema } from "./blocks/ServiceItem";
+import { PromoBanner, promoBannerSettingsSchema } from "./blocks/PromoBanner";
 import { AddressCard, addressCardSettingsSchema } from "./blocks/AddressCard";
 import { ToolPill, toolPillSettingsSchema } from "./blocks/ToolPill";
 import { SocialLink, socialLinkSettingsSchema } from "./blocks/SocialLink";
@@ -30,6 +33,7 @@ export const sectionsComponents: Record<
   "hero": Hero as React.ComponentType<Record<string, unknown>>,
   "direccion-cards": DireccionCards as React.ComponentType<Record<string, unknown>>,
   "tools-bar": ToolsBar as React.ComponentType<Record<string, unknown>>,
+  "servicios": Servicios as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
@@ -40,6 +44,7 @@ export const sectionSettingsSchemas = {
   "hero": heroSettingsSchema,
   "direccion-cards": direccionCardsSettingsSchema,
   "tools-bar": toolsBarSettingsSchema,
+  "servicios": serviciosSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).
@@ -154,6 +159,26 @@ export const sectionBlocksConfig: Record<
         name: "Botón de acción",
         component: ToolPill as React.ComponentType<Record<string, unknown>>,
         settings: toolPillSettingsSchema,
+      },
+    ],
+  },
+  "servicios": {
+    // ONE ordered slot, TWO section-local block types (D-02/D-03): the host
+    // exposes a single slot and the theme cannot partition by blockType.
+    blocks: [{ type: "service-item" }, { type: "promo-banner" }],
+    maxBlocks: 11,
+    localBlocks: [
+      {
+        type: "service-item",
+        name: "Servicio",
+        component: ServiceItem as React.ComponentType<Record<string, unknown>>,
+        settings: serviceItemSettingsSchema,
+      },
+      {
+        type: "promo-banner",
+        name: "Banner promocional",
+        component: PromoBanner as React.ComponentType<Record<string, unknown>>,
+        settings: promoBannerSettingsSchema,
       },
     ],
   },
