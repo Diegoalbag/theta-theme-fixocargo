@@ -155,10 +155,13 @@ export const Hero = ({ renderBlocks }: HeroProps): React.ReactNode => {
     // slides on one line instead of wrapping.
     style: { display: "flex", flexDirection: "row", flexWrap: "nowrap" },
   });
-  // Customizer => a single wrapper element; published-with-blocks => an array;
-  // published-zero => undefined.
+  // Customizer => a single wrapper element; published-with-blocks => a
+  // non-empty array; published-zero => undefined OR an empty array. An empty
+  // array is the canonical published-zero shape (matches BlocksSlot Test B), so
+  // it must fall through to EmptyState — not paint an empty `.blaze-track`.
   const customizerWrapped = React.isValidElement(rendered);
-  const hasBlocks = rendered != null;
+  const hasBlocks =
+    rendered != null && !(Array.isArray(rendered) && rendered.length === 0);
 
   return (
     <section role="region" aria-label="Carrusel destacado" className="relative">
