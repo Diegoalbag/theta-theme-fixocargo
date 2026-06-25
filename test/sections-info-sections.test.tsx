@@ -9,6 +9,7 @@ import {
   enviosNacionalesSettingsSchema,
 } from "@/sections/EnviosNacionales";
 import { FaqPill, faqPillSettingsSchema } from "@/blocks/FaqPill";
+import { BlogCard, blogCardSettingsSchema } from "@/blocks/BlogCard";
 import { sectionBlocksConfig } from "@/registry";
 
 // Render-smoke tests for the Phase 5 Info-sections sections/blocks.
@@ -228,5 +229,83 @@ describe("EnviosNacionales registry", () => {
   it("envios-nacionales caps the slot at 8 blocks (D-09)", () => {
     const cfg = sectionBlocksConfig["envios-nacionales"];
     expect(cfg.maxBlocks).toBe(8);
+  });
+});
+
+// --- Wave 3 (plan 05-03): Blogs + BlogCard ---
+
+describe("BlogCard", () => {
+  it("renders without crash with empty props (default title)", () => {
+    const html = renderToStaticMarkup(<BlogCard />);
+    expect(typeof html).toBe("string");
+    expect(html).toContain("Cómo calcular impuestos de tu paquete");
+  });
+
+  it("renders the ImageGuard placeholder and no img when image is unset", () => {
+    const html = renderToStaticMarkup(<BlogCard />);
+    expect(html).toContain("Agrega una imagen");
+    expect(html).not.toContain("<img");
+  });
+
+  it("renders an img with the url when image is set", () => {
+    const html = renderToStaticMarkup(
+      <BlogCard image={{ id: "1", url: "/cover.jpg" }} />,
+    );
+    expect(html).toContain("<img");
+    expect(html).toContain("/cover.jpg");
+  });
+
+  it("renders both tag pills (navy + yellow) when both tags are set (D-01)", () => {
+    const html = renderToStaticMarkup(
+      <BlogCard tagPrimary="Aduanas" tagSecondary="Guía" />,
+    );
+    expect(html).toContain("bg-brand-navy");
+    expect(html).toContain("bg-brand-yellow");
+    expect(html).toContain("Aduanas");
+    expect(html).toContain("Guía");
+  });
+
+  it("renders neither tag pill when both tags are unset (D-01)", () => {
+    const html = renderToStaticMarkup(<BlogCard />);
+    expect(html).not.toContain("Aduanas");
+    expect(html).not.toContain("Guía");
+  });
+
+  it("renders date and excerpt only when set", () => {
+    const html = renderToStaticMarkup(
+      <BlogCard date="12 Jun 2026" excerpt="Un resumen breve" />,
+    );
+    expect(html).toContain("12 Jun 2026");
+    expect(html).toContain("Un resumen breve");
+  });
+
+  it('renders "Conoce más" as a real anchor with the provided linkUrl', () => {
+    const html = renderToStaticMarkup(<BlogCard linkUrl="/post" />);
+    expect(html).toContain('href="/post"');
+    expect(html).toContain("Conoce más");
+  });
+
+  it("blogCardSettingsSchema has 7 entries [image,tagPrimary,tagSecondary,date,title,excerpt,linkUrl]", () => {
+    expect(blogCardSettingsSchema).toHaveLength(7);
+    const ids = blogCardSettingsSchema.map((s) => s.id);
+    expect(ids).toEqual([
+      "image",
+      "tagPrimary",
+      "tagSecondary",
+      "date",
+      "title",
+      "excerpt",
+      "linkUrl",
+    ]);
+    const imageSetting = blogCardSettingsSchema.find((s) => s.id === "image");
+    expect(imageSetting?.type).toBe("image_picker");
+    const excerptSetting = blogCardSettingsSchema.find(
+      (s) => s.id === "excerpt",
+    );
+    expect(excerptSetting?.type).toBe("textarea");
+    const linkUrlSetting = blogCardSettingsSchema.find(
+      (s) => s.id === "linkUrl",
+    );
+    expect(linkUrlSetting?.type).toBe("url");
   });
 });
