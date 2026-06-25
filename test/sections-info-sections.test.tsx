@@ -9,6 +9,7 @@ import {
   enviosNacionalesSettingsSchema,
 } from "@/sections/EnviosNacionales";
 import { FaqPill, faqPillSettingsSchema } from "@/blocks/FaqPill";
+import { Blogs, blogsSettingsSchema } from "@/sections/Blogs";
 import { BlogCard, blogCardSettingsSchema } from "@/blocks/BlogCard";
 import { sectionBlocksConfig } from "@/registry";
 
@@ -307,5 +308,66 @@ describe("BlogCard", () => {
       (s) => s.id === "linkUrl",
     );
     expect(linkUrlSetting?.type).toBe("url");
+  });
+});
+
+describe("Blogs", () => {
+  it("renders without crash with empty props", () => {
+    const html = renderToStaticMarkup(<Blogs />);
+    expect(typeof html).toBe("string");
+    expect(html.length).toBeGreaterThan(0);
+  });
+
+  it("renders the default heading and subtitle (light variant)", () => {
+    const html = renderToStaticMarkup(<Blogs />);
+    expect(html).toContain("Últimos Blogs");
+    expect(html).toContain("Novedades, tendencias y más");
+  });
+
+  it("renders the section CTA as a real anchor with the provided ctaUrl", () => {
+    const html = renderToStaticMarkup(<Blogs ctaUrl="/b" />);
+    expect(html).toContain('href="/b"');
+    expect(html).toContain("Explora todos blogs");
+  });
+
+  it("renders the default EmptyState when zero blocks (D-08)", () => {
+    const html = renderToStaticMarkup(<Blogs />);
+    expect(html).toContain("Sin elementos");
+  });
+
+  it("renders provided blocks inside a responsive 1→3-up grid", () => {
+    const html = renderToStaticMarkup(
+      <Blogs renderBlocks={() => [<span key="a">child</span>]} />,
+    );
+    expect(html).toContain("grid-cols-1");
+    expect(html).toContain("md:grid-cols-2");
+    expect(html).toContain("lg:grid-cols-3");
+    expect(html).toContain("child");
+  });
+
+  it("blogsSettingsSchema has 4 entries [heading,subtitle,ctaLabel,ctaUrl]", () => {
+    expect(blogsSettingsSchema).toHaveLength(4);
+    const ids = blogsSettingsSchema.map((s) => s.id);
+    expect(ids).toEqual(["heading", "subtitle", "ctaLabel", "ctaUrl"]);
+    const ctaUrlSetting = blogsSettingsSchema.find((s) => s.id === "ctaUrl");
+    expect(ctaUrlSetting?.type).toBe("url");
+  });
+});
+
+describe("Blogs registry", () => {
+  it("blogs slot exposes the blog-card block in its blocks allow-list", () => {
+    const cfg = sectionBlocksConfig.blogs;
+    expect(cfg.blocks).toContainEqual({ type: "blog-card" });
+  });
+
+  it("blogs registers exactly one section-local block of type blog-card (D-07)", () => {
+    const cfg = sectionBlocksConfig.blogs;
+    expect(cfg.localBlocks).toHaveLength(1);
+    expect(cfg.localBlocks?.[0].type).toBe("blog-card");
+  });
+
+  it("blogs caps the slot at 6 blocks (D-09)", () => {
+    const cfg = sectionBlocksConfig.blogs;
+    expect(cfg.maxBlocks).toBe(6);
   });
 });
