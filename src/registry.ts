@@ -6,7 +6,9 @@ import { Hero, heroSettingsSchema } from "./sections/Hero";
 import { DireccionCards, direccionCardsSettingsSchema } from "./sections/DireccionCards";
 import { ToolsBar, toolsBarSettingsSchema } from "./sections/ToolsBar";
 import { Servicios, serviciosSettingsSchema } from "./sections/Servicios";
+import { Beneficios, beneficiosSettingsSchema } from "./sections/Beneficios";
 import { HeroSlide, heroSlideSettingsSchema } from "./blocks/HeroSlide";
+import { BenefitCard, benefitCardSettingsSchema } from "./blocks/BenefitCard";
 import { ServiceItem, serviceItemSettingsSchema } from "./blocks/ServiceItem";
 import { PromoBanner, promoBannerSettingsSchema } from "./blocks/PromoBanner";
 import { AddressCard, addressCardSettingsSchema } from "./blocks/AddressCard";
@@ -34,6 +36,7 @@ export const sectionsComponents: Record<
   "direccion-cards": DireccionCards as React.ComponentType<Record<string, unknown>>,
   "tools-bar": ToolsBar as React.ComponentType<Record<string, unknown>>,
   "servicios": Servicios as React.ComponentType<Record<string, unknown>>,
+  "beneficios": Beneficios as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
@@ -45,6 +48,7 @@ export const sectionSettingsSchemas = {
   "direccion-cards": direccionCardsSettingsSchema,
   "tools-bar": toolsBarSettingsSchema,
   "servicios": serviciosSettingsSchema,
+  "beneficios": beneficiosSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).
@@ -179,6 +183,20 @@ export const sectionBlocksConfig: Record<
         name: "Banner promocional",
         component: PromoBanner as React.ComponentType<Record<string, unknown>>,
         settings: promoBannerSettingsSchema,
+      },
+    ],
+  },
+  "beneficios": {
+    // ONE ordered slot, ONE section-local block type (D-06): benefit-card is
+    // exclusive to Beneficios and is NOT registered in the global block maps.
+    blocks: [{ type: "benefit-card" }],
+    maxBlocks: 6,
+    localBlocks: [
+      {
+        type: "benefit-card",
+        name: "Beneficio",
+        component: BenefitCard as React.ComponentType<Record<string, unknown>>,
+        settings: benefitCardSettingsSchema,
       },
     ],
   },
