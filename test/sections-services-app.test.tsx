@@ -60,12 +60,15 @@ describe("ServiceItem", () => {
   });
 
   it("emits the open attribute only when isExpanded is true", () => {
+    // Match the boolean attribute on the <details> element precisely — a bare
+    // "open" substring would collide with the `group-open:` utility class that
+    // drives the chevron rotation, so assert on `<details open` / `open=""`.
     const expanded = renderToStaticMarkup(<ServiceItem isExpanded />);
     expect(expanded).toContain("<details");
-    expect(expanded).toContain("open");
+    expect(/<details[^>]*\sopen(=""|\s|>)/.test(expanded)).toBe(true);
 
     const collapsed = renderToStaticMarkup(<ServiceItem />);
-    expect(collapsed).not.toContain("open");
+    expect(/<details[^>]*\sopen(=""|\s|>)/.test(collapsed)).toBe(false);
   });
 
   it("resolves a known icon to an svg glyph", () => {
