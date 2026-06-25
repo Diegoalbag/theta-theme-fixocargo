@@ -4,6 +4,7 @@ import { describe, it, expect } from "vitest";
 
 import { Sucursales, sucursalesSettingsSchema } from "@/sections/Sucursales";
 import { Branch, branchSettingsSchema } from "@/blocks/Branch";
+import { FaqPill, faqPillSettingsSchema } from "@/blocks/FaqPill";
 import { sectionBlocksConfig } from "@/registry";
 
 // Render-smoke tests for the Phase 5 Info-sections sections/blocks.
@@ -118,5 +119,40 @@ describe("Sucursales registry", () => {
   it("sucursales caps the slot at 8 blocks (D-09)", () => {
     const cfg = sectionBlocksConfig.sucursales;
     expect(cfg.maxBlocks).toBe(8);
+  });
+});
+
+// --- Wave 2 (plan 05-02): EnviosNacionales + FaqPill ---
+
+describe("FaqPill", () => {
+  it("renders without crash with empty props (default question)", () => {
+    const html = renderToStaticMarkup(<FaqPill />);
+    expect(typeof html).toBe("string");
+    expect(html).toContain("¿Cómo funciona?");
+  });
+
+  it("always renders the provided question", () => {
+    const html = renderToStaticMarkup(<FaqPill question="¿Dónde recojo?" />);
+    expect(html).toContain("¿Dónde recojo?");
+  });
+
+  it("renders the Buscar button as a real anchor when url is set", () => {
+    const html = renderToStaticMarkup(<FaqPill url="/q" />);
+    expect(html).toContain('href="/q"');
+    expect(html).toContain("Buscar");
+  });
+
+  it("renders an inert disabled Buscar button (no anchor) when url is empty", () => {
+    const html = renderToStaticMarkup(<FaqPill url="" />);
+    expect(html).toContain("disabled");
+    expect(html).not.toContain(">Buscar</a>");
+  });
+
+  it("faqPillSettingsSchema has 2 entries [question,url] with url as url", () => {
+    expect(faqPillSettingsSchema).toHaveLength(2);
+    const ids = faqPillSettingsSchema.map((s) => s.id);
+    expect(ids).toEqual(["question", "url"]);
+    const urlSetting = faqPillSettingsSchema.find((s) => s.id === "url");
+    expect(urlSetting?.type).toBe("url");
   });
 });
