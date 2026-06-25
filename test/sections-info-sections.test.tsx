@@ -4,6 +4,11 @@ import { describe, it, expect } from "vitest";
 
 import { Sucursales, sucursalesSettingsSchema } from "@/sections/Sucursales";
 import { Branch, branchSettingsSchema } from "@/blocks/Branch";
+import {
+  EnviosNacionales,
+  enviosNacionalesSettingsSchema,
+} from "@/sections/EnviosNacionales";
+import { FaqPill, faqPillSettingsSchema } from "@/blocks/FaqPill";
 import { sectionBlocksConfig } from "@/registry";
 
 // Render-smoke tests for the Phase 5 Info-sections sections/blocks.
@@ -117,6 +122,111 @@ describe("Sucursales registry", () => {
 
   it("sucursales caps the slot at 8 blocks (D-09)", () => {
     const cfg = sectionBlocksConfig.sucursales;
+    expect(cfg.maxBlocks).toBe(8);
+  });
+});
+
+// --- Wave 2 (plan 05-02): EnviosNacionales + FaqPill ---
+
+describe("FaqPill", () => {
+  it("renders without crash with empty props (default question)", () => {
+    const html = renderToStaticMarkup(<FaqPill />);
+    expect(typeof html).toBe("string");
+    expect(html).toContain("¿Cómo funciona?");
+  });
+
+  it("always renders the provided question", () => {
+    const html = renderToStaticMarkup(<FaqPill question="¿Dónde recojo?" />);
+    expect(html).toContain("¿Dónde recojo?");
+  });
+
+  it("renders the Buscar button as a real anchor when url is set", () => {
+    const html = renderToStaticMarkup(<FaqPill url="/q" />);
+    expect(html).toContain('href="/q"');
+    expect(html).toContain("Buscar");
+  });
+
+  it("renders an inert disabled Buscar button (no anchor) when url is empty", () => {
+    const html = renderToStaticMarkup(<FaqPill url="" />);
+    expect(html).toContain("disabled");
+    expect(html).not.toContain(">Buscar</a>");
+  });
+
+  it("faqPillSettingsSchema has 2 entries [question,url] with url as url", () => {
+    expect(faqPillSettingsSchema).toHaveLength(2);
+    const ids = faqPillSettingsSchema.map((s) => s.id);
+    expect(ids).toEqual(["question", "url"]);
+    const urlSetting = faqPillSettingsSchema.find((s) => s.id === "url");
+    expect(urlSetting?.type).toBe("url");
+  });
+});
+
+describe("EnviosNacionales", () => {
+  it("renders without crash with empty props", () => {
+    const html = renderToStaticMarkup(<EnviosNacionales />);
+    expect(typeof html).toBe("string");
+    expect(html.length).toBeGreaterThan(0);
+  });
+
+  it("renders the default heading and kicker (dark variant)", () => {
+    const html = renderToStaticMarkup(<EnviosNacionales />);
+    expect(html).toContain("Envíos Nacionales");
+    expect(html).toContain("#FixoTeGuía");
+  });
+
+  it("renders on the navy dark surface", () => {
+    const html = renderToStaticMarkup(<EnviosNacionales />);
+    expect(html).toContain("bg-brand-navy");
+  });
+
+  it("renders the section CTA as a real anchor with the provided ctaUrl", () => {
+    const html = renderToStaticMarkup(<EnviosNacionales ctaUrl="/e" />);
+    expect(html).toContain('href="/e"');
+    expect(html).toContain("Conoce más");
+  });
+
+  it("renders the default EmptyState when zero blocks (D-08)", () => {
+    const html = renderToStaticMarkup(<EnviosNacionales />);
+    expect(html).toContain("Sin elementos");
+  });
+
+  it("renders provided blocks inside the stacking BlocksSlot layout", () => {
+    const html = renderToStaticMarkup(
+      <EnviosNacionales renderBlocks={() => [<span key="a">child</span>]} />,
+    );
+    expect(html).toContain("flex-col");
+    expect(html).toContain("child");
+  });
+
+  it("enviosNacionalesSettingsSchema has 5 entries [kicker,heading,body,ctaLabel,ctaUrl]", () => {
+    expect(enviosNacionalesSettingsSchema).toHaveLength(5);
+    const ids = enviosNacionalesSettingsSchema.map((s) => s.id);
+    expect(ids).toEqual(["kicker", "heading", "body", "ctaLabel", "ctaUrl"]);
+    const bodySetting = enviosNacionalesSettingsSchema.find(
+      (s) => s.id === "body",
+    );
+    expect(bodySetting?.type).toBe("textarea");
+    const ctaUrlSetting = enviosNacionalesSettingsSchema.find(
+      (s) => s.id === "ctaUrl",
+    );
+    expect(ctaUrlSetting?.type).toBe("url");
+  });
+});
+
+describe("EnviosNacionales registry", () => {
+  it("envios-nacionales slot exposes the faq-pill block in its blocks allow-list", () => {
+    const cfg = sectionBlocksConfig["envios-nacionales"];
+    expect(cfg.blocks).toContainEqual({ type: "faq-pill" });
+  });
+
+  it("envios-nacionales registers exactly one section-local block of type faq-pill (D-07)", () => {
+    const cfg = sectionBlocksConfig["envios-nacionales"];
+    expect(cfg.localBlocks).toHaveLength(1);
+    expect(cfg.localBlocks?.[0].type).toBe("faq-pill");
+  });
+
+  it("envios-nacionales caps the slot at 8 blocks (D-09)", () => {
+    const cfg = sectionBlocksConfig["envios-nacionales"];
     expect(cfg.maxBlocks).toBe(8);
   });
 });
