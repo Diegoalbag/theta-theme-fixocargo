@@ -8,7 +8,9 @@ import { ToolsBar, toolsBarSettingsSchema } from "./sections/ToolsBar";
 import { Servicios, serviciosSettingsSchema } from "./sections/Servicios";
 import { Beneficios, beneficiosSettingsSchema } from "./sections/Beneficios";
 import { DescargaApp, descargaAppSettingsSchema } from "./sections/DescargaApp";
+import { Sucursales, sucursalesSettingsSchema } from "./sections/Sucursales";
 import { HeroSlide, heroSlideSettingsSchema } from "./blocks/HeroSlide";
+import { Branch, branchSettingsSchema } from "./blocks/Branch";
 import { BenefitCard, benefitCardSettingsSchema } from "./blocks/BenefitCard";
 import { ServiceItem, serviceItemSettingsSchema } from "./blocks/ServiceItem";
 import { PromoBanner, promoBannerSettingsSchema } from "./blocks/PromoBanner";
@@ -39,6 +41,7 @@ export const sectionsComponents: Record<
   "servicios": Servicios as React.ComponentType<Record<string, unknown>>,
   "beneficios": Beneficios as React.ComponentType<Record<string, unknown>>,
   "descarga-app": DescargaApp as React.ComponentType<Record<string, unknown>>,
+  "sucursales": Sucursales as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
@@ -52,6 +55,7 @@ export const sectionSettingsSchemas = {
   "servicios": serviciosSettingsSchema,
   "beneficios": beneficiosSettingsSchema,
   "descarga-app": descargaAppSettingsSchema,
+  "sucursales": sucursalesSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).
@@ -210,5 +214,19 @@ export const sectionBlocksConfig: Record<
     // are NO section-local blocks here.
     blocks: [{ type: "store-badge" }],
     maxBlocks: 2,
+  },
+  "sucursales": {
+    // ONE ordered slot, ONE section-local block type (D-07): branch is
+    // exclusive to Sucursales and is NOT registered in the global block maps.
+    blocks: [{ type: "branch" }],
+    maxBlocks: 8,
+    localBlocks: [
+      {
+        type: "branch",
+        name: "Sucursal",
+        component: Branch as React.ComponentType<Record<string, unknown>>,
+        settings: branchSettingsSchema,
+      },
+    ],
   },
 };
