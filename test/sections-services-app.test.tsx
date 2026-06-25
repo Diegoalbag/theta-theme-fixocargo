@@ -5,6 +5,8 @@ import { describe, it, expect } from "vitest";
 import { Servicios, serviciosSettingsSchema } from "@/sections/Servicios";
 import { ServiceItem, serviceItemSettingsSchema } from "@/blocks/ServiceItem";
 import { PromoBanner, promoBannerSettingsSchema } from "@/blocks/PromoBanner";
+import { Beneficios, beneficiosSettingsSchema } from "@/sections/Beneficios";
+import { BenefitCard, benefitCardSettingsSchema } from "@/blocks/BenefitCard";
 import { sectionBlocksConfig } from "@/registry";
 
 // Render-smoke tests for the Phase 4 Servicios-app sections/blocks.
@@ -159,5 +161,94 @@ describe("Servicios registry", () => {
     const types = cfg.localBlocks?.map((b) => b.type);
     expect(types).toContain("service-item");
     expect(types).toContain("promo-banner");
+  });
+});
+
+// --- Wave 2 (plan 04-02): Beneficios + BenefitCard ------------------------
+
+describe("Beneficios", () => {
+  it("renders without crash with empty props", () => {
+    const html = renderToStaticMarkup(<Beneficios />);
+    expect(typeof html).toBe("string");
+    expect(html.length).toBeGreaterThan(0);
+  });
+
+  it("renders the default heading 'Beneficios'", () => {
+    const html = renderToStaticMarkup(<Beneficios />);
+    expect(html).toContain("Beneficios");
+  });
+
+  it("renders on the navy dark surface", () => {
+    const html = renderToStaticMarkup(<Beneficios />);
+    expect(html).toContain("bg-brand-navy");
+  });
+
+  it("renders the section CTA as a real anchor with the default label and href", () => {
+    const html = renderToStaticMarkup(<Beneficios ctaUrl="/beneficios" />);
+    expect(html).toContain("Explora Nuestros Beneficios");
+    expect(html).toContain("<a");
+    expect(html).toContain('href="/beneficios"');
+  });
+
+  it("renders the default EmptyState when zero blocks (D-07)", () => {
+    const html = renderToStaticMarkup(<Beneficios />);
+    expect(html).toContain("Sin elementos");
+  });
+
+  it("renders provided blocks inside a responsive 1→3-up grid wrapper", () => {
+    const html = renderToStaticMarkup(
+      <Beneficios renderBlocks={() => [<span key="a">child</span>]} />,
+    );
+    expect(html).toContain("grid-cols-1");
+    expect(html).toContain("md:grid-cols-2");
+    expect(html).toContain("lg:grid-cols-3");
+    expect(html).toContain("child");
+  });
+
+  it("beneficiosSettingsSchema has exactly 4 entries [heading,subtitle,ctaLabel,ctaUrl]", () => {
+    expect(beneficiosSettingsSchema).toHaveLength(4);
+    const ids = beneficiosSettingsSchema.map((s) => s.id);
+    expect(ids).toEqual(["heading", "subtitle", "ctaLabel", "ctaUrl"]);
+  });
+});
+
+describe("BenefitCard", () => {
+  it("renders without crash with empty props (default title)", () => {
+    const html = renderToStaticMarkup(<BenefitCard />);
+    expect(typeof html).toBe("string");
+    expect(html).toContain("Entrega Rápida y Segura");
+  });
+
+  it("resolves a known icon to an svg glyph", () => {
+    const html = renderToStaticMarkup(<BenefitCard icon="truck" />);
+    expect(html).toContain("<svg");
+  });
+
+  it("falls back without throwing on an unknown icon value (QA-03)", () => {
+    let html = "";
+    expect(() => {
+      html = renderToStaticMarkup(<BenefitCard icon="totally-unknown" />);
+    }).not.toThrow();
+    expect(html).toContain("<svg");
+  });
+
+  it("renders the yellow icon badge", () => {
+    const html = renderToStaticMarkup(<BenefitCard />);
+    expect(html).toContain("bg-brand-yellow");
+  });
+
+  it("renders a 'Conoce más' link as a real anchor with href", () => {
+    const html = renderToStaticMarkup(<BenefitCard linkUrl="/beneficio" />);
+    expect(html).toContain("Conoce más");
+    expect(html).toContain("<a");
+    expect(html).toContain('href="/beneficio"');
+  });
+
+  it("benefitCardSettingsSchema has 4 entries [icon,title,body,linkUrl] with icon as select", () => {
+    expect(benefitCardSettingsSchema).toHaveLength(4);
+    const ids = benefitCardSettingsSchema.map((s) => s.id);
+    expect(ids).toEqual(["icon", "title", "body", "linkUrl"]);
+    const iconSetting = benefitCardSettingsSchema.find((s) => s.id === "icon");
+    expect(iconSetting?.type).toBe("select");
   });
 });
