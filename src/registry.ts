@@ -7,6 +7,7 @@ import { DireccionCards, direccionCardsSettingsSchema } from "./sections/Direcci
 import { ToolsBar, toolsBarSettingsSchema } from "./sections/ToolsBar";
 import { Servicios, serviciosSettingsSchema } from "./sections/Servicios";
 import { Beneficios, beneficiosSettingsSchema } from "./sections/Beneficios";
+import { DescargaApp, descargaAppSettingsSchema } from "./sections/DescargaApp";
 import { HeroSlide, heroSlideSettingsSchema } from "./blocks/HeroSlide";
 import { BenefitCard, benefitCardSettingsSchema } from "./blocks/BenefitCard";
 import { ServiceItem, serviceItemSettingsSchema } from "./blocks/ServiceItem";
@@ -37,6 +38,7 @@ export const sectionsComponents: Record<
   "tools-bar": ToolsBar as React.ComponentType<Record<string, unknown>>,
   "servicios": Servicios as React.ComponentType<Record<string, unknown>>,
   "beneficios": Beneficios as React.ComponentType<Record<string, unknown>>,
+  "descarga-app": DescargaApp as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
@@ -49,6 +51,7 @@ export const sectionSettingsSchemas = {
   "tools-bar": toolsBarSettingsSchema,
   "servicios": serviciosSettingsSchema,
   "beneficios": beneficiosSettingsSchema,
+  "descarga-app": descargaAppSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).
@@ -199,5 +202,13 @@ export const sectionBlocksConfig: Record<
         settings: benefitCardSettingsSchema,
       },
     ],
+  },
+  "descarga-app": {
+    // SHARED block reuse (D-05): the app-store badge row accepts the global
+    // `store-badge` block via the allow-list only. store-badge is already in
+    // blocksComponents/blockSettingsSchemas — do NOT re-register it, and there
+    // are NO section-local blocks here.
+    blocks: [{ type: "store-badge" }],
+    maxBlocks: 2,
   },
 };

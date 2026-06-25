@@ -7,6 +7,7 @@ import { ServiceItem, serviceItemSettingsSchema } from "@/blocks/ServiceItem";
 import { PromoBanner, promoBannerSettingsSchema } from "@/blocks/PromoBanner";
 import { Beneficios, beneficiosSettingsSchema } from "@/sections/Beneficios";
 import { BenefitCard, benefitCardSettingsSchema } from "@/blocks/BenefitCard";
+import { DescargaApp, descargaAppSettingsSchema } from "@/sections/DescargaApp";
 import { sectionBlocksConfig } from "@/registry";
 
 // Render-smoke tests for the Phase 4 Servicios-app sections/blocks.
@@ -250,5 +251,90 @@ describe("BenefitCard", () => {
     expect(ids).toEqual(["icon", "title", "body", "linkUrl"]);
     const iconSetting = benefitCardSettingsSchema.find((s) => s.id === "icon");
     expect(iconSetting?.type).toBe("select");
+  });
+});
+
+// --- Wave 3 (plan 04-03): DescargaApp + shared store-badge reuse ----------
+
+describe("DescargaApp", () => {
+  it("renders without crash with empty props", () => {
+    const html = renderToStaticMarkup(<DescargaApp />);
+    expect(typeof html).toBe("string");
+    expect(html.length).toBeGreaterThan(0);
+  });
+
+  it("renders the default heading and body", () => {
+    const html = renderToStaticMarkup(<DescargaApp />);
+    expect(html).toContain("Descarga ya la Fixo App");
+    expect(html).toContain(
+      "La forma más rápida y fácil de rastrear tus envíos en tiempo real.",
+    );
+  });
+
+  it("renders a navy placeholder and no full-bleed img when bg is unset", () => {
+    const html = renderToStaticMarkup(<DescargaApp />);
+    expect(html).toContain("bg-brand-navy");
+    // Unset phones also avoid <img> (ImageGuard placeholder), so with NO
+    // images at all there must be zero <img> tags in the output.
+    expect(html).not.toContain("<img");
+  });
+
+  it("renders an object-cover background img when bg is set", () => {
+    const html = renderToStaticMarkup(
+      <DescargaApp backgroundImage={{ id: "x", url: "https://e/bg.jpg" }} />,
+    );
+    expect(html).toContain("<img");
+    expect(html).toContain("object-cover");
+    expect(html).toContain("https://e/bg.jpg");
+  });
+
+  it("renders a fixed yellow overlay layer (D-05, CSS-only)", () => {
+    const html = renderToStaticMarkup(<DescargaApp />);
+    expect(html).toContain("bg-brand-yellow");
+  });
+
+  it("renders the ImageGuard placeholder for unset phone mockups", () => {
+    const html = renderToStaticMarkup(<DescargaApp />);
+    expect(html).toContain("Agrega una imagen");
+  });
+
+  it("renders an img with the provided phoneImage1 url when set", () => {
+    const html = renderToStaticMarkup(
+      <DescargaApp phoneImage1={{ id: "p1", url: "https://e/phone1.png" }} />,
+    );
+    expect(html).toContain("<img");
+    expect(html).toContain("https://e/phone1.png");
+  });
+
+  it("renders the default EmptyState when zero blocks (D-07)", () => {
+    const html = renderToStaticMarkup(<DescargaApp />);
+    expect(html).toContain("Sin elementos");
+  });
+
+  it("descargaAppSettingsSchema has 5 entries [backgroundImage,heading,body,phoneImage1,phoneImage2]", () => {
+    expect(descargaAppSettingsSchema).toHaveLength(5);
+    const ids = descargaAppSettingsSchema.map((s) => s.id);
+    expect(ids).toEqual([
+      "backgroundImage",
+      "heading",
+      "body",
+      "phoneImage1",
+      "phoneImage2",
+    ]);
+  });
+});
+
+describe("DescargaApp registry", () => {
+  it("descarga-app lists the shared store-badge in its blocks allow-list (D-05)", () => {
+    const cfg = sectionBlocksConfig["descarga-app"];
+    const types = cfg.blocks.map((b) => b.type);
+    expect(types.includes("store-badge") || types.includes("@theme")).toBe(
+      true,
+    );
+  });
+
+  it("descarga-app registers NO section-local blocks (store-badge is the shared global block, D-05)", () => {
+    const cfg = sectionBlocksConfig["descarga-app"];
+    expect(cfg.localBlocks ?? []).toHaveLength(0);
   });
 });
