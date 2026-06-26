@@ -47,6 +47,9 @@ const EMPTY_STATE_MARKER = "Sin elementos";
 // blocksComponents alone would cover 2 of 13 — we MUST flatMap localBlocks to
 // reach hero-slide, address-card, tool-pill, service-item, promo-banner,
 // benefit-card, branch, faq-pill, blog-card, nav-link, footer-column.
+// (promo-banner is DEPRECATED — Servicios no longer OFFERS it and drives the
+// right rail via section settings — but its localBlock config is retained for
+// back-compat with legacy instances, so it is still in this census.)
 const localBlockEntries: Array<
   [string, React.ComponentType<Record<string, unknown>>]
 > = Object.values(sectionBlocksConfig).flatMap((cfg) =>

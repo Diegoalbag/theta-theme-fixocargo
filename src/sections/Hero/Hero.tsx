@@ -167,7 +167,7 @@ export const Hero = ({ renderBlocks }: HeroProps): React.ReactNode => {
     <section role="region" aria-label="Carrusel destacado" className="relative">
       <div ref={rootRef} className="blaze-slider">
         <div className="blaze-container">
-          <div className="blaze-track-container relative min-h-[60vh] md:min-h-[560px]">
+          <div className="blaze-track-container relative md:min-h-[560px]">
             {/* Customizer-only drop affordance: shown behind the (empty) track
                 so the merchant can see where hero slides go. Real slides are
                 full-bleed and paint over it. */}

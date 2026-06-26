@@ -39,14 +39,27 @@ describe("Servicios", () => {
       <Servicios renderBlocks={() => [<span key="a">child</span>]} />,
     );
     expect(html).toContain("grid-cols-1");
-    expect(html).toContain("lg:grid-cols-3");
+    expect(html).toContain("lg:grid-cols-2");
     expect(html).toContain("child");
   });
 
-  it("serviciosSettingsSchema has exactly 2 entries [heading,subtitle]", () => {
-    expect(serviciosSettingsSchema).toHaveLength(2);
+  it("serviciosSettingsSchema carries heading/subtitle + the settings-driven banners", () => {
     const ids = serviciosSettingsSchema.map((s) => s.id);
-    expect(ids).toEqual(["heading", "subtitle"]);
+    // Right-rail banners moved out of the block slot into section settings, so
+    // the schema now also drives banner 1 + the optional banner 2.
+    expect(ids.slice(0, 2)).toEqual(["heading", "subtitle"]);
+    expect(ids).toEqual(
+      expect.arrayContaining([
+        "bannerImage",
+        "bannerHeadline",
+        "bannerCtaUrl",
+        "showSecondBanner",
+        "banner2Image",
+        "banner2Headline",
+        "banner2CtaUrl",
+      ]),
+    );
+    expect(serviciosSettingsSchema).toHaveLength(13);
   });
 });
 
@@ -149,19 +162,24 @@ describe("PromoBanner", () => {
 });
 
 describe("Servicios registry", () => {
-  it("servicios slot exposes both block types in ONE blocks array (D-02/D-03)", () => {
+  it("servicios slot exposes ONLY service-item (banners moved to settings)", () => {
     const cfg = sectionBlocksConfig.servicios;
-    expect(cfg.blocks).toHaveLength(2);
+    expect(cfg.blocks).toHaveLength(1);
     expect(cfg.blocks).toContainEqual({ type: "service-item" });
-    expect(cfg.blocks).toContainEqual({ type: "promo-banner" });
+    // promo-banner is no longer a block — the right rail is settings-driven, so
+    // the slot can't offer it (a section has only one slot; see Servicios.tsx).
+    expect(cfg.blocks).not.toContainEqual({ type: "promo-banner" });
   });
 
-  it("servicios registers TWO section-local blocks (D-06)", () => {
+  it("retains promo-banner in localBlocks for back-compat but does NOT offer it", () => {
     const cfg = sectionBlocksConfig.servicios;
-    expect(cfg.localBlocks).toHaveLength(2);
+    // promo-banner is deprecated: kept in localBlocks so the platform still
+    // registers its Puck config (legacy instances stay renderable/removable),
+    // but absent from `blocks` so it can't be added to new pages.
     const types = cfg.localBlocks?.map((b) => b.type);
     expect(types).toContain("service-item");
     expect(types).toContain("promo-banner");
+    expect(cfg.blocks).not.toContainEqual({ type: "promo-banner" });
   });
 });
 
@@ -206,10 +224,16 @@ describe("Beneficios", () => {
     expect(html).toContain("child");
   });
 
-  it("beneficiosSettingsSchema has exactly 4 entries [heading,subtitle,ctaLabel,ctaUrl]", () => {
-    expect(beneficiosSettingsSchema).toHaveLength(4);
+  it("beneficiosSettingsSchema has 5 entries incl. backgroundImage", () => {
+    expect(beneficiosSettingsSchema).toHaveLength(5);
     const ids = beneficiosSettingsSchema.map((s) => s.id);
-    expect(ids).toEqual(["heading", "subtitle", "ctaLabel", "ctaUrl"]);
+    expect(ids).toEqual([
+      "heading",
+      "subtitle",
+      "ctaLabel",
+      "ctaUrl",
+      "backgroundImage",
+    ]);
   });
 });
 

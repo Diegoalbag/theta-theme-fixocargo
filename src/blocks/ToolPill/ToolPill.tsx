@@ -1,14 +1,23 @@
 import * as React from "react";
-import { Search, Calculator, MapPin, Truck, Package, Phone } from "lucide-react";
+import {
+  Search,
+  Calculator,
+  MapPin,
+  Truck,
+  Package,
+  Phone,
+} from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { IconChip } from "@/components/ui/icon-chip";
 
 // Section-local block (ATF-03) for the ToolsBar: a single quick-action pill
-// rendered as a real <a>. The icon is chosen from a curated select (enum →
-// Lucide glyph via iconMap) — no free icon upload — with a defensive default so
-// an unknown value NEVER crashes (QA-03). Pill is uniform brand-yellow with a
-// navy gotham-bold label and a trailing navy IconChip whose glyph is forced
-// brand-yellow via a className override (D-08).
+// rendered as a real <a>, styled through the shared Button (`tool-pill` variant
+// + `tool` size) via asChild so the anchor keeps its href. The icon is chosen
+// from a curated select (enum → Lucide glyph via iconMap) — no free icon upload
+// — with a defensive default so an unknown value NEVER crashes (QA-03). Pill is
+// uniform brand-yellow with a navy gotham-bold label and a trailing navy
+// IconChip whose glyph is forced brand-yellow via a className override (D-08).
 //
 // No state, no event handlers, no hex literals, @/ imports only.
 export interface ToolPillProps {
@@ -41,15 +50,17 @@ export const ToolPill = ({
   const Icon = iconMap[icon] ?? Search;
 
   return (
-    <a
-      href={url || "#"}
-      className="flex items-center justify-center gap-4 rounded-full bg-brand-yellow px-6 h-16 md:h-20 hover:bg-brand-yellow/90 transition-colors"
-    >
-      <span className="font-gotham font-bold text-brand-navy">{label}</span>
-      <IconChip background="navy" size="md" className="text-brand-yellow">
-        <Icon aria-hidden="true" />
-      </IconChip>
-    </a>
+    <Button asChild variant="tool-pill" size="tool">
+      <a href={url || "#"}>
+        <span>{label}</span>
+        <IconChip background="navy" size="lg" className="text-brand-yellow">
+          {/* size-5 keeps the chip glyph at 20px: the Button's
+              [&_svg:not([class*='size-'])]:size-4 rule is more specific than
+              IconChip's [&_svg]:size-5 and would otherwise shrink it. */}
+          <Icon aria-hidden="true" className="size-6" />
+        </IconChip>
+      </a>
+    </Button>
   );
 };
 

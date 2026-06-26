@@ -1,13 +1,8 @@
 import * as React from "react";
-import {
-  Facebook,
-  Instagram,
-  Linkedin,
-  Twitter,
-  Youtube,
-} from "lucide-react";
+import { Facebook, Instagram, Linkedin, Twitter, Youtube } from "lucide-react";
 import { WhatsApp } from "@/components/icons/social/whatsapp";
 import { TikTok } from "@/components/icons/social/tiktok";
+import { X } from "@/components/icons/social/x";
 
 // Shared global block (FND-07): a single social network link rendered as its
 // icon on a real <a>. Uses Lucide icons for Facebook, Instagram, LinkedIn,
@@ -20,11 +15,14 @@ export interface SocialLinkProps {
   blockType?: string;
 }
 
-const iconMap: Record<string, React.FC<{ className?: string; "aria-hidden"?: boolean | "true" | "false" }>> = {
+const iconMap: Record<
+  string,
+  React.FC<{ className?: string; "aria-hidden"?: boolean | "true" | "false" }>
+> = {
   facebook: Facebook,
   instagram: Instagram,
   linkedin: Linkedin,
-  x: Twitter,
+  x: X,
   youtube: Youtube,
   whatsapp: WhatsApp,
   tiktok: TikTok,
@@ -51,7 +49,7 @@ export const SocialLink = ({
     <a
       href={url}
       aria-label={network}
-      className="text-brand-yellow hover:opacity-80 inline-flex items-center transition-opacity"
+      className="text-brand-yellow hover:opacity-80 flex w-fit items-center transition-opacity"
     >
       <Icon aria-hidden={true} className="size-5" />
     </a>

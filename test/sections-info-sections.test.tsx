@@ -42,29 +42,32 @@ describe("Sucursales", () => {
     expect(html).toContain("Sin elementos");
   });
 
-  it("renders the ImageGuard placeholder and no img when mapImage unset", () => {
+  it("renders a real map iframe + the selected-branch overlay panel", () => {
     const html = renderToStaticMarkup(<Sucursales />);
-    expect(html).toContain("Agrega una imagen");
-    expect(html).not.toContain("<img");
+    expect(html).toContain("<iframe");
+    expect(html).toContain("output=embed");
+    expect(html).toContain("Contáctanos");
+    expect(html).toContain("Dirección");
   });
 
-  it("renders provided blocks inside a responsive two-column layout", () => {
+  it("renders branches as a vertical list (not a grid) in a two-column layout", () => {
     const html = renderToStaticMarkup(
       <Sucursales renderBlocks={() => [<span key="a">child</span>]} />,
     );
-    expect(html).toContain("grid-cols-1");
     expect(html).toContain("lg:flex-row");
+    expect(html).toContain("flex-col");
+    expect(html).not.toContain("grid-cols-1");
     expect(html).toContain("child");
   });
 
-  it("sucursalesSettingsSchema has exactly 3 entries [heading,subtitle,mapImage]", () => {
+  it("sucursalesSettingsSchema has exactly 3 entries [heading,subtitle,mapQuery]", () => {
     expect(sucursalesSettingsSchema).toHaveLength(3);
     const ids = sucursalesSettingsSchema.map((s) => s.id);
-    expect(ids).toEqual(["heading", "subtitle", "mapImage"]);
-    const mapImageSetting = sucursalesSettingsSchema.find(
-      (s) => s.id === "mapImage",
+    expect(ids).toEqual(["heading", "subtitle", "mapQuery"]);
+    const mapQuerySetting = sucursalesSettingsSchema.find(
+      (s) => s.id === "mapQuery",
     );
-    expect(mapImageSetting?.type).toBe("image_picker");
+    expect(mapQuerySetting?.type).toBe("text");
   });
 });
 
@@ -96,15 +99,22 @@ describe("Branch", () => {
     expect(/href="(tel|mailto):"/.test(html)).toBe(false);
   });
 
-  it("renders the Dirección anchor with the provided mapUrl", () => {
+  it("exposes mapUrl via data-branch-mapurl for the section map overlay", () => {
     const html = renderToStaticMarkup(<Branch mapUrl="/m" />);
-    expect(html).toContain('href="/m"');
+    expect(html).toContain('data-branch-mapurl="/m"');
   });
 
-  it("branchSettingsSchema has 4 entries [name,phone,email,mapUrl] with mapUrl as url", () => {
-    expect(branchSettingsSchema).toHaveLength(4);
+  it("branchSettingsSchema has 6 entries incl. address + mapQuery; mapUrl is url", () => {
+    expect(branchSettingsSchema).toHaveLength(6);
     const ids = branchSettingsSchema.map((s) => s.id);
-    expect(ids).toEqual(["name", "phone", "email", "mapUrl"]);
+    expect(ids).toEqual([
+      "name",
+      "phone",
+      "email",
+      "address",
+      "mapUrl",
+      "mapQuery",
+    ]);
     const mapUrlSetting = branchSettingsSchema.find((s) => s.id === "mapUrl");
     expect(mapUrlSetting?.type).toBe("url");
   });
@@ -200,10 +210,17 @@ describe("EnviosNacionales", () => {
     expect(html).toContain("child");
   });
 
-  it("enviosNacionalesSettingsSchema has 5 entries [kicker,heading,body,ctaLabel,ctaUrl]", () => {
-    expect(enviosNacionalesSettingsSchema).toHaveLength(5);
+  it("enviosNacionalesSettingsSchema has 6 entries incl. backgroundImage", () => {
+    expect(enviosNacionalesSettingsSchema).toHaveLength(6);
     const ids = enviosNacionalesSettingsSchema.map((s) => s.id);
-    expect(ids).toEqual(["kicker", "heading", "body", "ctaLabel", "ctaUrl"]);
+    expect(ids).toEqual([
+      "kicker",
+      "heading",
+      "body",
+      "ctaLabel",
+      "ctaUrl",
+      "backgroundImage",
+    ]);
     const bodySetting = enviosNacionalesSettingsSchema.find(
       (s) => s.id === "body",
     );

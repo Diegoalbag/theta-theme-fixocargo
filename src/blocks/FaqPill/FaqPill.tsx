@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
@@ -23,6 +24,13 @@ export const FaqPill = ({
 }: FaqPillProps): React.ReactNode => {
   return (
     <div className="flex items-center gap-4 rounded-full bg-card border border-border px-6 py-3">
+      {/* Decorative leading icon: white glyph on a brand-yellow circle. */}
+      <span
+        aria-hidden="true"
+        className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-yellow text-white"
+      >
+        <Search className="size-4" />
+      </span>
       <span className="flex-1 font-gotham font-bold text-brand-navy">
         {question}
       </span>

@@ -3,6 +3,7 @@ import { Menu, X, User } from "lucide-react";
 
 import { BlocksSlot } from "@/lib/blocks-slot";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 // SiteHeader (CHR-02) — site-wide top navigation.
 // Mobile nav uses a CSS-only details/summary hamburger — no useState, no React
@@ -12,8 +13,14 @@ import { Button } from "@/components/ui/button";
 // Single BlocksSlot pattern (RESEARCH.md Pattern 4, Pitfall 3): BlocksSlot is
 // called exactly once inside a <nav> sibling to <details class="peer">.
 // The nav is hidden on mobile and revealed via `peer-open:flex` when the
-// details is open. On desktop (lg:) the nav is always flex-row regardless.
-// details and nav MUST be adjacent siblings for the peer selector to work.
+// details is open (a styled dropdown panel below the header). On desktop (lg:)
+// the nav is always an inline flex-row. details and nav MUST be adjacent
+// siblings for the peer selector to work.
+//
+// The "Mi Cuenta" account button is rendered TWICE (same content): the desktop
+// copy lives in the header bar (`hidden lg:block`); the mobile copy lives inside
+// the dropdown menu, full-width below a divider (`lg:hidden`). CSS picks which is
+// visible — so on mobile the header bar is just logo + hamburger.
 //
 // All text arrives as optional props (platform-validated strings).
 // Icons are decorative (aria-hidden). No state, no event handlers in this file.
@@ -38,9 +45,28 @@ export const SiteHeader = ({
   accountUrl,
   renderBlocks,
 }: SiteHeaderProps): React.ReactNode => {
+  // Rendered in both the desktop header bar and the mobile menu; `extra` makes
+  // the mobile copy full-width. Pure render — no state, no handlers.
+  const accountButton = (extra?: string) => (
+    <Button
+      size="lg"
+      variant="pill-outline"
+      className={cn("border-white", extra)}
+      asChild
+    >
+      <a
+        href={accountUrl || "#"}
+        className="inline-flex items-center justify-center gap-2 text-white"
+      >
+        <User aria-hidden="true" className="size-4" />
+        <span>{accountLabel || "Mi Cuenta"}</span>
+      </a>
+    </Button>
+  );
+
   return (
     <header className="bg-brand-navy relative">
-      <div className="container mx-auto container-padding-x flex flex-wrap items-center justify-between gap-y-0 py-3 relative">
+      <div className="container mx-auto container-padding-x flex flex-wrap items-center justify-between gap-y-0 py-7 relative">
         {/* Logo */}
         <div className="shrink-0">
           {logo?.url ? (
@@ -61,7 +87,7 @@ export const SiteHeader = ({
             rendered inside details. */}
         <details className="peer group lg:hidden shrink-0">
           <summary
-            className="list-none cursor-pointer h-11 flex items-center [&::-webkit-details-marker]:hidden marker:content-[''] text-white"
+            className="list-none cursor-pointer size-11 -mr-2 flex items-center justify-center rounded-lg hover:bg-white/10 [&::-webkit-details-marker]:hidden marker:content-[''] text-white"
             aria-label="Abrir menú"
           >
             <Menu aria-hidden="true" className="size-6 group-open:hidden" />
@@ -71,32 +97,27 @@ export const SiteHeader = ({
 
         {/* SINGLE nav + SINGLE BlocksSlot — reflows via CSS for both contexts:
             mobile: hidden by default, peer-open:flex when hamburger is open
-                    (absolute dropdown below header, flex-col)
+                    (styled dropdown panel below the header, flex-col)
             desktop: always lg:flex flex-row inline, static positioning
             details and nav must be adjacent siblings for peer-open to work. */}
         <nav
           aria-label="Navegación principal"
-          className="hidden peer-open:flex flex-col gap-2 w-full px-4 py-3 bg-brand-navy absolute left-0 right-0 top-full z-50 shadow-lg lg:static lg:flex lg:flex-row lg:items-center lg:gap-6 lg:bg-transparent lg:p-0 lg:shadow-none lg:w-auto"
+          className="hidden peer-open:flex flex-col gap-4 w-full px-6 py-5 bg-brand-navy absolute left-0 right-0 top-full z-50 border-t border-white/10 shadow-xl rounded-b-2xl lg:static lg:flex lg:flex-row lg:items-center lg:gap-6 lg:bg-transparent lg:p-0 lg:border-0 lg:shadow-none lg:rounded-none lg:w-auto"
         >
           <BlocksSlot
             renderBlocks={renderBlocks}
             empty={null}
-            className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-6"
+            className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6 [&_a]:py-1 lg:[&_a]:py-0"
           />
+
+          {/* Mobile-only: divider + full-width account button. The desktop copy
+              lives in the header bar (below). */}
+          <div className="h-px w-full bg-white/10 lg:hidden" />
+          <div className="lg:hidden">{accountButton("w-full")}</div>
         </nav>
 
-        {/* Account button — pill-outline Button with asChild anchor (D-06) */}
-        <div className="ml-4 shrink-0">
-          <Button variant="pill-outline" asChild>
-            <a
-              href={accountUrl || "#"}
-              className="inline-flex items-center gap-2"
-            >
-              <User aria-hidden="true" className="size-4" />
-              <span>{accountLabel || "Mi Cuenta"}</span>
-            </a>
-          </Button>
-        </div>
+        {/* Account button — desktop only (the mobile copy is inside the menu). */}
+        <div className="ml-4 hidden shrink-0 lg:block">{accountButton()}</div>
       </div>
     </header>
   );

@@ -37,7 +37,7 @@ export const HeroSlide = ({
   ctaUrl,
 }: HeroSlideProps): React.ReactNode => {
   return (
-    <article className="relative flex items-center overflow-hidden min-h-[60vh] md:min-h-[560px]">
+    <article className="relative flex items-center overflow-hidden min-h-[30vh] md:min-h-[560px]">
       {/* Full-bleed per-slide background — url-guard (RESEARCH Pattern 2, D-04).
           When the image is set, paint it object-cover; otherwise a navy
           placeholder (no broken img, QA-01). */}
@@ -58,10 +58,9 @@ export const HeroSlide = ({
       {/* Content layer — left-aligned column, vertically centered via the
           article's items-center. */}
       <div className="container relative mx-auto container-padding-x">
-        <div className="flex max-w-2xl flex-col items-start gap-6">
-          <h2 className="font-display italic text-white text-4xl md:text-6xl lg:text-7xl leading-tight">
-            {heading ??
-              "Transportamos lo que necesitas del mundo a tus manos"}
+        <div className="flex flex-col items-start gap-6">
+          <h2 className="font-aku font-bold text-white text-4xl md:text-6xl lg:text-8xl">
+            {heading ?? "Transportamos lo que necesitas del mundo a tus manos"}
           </h2>
 
           {subtitle && (
@@ -71,7 +70,7 @@ export const HeroSlide = ({
           )}
 
           {ctaLabel && (
-            <Button variant="pill" asChild>
+            <Button size="lg" variant="pill" asChild>
               <a href={ctaUrl || "#"}>{ctaLabel}</a>
             </Button>
           )}

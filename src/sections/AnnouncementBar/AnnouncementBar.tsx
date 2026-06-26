@@ -26,20 +26,20 @@ export const AnnouncementBar = ({
 }: AnnouncementBarProps): React.ReactNode => {
   return (
     <div role="banner" className="bg-brand-navy text-white">
-      <div className="container mx-auto container-padding-x flex flex-wrap items-center justify-between gap-3 py-2">
-        {/* Left side: location + change label */}
+      <div className="container mx-auto container-padding-x flex flex-wrap items-center justify-end gap-3 py-4">
+        {/* Left side: location + change label
         <div className="flex items-center gap-3 font-opensans text-sm">
           <MapPin aria-hidden="true" className="size-4 text-brand-yellow" />
           {locationLabel && <span>{locationLabel}</span>}
           {changeLabel && (
             <span className="inline-flex items-center gap-1">
               {changeLabel}
-              {/* ChevronDown is decorative — no switcher behavior (D-06) */}
+
               <ChevronDown aria-hidden="true" className="size-4" />
             </span>
           )}
         </div>
-
+        */}
         {/* Right side: follow label + social-link blocks slot */}
         <div className="flex items-center gap-4">
           {followLabel && (
@@ -49,7 +49,7 @@ export const AnnouncementBar = ({
           <BlocksSlot
             renderBlocks={renderBlocks}
             empty={null}
-            className="flex items-center gap-3"
+            className="flex items-center gap-5 h-5"
           />
         </div>
       </div>

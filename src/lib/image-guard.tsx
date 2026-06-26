@@ -22,7 +22,7 @@ export const ImageGuard = ({
       <img
         src={url}
         alt={alt}
-        className={`absolute inset-0 h-full w-full rounded-2xl object-cover ${className ?? ""}`}
+        className={`absolute inset-0 h-full w-full rounded-2xl object-contain ${className ?? ""}`}
       />
     ) : (
       <div className="bg-secondary text-muted-foreground absolute inset-0 flex items-center justify-center rounded-2xl border-2 border-dashed border-border text-sm">

@@ -35,7 +35,7 @@ export const PromoBanner = ({
   ctaUrl = "#",
 }: PromoBannerProps): React.ReactNode => {
   return (
-    <div className="relative overflow-hidden rounded-2xl min-h-[220px] flex">
+    <div className="relative overflow-hidden rounded-2xl min-h-[220px] lg:min-h-[346px] flex">
       {/* Full-bleed background — url-guard (Pitfall 3, NOT ImageGuard). */}
       {backgroundImage?.url ? (
         <img
@@ -56,14 +56,12 @@ export const PromoBanner = ({
       {/* Content layer. */}
       <div className="relative mt-auto flex flex-col items-start gap-3 p-6">
         {kicker && (
-          <span className="font-gotham text-sm font-bold uppercase tracking-wide text-brand-yellow">
+          <span className="font-gotham text-base font-light tracking-wide text-white">
             {kicker}
           </span>
         )}
-        <p className="font-gotham font-bold text-white text-xl leading-snug">
-          {headline}
-        </p>
-        <Button variant="pill" asChild>
+        <p className="font-aku text-white text-3xl leading-snug">{headline}</p>
+        <Button size="lg" variant="pill" asChild>
           <a href={ctaUrl || "#"}>{ctaLabel}</a>
         </Button>
       </div>

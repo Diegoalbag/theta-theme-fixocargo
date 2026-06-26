@@ -55,8 +55,22 @@
 
 @font-face {
   font-family: "Gotham";
-  src: url("./fonts/archivo.woff2") format("woff2");
-  font-weight: 400 700;
+  src: url("./fonts/Gotham-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gotham";
+  src: url("./fonts/Gotham-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gotham";
+  src: url("./fonts/Gotham-Bold.ttf") format("truetype");
+  font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
@@ -73,6 +87,14 @@
   font-family: "OpenSans";
   src: url("./fonts/open-sans.woff2") format("woff2");
   font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Aku";
+  src: url("./fonts/aku-kamu.otf") format("opentype");
+  font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
@@ -143,8 +165,9 @@
 
   /* System font stack — no external font dependency. Swap in a custom font
    * here (and load it) when you brand the theme. */
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    Helvetica, Arial, sans-serif;
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   /* Neutral slate palette (light mode). */
@@ -189,13 +212,14 @@
    * font-opensans utilities. The metric-compatible fallback face is listed
    * BEFORE the generic fallbacks so CLS is minimized on the licensed-font swap
    * (Pitfall 5). Logical family names keep the swap a pure asset replacement. */
-  --font-display: "Display", "Display Fallback", "Arial Narrow", Impact,
-    sans-serif;
-  --font-gill: "Gill", "Gill Fallback", "Gill Sans", "Gill Sans MT", Calibri,
-    sans-serif;
-  --font-gotham: "Gotham", "Gotham Fallback", Montserrat, "Helvetica Neue",
-    Arial, sans-serif;
+  --font-display:
+    "Display", "Display Fallback", "Arial Narrow", Impact, sans-serif;
+  --font-gill:
+    "Gill", "Gill Fallback", "Gill Sans", "Gill Sans MT", Calibri, sans-serif;
+  --font-gotham:
+    "Gotham", "Gotham Fallback", Montserrat, "Helvetica Neue", Arial, sans-serif;
   --font-opensans: "OpenSans", Arial, sans-serif;
+  --font-aku: "Aku", sans-serif;
 }
 
 /* ---------------------------------------------------------------------------
@@ -230,10 +254,10 @@
     letter-spacing: -0.01em;
   }
   .container-padding-x {
-    padding-inline: 1.5rem;
+    @apply p-3 lg:p-6;
   }
   .section-padding-y {
-    padding-block: 6rem;
+    padding-block: 4rem;
   }
   .section-title-gap-xl {
     gap: 1.5rem;
@@ -264,7 +288,6 @@
   direction: ltr;
 }
 .blaze-container {
-  position: relative;
 }
 .blaze-track-container {
   overflow: hidden;
@@ -349,7 +372,7 @@
     font-weight: 700;
   }
   .section-padding-y {
-    padding-block: 4rem;
+    padding-block: 2rem;
   }
   .section-title-gap-xl {
     gap: 1rem;

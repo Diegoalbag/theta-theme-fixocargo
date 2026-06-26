@@ -40,7 +40,10 @@ export const BlogCard = ({
   linkUrl,
 }: BlogCardProps): React.ReactNode => {
   return (
-    <Card variant="surface" className="flex flex-col gap-4 overflow-hidden p-0">
+    <Card
+      variant="surface"
+      className="flex flex-col overflow-hidden p-0"
+    >
       <div className="relative">
         <ImageGuard url={image?.url} alt={image?.alt ?? ""} ratio={422 / 240} />
 
@@ -61,7 +64,9 @@ export const BlogCard = ({
 
       <div className="flex flex-col gap-2 p-6">
         {date && (
-          <span className="font-gill text-sm text-muted-foreground">{date}</span>
+          <span className="font-gill text-sm text-muted-foreground">
+            {date}
+          </span>
         )}
 
         <h3 className="font-gotham text-xl font-bold text-brand-navy leading-tight">
@@ -77,9 +82,9 @@ export const BlogCard = ({
           asChild
           className="mt-2 self-start text-brand-navy"
         >
-          <a href={linkUrl || "#"}>
+          <a className="font-bold!" href={linkUrl || "#"}>
             Conoce más
-            <ArrowRight aria-hidden="true" />
+            <ArrowRight className="text-brand-yellow" aria-hidden="true" />
           </a>
         </Button>
       </div>

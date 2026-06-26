@@ -61,25 +61,25 @@ export const BenefitCard = ({
   const Icon = iconMap[icon] ?? Truck;
 
   return (
-    <Card variant="navy-dark" className="flex flex-col gap-4">
-      <IconChip background="yellow" size="md">
+    <Card
+      variant="navy-dark"
+      className="flex flex-col p-7 gap-4 shadow-2xl"
+    >
+      <IconChip background="yellow" size="lg">
         <Icon aria-hidden="true" />
       </IconChip>
 
-      <h3 className="font-gotham font-bold text-white text-xl leading-tight">
+      <h3 className="font-gotham font-bold text-white text-2xl leading-tight">
         {title}
       </h3>
 
-      {body && <p className="font-opensans text-white/80">{body}</p>}
+      {body && (
+        <p className="font-opensans text-white/80 text-lg leading-5">{body}</p>
+      )}
 
-      <div className="mt-auto pt-2">
-        <Button variant="link" asChild className="text-brand-yellow">
-          <a href={linkUrl || "#"}>
-            Conoce más
-            <ArrowRight aria-hidden="true" />
-          </a>
-        </Button>
-      </div>
+      <Button variant="link" asChild className="text-brand-white w-min!">
+        <a href={linkUrl || "#"}>Conoce más</a>
+      </Button>
     </Card>
   );
 };

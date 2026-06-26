@@ -1,4 +1,4 @@
-# theta-theme-starter
+# theta-theme-fixocargo
 
 A boilerplate starter for building a theme on the Theta platform. It ships the
 full build/registration/test contract plus one example section and two example
@@ -8,7 +8,7 @@ building.
 ## What's inside
 
 ```
-theta-theme-starter/
+theta-theme-fixocargo/
 ├── package.json          # name = the theme identity (single source of truth)
 ├── vite.config.ts        # IIFE library build → dist/theme.bundle.{js,css}
 ├── vitest.config.ts

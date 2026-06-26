@@ -71,7 +71,7 @@ export const Footer = ({
             <BlocksSlot
               renderBlocks={renderBlocks}
               empty={null}
-              className="flex flex-row flex-wrap justify-end gap-[60px]"
+              className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:justify-end lg:gap-[60px]"
             />
           </div>
         </div>

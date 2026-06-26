@@ -33,11 +33,12 @@ export const Blogs = ({
     <section className="bg-background section-padding-y">
       <div className="container mx-auto container-padding-x">
         <SectionHeading
+          className="flex flex-col md:flex-row gap-4 justify-between"
           variant="light"
           title={heading}
-          eyebrow={subtitle}
+          subtitle={subtitle}
           cta={
-            <Button variant="navy" asChild>
+            <Button size="lg" variant="navy" asChild>
               <a href={ctaUrl || "#"}>{ctaLabel}</a>
             </Button>
           }
@@ -45,7 +46,7 @@ export const Blogs = ({
 
         <BlocksSlot
           renderBlocks={renderBlocks}
-          className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
+          className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
         />
       </div>
     </section>

@@ -53,7 +53,7 @@ export const DescargaApp = ({
   renderBlocks,
 }: DescargaAppProps): React.ReactNode => {
   return (
-    <section className="relative overflow-hidden section-padding-y">
+    <section className="relative overflow-hidden">
       {/* Full-bleed background — url-guard (RESEARCH Pattern 2 / HeroSlide):
           paint object-cover when set, else a navy placeholder (no broken img,
           QA-01). NOT ImageGuard — that boxes at 16:9 (Pitfall 3). */}
@@ -72,15 +72,15 @@ export const DescargaApp = ({
 
       {/* Content layer — two-column on desktop, stacked on mobile. */}
       <div className="container relative mx-auto container-padding-x">
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-center">
+        <div className="flex flex-col items-center justify-between gap-8 lg:flex-row">
           {/* LEFT — heading / body / store-badge row. */}
-          <div className="flex flex-col items-start gap-6 lg:flex-1">
-            <h2 className="font-display text-brand-navy text-4xl md:text-5xl lg:text-6xl leading-tight">
+          <div className="flex flex-col items-center lg:items-start gap-4 lg:gap-6 lg:flex-1 max-w-96">
+            <h2 className="font-aku text-center md:text-left text-brand-navy text-6xl lg:text-7xl leading-16 lg:leading-20">
               {heading}
             </h2>
 
             {body && (
-              <p className="font-opensans text-brand-navy text-lg md:text-xl max-w-xl">
+              <p className="font-opensans text-center md:text-left text-brand-navy text-xl max-w-xl">
                 {body}
               </p>
             )}
@@ -89,21 +89,23 @@ export const DescargaApp = ({
                 Layout lives on this wrapper className, never on the slot. */}
             <BlocksSlot
               renderBlocks={renderBlocks}
-              className="flex flex-wrap items-center gap-4"
+              className="flex flex-col lg:flex-row items-center gap-2 lg:gap-4"
             />
           </div>
 
           {/* RIGHT — two guarded phone mockups (ImageGuard, the contained case). */}
-          <div className="flex items-end gap-4 lg:flex-1">
+          <div className="flex justify-end items-end gap-4 lg:flex-1">
             <div className="w-40 md:w-56 lg:w-64">
               <ImageGuard
+                className="transform translate-x-10 lg:translate-x-0 lg:translate-y-10 z-50"
                 url={phoneImage1?.url}
                 alt={phoneImage1?.alt ?? ""}
                 ratio={9 / 16}
               />
             </div>
-            <div className="hidden w-40 md:block md:w-56 lg:w-64">
+            <div className="w-40 md:w-56 lg:w-64">
               <ImageGuard
+                className="transform -translate-x-10 lg:-translate-x-30 -translate-y-10 z-50"
                 url={phoneImage2?.url}
                 alt={phoneImage2?.alt ?? ""}
                 ratio={9 / 16}

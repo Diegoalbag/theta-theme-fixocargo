@@ -35,39 +35,48 @@ export const AddressCard = ({
   const addressValue = address ?? DEFAULT_ADDRESS;
 
   return (
-    <Card variant="navy-dark" className="relative">
+    <Card variant="navy-dark" className="relative p-7">
       <button
         type="button"
         aria-label="Copiar dirección"
         onClick={() => {
           navigator.clipboard?.writeText(addressValue).catch(() => {});
         }}
-        className="absolute right-6 top-6 flex size-14 shrink-0 items-center justify-center rounded-full bg-brand-yellow text-brand-navy hover:bg-brand-yellow/90"
+        className="absolute right-6 top-auto bottom-6 sm:bottom-auto sm:top-6 flex size-14 shrink-0 items-center justify-center rounded-full bg-brand-yellow text-brand-navy hover:bg-brand-yellow/90"
       >
         <Copy aria-hidden="true" className="size-6" />
       </button>
 
       <div className="flex flex-col gap-3">
-        <h3 className="font-gotham font-bold text-brand-yellow text-2xl leading-tight">
+        <h3 className="font-gotham font-bold text-white text-2xl md:text-4xl leading-tight">
           {title ?? "Dirección en Miami:"}
         </h3>
 
         <div className="flex items-center gap-3">
-          <User aria-hidden="true" className="size-5 text-brand-yellow shrink-0" />
+          <User
+            aria-hidden="true"
+            className="size-5 text-brand-yellow fill-brand-yellow shrink-0"
+          />
           <span className="font-gill text-base md:text-xl text-white">
             {recipientLine ?? "FC-XXXXX + Tu nombre y apellido"}
           </span>
         </div>
 
         <div className="flex items-center gap-3">
-          <MapPin aria-hidden="true" className="size-5 text-brand-yellow shrink-0" />
+          <MapPin
+            aria-hidden="true"
+            className="size-5 text-brand-yellow fill-brand-yellow shrink-0"
+          />
           <span className="font-gill text-base md:text-xl text-white">
             {addressValue}
           </span>
         </div>
 
         <div className="flex items-center gap-3">
-          <Phone aria-hidden="true" className="size-5 text-brand-yellow shrink-0" />
+          <Phone
+            aria-hidden="true"
+            className="size-5 text-brand-yellow fill-brand-yellow shrink-0"
+          />
           <span className="font-gill text-base md:text-xl text-white">
             {phone ?? "+1 305 456 1237"}
           </span>

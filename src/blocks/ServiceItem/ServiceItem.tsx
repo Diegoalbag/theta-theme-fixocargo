@@ -61,18 +61,13 @@ export const ServiceItem = ({
   const Icon = iconMap[icon] ?? Package;
 
   return (
-    <details
-      open={isExpanded}
-      className="group border-b border-border py-4"
-    >
+    <details open={isExpanded} className="group shadow py-5 px-7 rounded-2xl">
       <summary className="list-none cursor-pointer flex items-center justify-between gap-4 [&::-webkit-details-marker]:hidden marker:content-['']">
         <span className="flex items-center gap-4">
           <IconChip background="navy" size="md">
-            <Icon aria-hidden="true" />
+            <Icon aria-hidden="true" className="text-brand-yellow" />
           </IconChip>
-          <span className="font-gotham font-bold text-brand-navy">
-            {title}
-          </span>
+          <span className="font-gotham font-bold text-brand-navy">{title}</span>
         </span>
         <ChevronDown
           aria-hidden="true"
@@ -81,7 +76,7 @@ export const ServiceItem = ({
       </summary>
 
       {body && (
-        <p className="mt-3 text-muted-foreground font-opensans">{body}</p>
+        <p className="mt-3 text-muted-foreground font-gill leading-5">{body}</p>
       )}
 
       <div className="mt-3">

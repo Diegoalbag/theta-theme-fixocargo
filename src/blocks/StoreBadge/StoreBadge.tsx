@@ -21,7 +21,7 @@ export const StoreBadge = ({
   if (!Badge) {
     return (
       <span
-        className="bg-muted text-muted-foreground inline-flex h-12 w-32 items-center justify-center rounded-md text-xs"
+        className="bg-muted text-muted-foreground inline-flex h-12 w-auto items-center justify-center rounded-md text-xs"
         aria-hidden="true"
       >
         ?

@@ -182,10 +182,20 @@ export const sectionBlocksConfig: Record<
     ],
   },
   "servicios": {
-    // ONE ordered slot, TWO section-local block types (D-02/D-03): the host
-    // exposes a single slot and the theme cannot partition by blockType.
-    blocks: [{ type: "service-item" }, { type: "promo-banner" }],
-    maxBlocks: 11,
+    // ONE ordered slot OFFERING service-item only (the left column). The
+    // right-rail promo banners moved OUT of this slot into Servicios SECTION
+    // SETTINGS: the platform exposes exactly ONE block slot per section, and a
+    // single mixed slot cannot be split by blockType without diverging between
+    // the customizer (one opaque Puck slot) and the published site (D-02/D-03).
+    // Until multi-slot sections land, the banners are settings-driven.
+    //
+    // promo-banner is kept in localBlocks (but NOT in `blocks`) ONLY for
+    // back-compat: the platform registers a Puck config for any block in
+    // localBlocks, so promo-banner instances saved in existing pages still
+    // render and can be deleted. It is absent from `blocks`, so it can't be
+    // added to new pages. Remove this entry once no legacy instances remain.
+    blocks: [{ type: "service-item" }],
+    maxBlocks: 8,
     localBlocks: [
       {
         type: "service-item",
@@ -194,8 +204,9 @@ export const sectionBlocksConfig: Record<
         settings: serviceItemSettingsSchema,
       },
       {
+        // DEPRECATED — retained so legacy instances stay renderable/removable.
         type: "promo-banner",
-        name: "Banner promocional",
+        name: "Banner promocional (obsoleto)",
         component: PromoBanner as React.ComponentType<Record<string, unknown>>,
         settings: promoBannerSettingsSchema,
       },

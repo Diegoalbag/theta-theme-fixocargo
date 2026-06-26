@@ -10,7 +10,8 @@ const iconChipVariants = cva(
       size: {
         sm: "size-8 [&_svg]:size-4",
         md: "size-11 [&_svg]:size-5",
-        lg: "size-14 [&_svg]:size-7",
+        lg: "size-12 [&_svg]:size-6",
+        xl: "size-14 [&_svg]:size-7",
       },
       background: {
         surface: "bg-muted text-brand-navy",
