@@ -37,6 +37,16 @@ const CHROME_NULL_EMPTY = new Set<string>([
   "footer",
 ]);
 
+// The two no-block sections (07-04) accept NO child blocks (Pattern 4 — they
+// have no sectionBlocksConfig entry), so they NEVER render the default
+// EmptyState ("Sin elementos") in the zero-block loop. `article-body` delegates
+// its own empty case to RichText's "Sin contenido" placeholder; `blog-hero`
+// paints its header/search chrome. They still keep the no-throw + non-empty
+// markup assertions above the guard — only the EmptyState-marker assertion is
+// exempted, mirroring CHROME_NULL_EMPTY. Do NOT weaken the marker for the
+// existing content sections.
+const NO_BLOCK_SECTIONS = new Set<string>(["article-body", "blog-hero"]);
+
 // The EmptyState marker string content sections fall through to at published
 // zero (src/lib/empty-state.tsx default heading).
 const EMPTY_STATE_MARKER = "Sin elementos";
@@ -76,8 +86,8 @@ const allBlocks: Array<
 const sectionEntries = Object.entries(sectionsComponents);
 
 describe("empty-state matrix — drift guards (census)", () => {
-  it("collects exactly 12 sections", () => {
-    expect(sectionEntries.length).toBe(12);
+  it("collects exactly 14 sections", () => {
+    expect(sectionEntries.length).toBe(14);
   });
 
   it("collects exactly 13 block components (2 global + 11 section-local)", () => {
@@ -113,6 +123,13 @@ describe("empty-state matrix — sections render the zero-child-block state (no 
         // Chrome sections pass empty={null}: the slot renders nothing, but the
         // surrounding chrome markup is still painted (asserted above). Do NOT
         // require the EmptyState marker.
+        return;
+      }
+      if (NO_BLOCK_SECTIONS.has(key)) {
+        // No-block sections (article-body, blog-hero) have no child-block slot,
+        // so there is no zero-block EmptyState to assert — they paint their own
+        // content/chrome (asserted above) and delegate any empty case elsewhere
+        // (RichText's "Sin contenido"). Exempt the marker, not the no-throw.
         return;
       }
       // Content sections fall through to the default EmptyState ("Sin
