@@ -357,7 +357,7 @@ describe("Blogs", () => {
       <Blogs renderBlocks={() => [<span key="a">child</span>]} />,
     );
     expect(html).toContain("grid-cols-1");
-    expect(html).toContain("md:grid-cols-2");
+    expect(html).toContain("sm:grid-cols-2");
     expect(html).toContain("lg:grid-cols-3");
     expect(html).toContain("child");
   });

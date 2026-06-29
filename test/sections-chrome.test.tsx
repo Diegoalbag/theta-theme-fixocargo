@@ -23,18 +23,22 @@ describe("AnnouncementBar", () => {
     expect(html).toContain('role="banner"');
   });
 
-  it("renders locationLabel text when provided", () => {
+  // The left-side location/change label block was retired in the FixoCargo
+  // section-styling pass (commit be46441): the bar now shows only the follow
+  // label + social-link slot, right-aligned. locationLabel/changeLabel remain
+  // in the props/schema but are intentionally not rendered.
+  it("does not render locationLabel text (label block retired)", () => {
     const html = renderToStaticMarkup(
       <AnnouncementBar locationLabel="Test Location" />,
     );
-    expect(html).toContain("Test Location");
+    expect(html).not.toContain("Test Location");
   });
 
-  it("renders changeLabel text when provided", () => {
+  it("does not render changeLabel text (label block retired)", () => {
     const html = renderToStaticMarkup(
       <AnnouncementBar changeLabel="Test Change" />,
     );
-    expect(html).toContain("Test Change");
+    expect(html).not.toContain("Test Change");
   });
 
   it("renders followLabel text when provided", () => {
