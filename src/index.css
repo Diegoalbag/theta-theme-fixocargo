@@ -378,3 +378,90 @@
     gap: 1rem;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Scoped richtext typography (.article-body) — ART-03, D-09, Pitfall 3.
+ *
+ * The single RichText sink (src/lib/rich-text.tsx) wraps its SANITIZED output in
+ * <div class="article-body">. DOMPurify's ALLOWED_ATTR forbids style/class/id, so
+ * merchant HTML carries NO styling hooks — every element is restyled here by
+ * element selector, scoped under `.article-body` so it never leaks into other
+ * sections (T-07-06).
+ *
+ * Kept UNLAYERED (raw selectors, NOT inside @layer base), mirroring .blaze-slider,
+ * so it wins over Tailwind v4 preflight (which strips heading/list margins and
+ * list markers). Brand tokens only — NO hex literals (D-09); every rule covers a
+ * tag in the sink's ALLOWED_TAGS allow-list.
+ * ------------------------------------------------------------------------- */
+.article-body {
+  font-family: var(--font-opensans);
+  color: var(--brand-navy);
+  line-height: 1.7;
+}
+.article-body h2 {
+  font-family: var(--font-gotham);
+  font-weight: 700;
+  font-size: 1.875rem;
+  margin: 2rem 0 1rem;
+}
+.article-body h3 {
+  font-family: var(--font-gotham);
+  font-weight: 700;
+  font-size: 1.5rem;
+  margin: 1.5rem 0 0.75rem;
+}
+.article-body h4 {
+  font-family: var(--font-gotham);
+  font-weight: 700;
+  font-size: 1.25rem;
+  margin: 1.25rem 0 0.5rem;
+}
+.article-body p {
+  margin: 0 0 1rem;
+}
+.article-body ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+  margin: 0 0 1rem;
+}
+.article-body ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+  margin: 0 0 1rem;
+}
+.article-body li {
+  margin: 0.25rem 0;
+}
+.article-body a {
+  color: var(--brand-navy);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.article-body a:hover {
+  color: var(--brand-yellow);
+}
+.article-body blockquote {
+  border-left: 4px solid var(--brand-yellow);
+  padding-left: 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+}
+.article-body strong,
+.article-body b {
+  font-weight: 700;
+}
+.article-body em,
+.article-body i {
+  font-style: italic;
+}
+.article-body u {
+  text-decoration: underline;
+}
+.article-body s {
+  text-decoration: line-through;
+}
+.article-body hr {
+  border: 0;
+  border-top: 1px solid var(--brand-navy);
+  margin: 1.5rem 0;
+}
