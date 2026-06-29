@@ -496,9 +496,30 @@ export async function fetchPageBySlug(slug: string): Promise<StrapiPage | null> 
   }
 
   try {
-    // D-04: read the live pointer first. No live theme → nothing public.
+    // D-04: read the live pointer first. When liveTheme IS set, only the
+    // liveTheme-bound template is rendered (MT-04 / multi-theme divide).
+    // When liveTheme is NOT set, fall back to the first available template so
+    // newly-added themes that haven't been promoted yet still render their homepage.
     const site = await fetchSite();
-    if (!site?.liveTheme) return null;
+
+    if (!site?.liveTheme) {
+      // No live theme configured — fetch unfiltered and use the first template.
+      const response = await strapiClient.request<StrapiPagesResponse>(
+        getPageBySlugUnfilteredQuery,
+        { slug }
+      );
+      const rawPage = response.pages[0] || null;
+      if (!rawPage) return null;
+
+      const templates = Array.isArray(rawPage.page_template)
+        ? rawPage.page_template
+        : rawPage.page_template
+        ? [rawPage.page_template as StrapiPageTemplate]
+        : [];
+      const page: StrapiPage = { ...rawPage, page_template: templates[0] ?? null };
+      const withResolvedRefs = await resolvePageMetaobjectRefs(page);
+      return resolveDynamicSources(withResolvedRefs);
+    }
 
     let response: StrapiPagesResponse;
     try {
