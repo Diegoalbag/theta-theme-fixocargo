@@ -11,6 +11,8 @@ import { DescargaApp, descargaAppSettingsSchema } from "./sections/DescargaApp";
 import { Sucursales, sucursalesSettingsSchema } from "./sections/Sucursales";
 import { EnviosNacionales, enviosNacionalesSettingsSchema } from "./sections/EnviosNacionales";
 import { Blogs, blogsSettingsSchema } from "./sections/Blogs";
+import { ArticleBody, articleBodySettingsSchema } from "./sections/ArticleBody";
+import { BlogHero, blogHeroSettingsSchema } from "./sections/BlogHero";
 import { HeroSlide, heroSlideSettingsSchema } from "./blocks/HeroSlide";
 import { Branch, branchSettingsSchema } from "./blocks/Branch";
 import { FaqPill, faqPillSettingsSchema } from "./blocks/FaqPill";
@@ -48,6 +50,8 @@ export const sectionsComponents: Record<
   "sucursales": Sucursales as React.ComponentType<Record<string, unknown>>,
   "envios-nacionales": EnviosNacionales as React.ComponentType<Record<string, unknown>>,
   "blogs": Blogs as React.ComponentType<Record<string, unknown>>,
+  "article-body": ArticleBody as React.ComponentType<Record<string, unknown>>,
+  "blog-hero": BlogHero as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
@@ -64,6 +68,8 @@ export const sectionSettingsSchemas = {
   "sucursales": sucursalesSettingsSchema,
   "envios-nacionales": enviosNacionalesSettingsSchema,
   "blogs": blogsSettingsSchema,
+  "article-body": articleBodySettingsSchema,
+  "blog-hero": blogHeroSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).
