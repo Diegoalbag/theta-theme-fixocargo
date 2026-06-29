@@ -66,7 +66,7 @@ describe("RichText sink — empty-body guard (never builds __html from empty)", 
   });
 
   it("renders the EmptyState placeholder for a whitespace-only string", () => {
-    const html = renderToStaticMarkup(<RichText html="   \n  " />);
+    const html = renderToStaticMarkup(<RichText html={"   \n\t  "} />);
     expect(html).toContain("Sin contenido");
   });
 });
