@@ -13,6 +13,7 @@ import { EnviosNacionales, enviosNacionalesSettingsSchema } from "./sections/Env
 import { Blogs, blogsSettingsSchema } from "./sections/Blogs";
 import { ArticleBody, articleBodySettingsSchema } from "./sections/ArticleBody";
 import { BlogHero, blogHeroSettingsSchema } from "./sections/BlogHero";
+import { BlogList, blogListSettingsSchema } from "./sections/BlogList";
 import { HeroSlide, heroSlideSettingsSchema } from "./blocks/HeroSlide";
 import { Branch, branchSettingsSchema } from "./blocks/Branch";
 import { FaqPill, faqPillSettingsSchema } from "./blocks/FaqPill";
@@ -52,6 +53,7 @@ export const sectionsComponents: Record<
   "blogs": Blogs as React.ComponentType<Record<string, unknown>>,
   "article-body": ArticleBody as React.ComponentType<Record<string, unknown>>,
   "blog-hero": BlogHero as React.ComponentType<Record<string, unknown>>,
+  "blog-list": BlogList as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
@@ -70,6 +72,7 @@ export const sectionSettingsSchemas = {
   "blogs": blogsSettingsSchema,
   "article-body": articleBodySettingsSchema,
   "blog-hero": blogHeroSettingsSchema,
+  "blog-list": blogListSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).
@@ -79,6 +82,11 @@ export const blocksComponents: Record<
 > = {
   "social-link": SocialLink as React.ComponentType<Record<string, unknown>>,
   "store-badge": StoreBadge as React.ComponentType<Record<string, unknown>>,
+  // PRIVATE GLOBAL (leading `_`): shared by the homepage `blogs` section and the
+  // `blog-list` section, but the `_` prefix EXCLUDES it from the `@theme`
+  // expansion — so it never leaks into the Footer / AnnouncementBar block menus.
+  // Both consumers reference it explicitly via `blocks: [{ type: "_blog-card" }]`.
+  "_blog-card": BlogCard as React.ComponentType<Record<string, unknown>>,
 };
 
 // Block settings schemas keyed by block type.
@@ -97,6 +105,7 @@ export const blockSettingsSchemas: Record<
 > = {
   "social-link": socialLinkSettingsSchema,
   "store-badge": storeBadgeSettingsSchema,
+  "_blog-card": blogCardSettingsSchema,
 };
 
 // Per-section block config: which blocks each section accepts.
@@ -270,18 +279,34 @@ export const sectionBlocksConfig: Record<
     ],
   },
   "blogs": {
-    // ONE ordered slot, ONE section-local block type (D-07): blog-card is
-    // exclusive to Blogs and is NOT registered in the global block maps
-    // (blocksComponents/blockSettingsSchemas stay unchanged).
-    blocks: [{ type: "blog-card" }],
+    // PROMOTION (08-02): blog-card was section-local to Blogs; it is now the
+    // PRIVATE GLOBAL `_blog-card` (registered in blocksComponents /
+    // blockSettingsSchemas) so the new `blog-list` section can reuse it. Both
+    // sections reference it EXPLICITLY — the leading `_` keeps it out of the
+    // `@theme` menus. maxBlocks stays 6 for the homepage teaser row.
+    blocks: [{ type: "_blog-card" }],
     maxBlocks: 6,
     localBlocks: [
       {
+        // DEPRECATED back-compat alias — mirrors the promo-banner precedent.
+        // Retained ONLY so blog-card instances saved on existing pages (which
+        // carry the literal key `blog-card`) still render and can be removed.
+        // It is ABSENT from `blocks`, so it can't be added to new pages; new
+        // cards use the promoted `_blog-card` global. Remove once no legacy
+        // instances remain.
         type: "blog-card",
-        name: "Tarjeta de blog",
+        name: "Tarjeta de blog (obsoleto)",
         component: BlogCard as React.ComponentType<Record<string, unknown>>,
         settings: blogCardSettingsSchema,
       },
     ],
+  },
+  "blog-list": {
+    // SHARED global reuse: the Blog index consumes the promoted private global
+    // `_blog-card` via the allow-list only (no section-local blocks). The `_`
+    // prefix keeps `_blog-card` out of the `@theme` menus; both `blogs` and
+    // `blog-list` reference it explicitly. Higher cap (12) for a full index.
+    blocks: [{ type: "_blog-card" }],
+    maxBlocks: 12,
   },
 };
