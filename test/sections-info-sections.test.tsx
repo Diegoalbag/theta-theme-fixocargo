@@ -11,7 +11,13 @@ import {
 import { FaqPill, faqPillSettingsSchema } from "@/blocks/FaqPill";
 import { Blogs, blogsSettingsSchema } from "@/sections/Blogs";
 import { BlogCard, blogCardSettingsSchema } from "@/blocks/BlogCard";
-import { sectionBlocksConfig } from "@/registry";
+import {
+  sectionBlocksConfig,
+  sectionsComponents,
+  sectionSettingsSchemas,
+  blocksComponents,
+  blockSettingsSchemas,
+} from "@/registry";
 
 // Render-smoke tests for the Phase 5 Info-sections sections/blocks.
 // The vitest environment is `node` (no global document), so we render DOM-free
@@ -372,19 +378,53 @@ describe("Blogs", () => {
 });
 
 describe("Blogs registry", () => {
-  it("blogs slot exposes the blog-card block in its blocks allow-list", () => {
+  it("blogs slot exposes the promoted _blog-card global block in its blocks allow-list", () => {
     const cfg = sectionBlocksConfig.blogs;
-    expect(cfg.blocks).toContainEqual({ type: "blog-card" });
+    expect(cfg.blocks).toContainEqual({ type: "_blog-card" });
   });
 
-  it("blogs registers exactly one section-local block of type blog-card (D-07)", () => {
+  it("blogs references the private global _blog-card and retains the deprecated blog-card local for back-compat (D-07 promotion)", () => {
     const cfg = sectionBlocksConfig.blogs;
-    expect(cfg.localBlocks).toHaveLength(1);
-    expect(cfg.localBlocks?.[0].type).toBe("blog-card");
+    // blog-card was PROMOTED to the private global `_blog-card` (08-02): the
+    // block now lives in the global maps and both `blogs` and `blog-list`
+    // reference it explicitly (the leading `_` keeps it out of `@theme`).
+    expect(cfg.blocks).toContainEqual({ type: "_blog-card" });
+    expect(typeof blocksComponents["_blog-card"]).toBe("function");
+    expect(blockSettingsSchemas["_blog-card"]).toBeDefined();
+    // The legacy `blog-card` local entry is RETAINED (deprecated) so saved
+    // instances still render/delete — mirrors the promo-banner precedent.
+    expect(
+      cfg.localBlocks?.some((b) => b.type === "blog-card"),
+    ).toBe(true);
   });
 
   it("blogs caps the slot at 6 blocks (D-09)", () => {
     const cfg = sectionBlocksConfig.blogs;
     expect(cfg.maxBlocks).toBe(6);
+  });
+});
+
+describe("BlogList registry", () => {
+  it("blog-list slot offers the shared _blog-card global block", () => {
+    const cfg = sectionBlocksConfig["blog-list"];
+    expect(cfg.blocks).toContainEqual({ type: "_blog-card" });
+  });
+
+  it("blog-list caps the slot at 12 blocks and has no section-local blocks", () => {
+    const cfg = sectionBlocksConfig["blog-list"];
+    expect(cfg.maxBlocks).toBe(12);
+    expect(cfg.localBlocks).toBeUndefined();
+  });
+
+  it("_blog-card is private (leading _) so it is not exposed via @theme", () => {
+    const cfg = sectionBlocksConfig["blog-list"];
+    const key = cfg.blocks[0].type;
+    expect(key.startsWith("_")).toBe(true);
+    expect(key).toBe("_blog-card");
+  });
+
+  it("registers blog-list across the section maps", () => {
+    expect(typeof sectionsComponents["blog-list"]).toBe("function");
+    expect(sectionSettingsSchemas["blog-list"]).toBeDefined();
   });
 });

@@ -22,7 +22,7 @@ import {
 // D-01), so we render DOM-free with renderToStaticMarkup and assert only on the
 // returned HTML string. Coverage is registry-driven on purpose: components are
 // never imported by name here, so any future section/block addition is forced
-// to appear in these loops (the drift guards pin the 12/13 census).
+// to appear in these loops (the drift guards pin the 15/14 census).
 // ---------------------------------------------------------------------------
 
 // The three CHROME sections pass `empty={null}` to BlocksSlot, so their
@@ -51,15 +51,20 @@ const NO_BLOCK_SECTIONS = new Set<string>(["article-body", "blog-hero"]);
 // zero (src/lib/empty-state.tsx default heading).
 const EMPTY_STATE_MARKER = "Sin elementos";
 
-// Build the FULL block-component census. blocksComponents holds ONLY the two
-// shared/global blocks (social-link, store-badge); the other 11 components live
-// section-local under sectionBlocksConfig[key].localBlocks[].component. Walking
-// blocksComponents alone would cover 2 of 13 — we MUST flatMap localBlocks to
-// reach hero-slide, address-card, tool-pill, service-item, promo-banner,
-// benefit-card, branch, faq-pill, blog-card, nav-link, footer-column.
+// Build the FULL block-component census. blocksComponents now holds THREE
+// shared/global blocks (social-link, store-badge, _blog-card); the other 11
+// components live section-local under sectionBlocksConfig[key].localBlocks[].
+// component. Walking blocksComponents alone would cover 3 of 14 — we MUST
+// flatMap localBlocks to reach hero-slide, address-card, tool-pill,
+// service-item, promo-banner, benefit-card, branch, faq-pill, blog-card,
+// nav-link, footer-column.
 // (promo-banner is DEPRECATED — Servicios no longer OFFERS it and drives the
 // right rail via section settings — but its localBlock config is retained for
-// back-compat with legacy instances, so it is still in this census.)
+// back-compat with legacy instances, so it is still in this census.
+// blog-card was PROMOTED (08-02) to the private global `_blog-card`, so the
+// same component now appears once in blocksComponents (as `_blog-card`) AND
+// once section-local in blogs.localBlocks (the deprecated `blog-card`
+// back-compat alias) — net +1 block versus the pre-promotion census.)
 const localBlockEntries: Array<
   [string, React.ComponentType<Record<string, unknown>>]
 > = Object.values(sectionBlocksConfig).flatMap((cfg) =>
@@ -86,12 +91,12 @@ const allBlocks: Array<
 const sectionEntries = Object.entries(sectionsComponents);
 
 describe("empty-state matrix — drift guards (census)", () => {
-  it("collects exactly 14 sections", () => {
-    expect(sectionEntries.length).toBe(14);
+  it("collects exactly 15 sections", () => {
+    expect(sectionEntries.length).toBe(15);
   });
 
-  it("collects exactly 13 block components (2 global + 11 section-local)", () => {
-    expect(allBlocks.length).toBe(13);
+  it("collects exactly 14 block components (3 global + 11 section-local)", () => {
+    expect(allBlocks.length).toBe(14);
   });
 });
 
