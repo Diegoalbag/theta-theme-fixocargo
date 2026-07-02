@@ -99,6 +99,18 @@ const allBlocks: Array<
 
 const sectionEntries = Object.entries(sectionsComponents);
 
+// Census reconciled for Phase 10 (QA-07): Phase 10 is quality hardening and adds
+// NO sections/blocks, so these counts are CONFIRMED-not-bumped against the live
+// registry. The 20/17 already absorb every Phase 7–9 addition, registry-driven
+// (no per-name imports):
+//   Phase 7 sections: article-body, blog-hero (both NO_BLOCK_SECTIONS).
+//   Phase 8 section:  blog-list; block: _blog-card (global) + blog-card (legacy
+//                     local alias) → both counted in the 17.
+//   Phase 9 sections: nosotros-hero, nosotros-mission (both NO_BLOCK_SECTIONS),
+//                     nosotros-stats, nosotros-values, nosotros-timeline;
+//         blocks:     stat-item, value-card, timeline-item (section-local).
+// If the live registry ever diverges from 20/17, reconcile these guards to the
+// TRUE count with a comment — never delete a guard, never weaken a loop.
 describe("empty-state matrix — drift guards (census)", () => {
   it("collects exactly 20 sections", () => {
     expect(sectionEntries.length).toBe(20);
