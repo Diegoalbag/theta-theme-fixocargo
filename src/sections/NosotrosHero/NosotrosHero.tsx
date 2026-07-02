@@ -1,0 +1,209 @@
+import * as React from "react";
+
+import { Button } from "@/components/ui/button";
+import { ImageGuard } from "@/lib/image-guard";
+
+// NosotrosHero (NOS-01, D-03) — the About-page header: a two-column band with an
+// editable text column (brand-yellow eyebrow, display-italic heading, subtitle,
+// two guarded CTA anchors) beside a team-image card that renders the ImageGuard
+// placeholder ("Agrega una imagen") when unset. An editable experience badge
+// (D-03) sits INSIDE the card's normal document flow — never via absolute
+// coordinates — and hides when `showBadge` is off (default on) or when both
+// badge fields are empty.
+//
+// Stateless: no useState, no effects, no refs, no event handlers, no render-time
+// window/document — renders under node renderToStaticMarkup. Every text field is
+// React-escaped JSX (never dangerouslySetInnerHTML, T-09-03). CTA anchors render
+// ONLY when their label is non-empty, so no empty/dangling href is ever emitted
+// (T-09-04). Brand tokens only — no hex literals. @/ imports only.
+export interface TeamImage {
+  id: string;
+  url?: string;
+  alt?: string;
+  width?: number;
+  height?: number;
+}
+
+export interface NosotrosHeroProps {
+  eyebrow?: string;
+  heading?: string;
+  subtitle?: string;
+  primaryCtaLabel?: string;
+  primaryCtaUrl?: string;
+  secondaryCtaLabel?: string;
+  secondaryCtaUrl?: string;
+  teamImage?: TeamImage;
+  showBadge?: boolean;
+  badgeNumber?: string;
+  badgeLabel?: string;
+  sectionId?: string;
+  sectionName?: string;
+}
+
+export const NosotrosHero = ({
+  eyebrow,
+  heading,
+  subtitle,
+  primaryCtaLabel,
+  primaryCtaUrl,
+  secondaryCtaLabel,
+  secondaryCtaUrl,
+  teamImage,
+  showBadge = true,
+  badgeNumber,
+  badgeLabel,
+}: NosotrosHeroProps): React.ReactNode => {
+  // Badge visibility (D-03): only when the toggle is on AND at least one badge
+  // field carries copy — never a bare navy chip.
+  const badgeVisible = showBadge && (Boolean(badgeNumber) || Boolean(badgeLabel));
+
+  return (
+    <section className="bg-background section-padding-y">
+      <div className="container mx-auto container-padding-x">
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:gap-12">
+          {/* Text column — each field guarded so an empty value renders nothing. */}
+          <div className="flex flex-col items-start gap-6 lg:flex-1">
+            {eyebrow ? (
+              <p className="font-gotham text-brand-yellow text-sm uppercase tracking-wide">
+                {eyebrow}
+              </p>
+            ) : null}
+
+            {heading ? (
+              <h1 className="font-display italic text-brand-navy text-3xl lg:text-5xl leading-tight">
+                {heading}
+              </h1>
+            ) : null}
+
+            {subtitle ? (
+              <p className="font-gill text-lg text-muted-foreground max-w-xl">
+                {subtitle}
+              </p>
+            ) : null}
+
+            {/* CTA row — each anchor rendered ONLY when its label is non-empty
+                (T-09-04: no empty-href anchors). */}
+            {primaryCtaLabel || secondaryCtaLabel ? (
+              <div className="flex flex-wrap items-center gap-4">
+                {primaryCtaLabel ? (
+                  <Button variant="pill" asChild>
+                    <a href={primaryCtaUrl || "#"}>{primaryCtaLabel}</a>
+                  </Button>
+                ) : null}
+                {secondaryCtaLabel ? (
+                  <Button variant="pill-outline" asChild>
+                    <a href={secondaryCtaUrl || "#"}>{secondaryCtaLabel}</a>
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+
+          {/* Image column — the team-image card. ImageGuard paints the dashed
+              "Agrega una imagen" placeholder when no url is set. */}
+          <div className="flex flex-col gap-4 lg:flex-1">
+            <div className="relative rounded-3xl overflow-hidden bg-card shadow-lg">
+              <ImageGuard
+                url={teamImage?.url}
+                alt={teamImage?.alt}
+                ratio={760 / 900}
+              />
+            </div>
+
+            {/* Experience badge (D-03) — in normal flow at the card's lower edge
+                via flex, NOT absolute coordinates. */}
+            {badgeVisible ? (
+              <div className="flex">
+                <div className="rounded-2xl bg-brand-navy px-5 py-4 flex items-center gap-3">
+                  {badgeNumber ? (
+                    <span className="font-display italic text-brand-yellow text-4xl leading-none">
+                      {badgeNumber}
+                    </span>
+                  ) : null}
+                  {badgeLabel ? (
+                    <span className="font-gotham font-bold text-sm text-white">
+                      {badgeLabel}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// Eleven editable fields, ids → camelCase props, in the locked order. Spanish
+// labels + defaults per UI-SPEC Copywriting Contract. `showBadge` (checkbox,
+// default true) drives the badge visibility; `teamImage` opens the media
+// library; the CTA urls are `url` inputs.
+export const nosotrosHeroSettingsSchema = [
+  {
+    id: "eyebrow",
+    label: "Etiqueta superior",
+    type: "text",
+    default: "Quiénes Somos",
+  },
+  {
+    id: "heading",
+    label: "Título",
+    type: "text",
+    default: "Movemos el mundo a tus manos",
+  },
+  {
+    id: "subtitle",
+    label: "Subtítulo",
+    type: "text",
+    default:
+      "Somos Fixocargo, un courier nacido para acercar distancias. Conectamos a las personas con lo que importa — paquetes, compras y oportunidades — con la rapidez, el cuidado y la confianza que mereces.",
+  },
+  {
+    id: "primaryCtaLabel",
+    label: "Botón principal",
+    type: "text",
+    default: "Nuestros servicios",
+  },
+  {
+    id: "primaryCtaUrl",
+    label: "Enlace principal",
+    type: "url",
+    default: "#",
+  },
+  {
+    id: "secondaryCtaLabel",
+    label: "Botón secundario",
+    type: "text",
+    default: "Ver sucursales",
+  },
+  {
+    id: "secondaryCtaUrl",
+    label: "Enlace secundario",
+    type: "url",
+    default: "#",
+  },
+  {
+    id: "teamImage",
+    label: "Imagen del equipo",
+    type: "image_picker",
+  },
+  {
+    id: "showBadge",
+    label: "Mostrar insignia",
+    type: "checkbox",
+    default: true,
+  },
+  {
+    id: "badgeNumber",
+    label: "Número de insignia",
+    type: "text",
+    default: "+10",
+  },
+  {
+    id: "badgeLabel",
+    label: "Texto de insignia",
+    type: "text",
+    default: "años conectando el mundo a tus manos",
+  },
+];
