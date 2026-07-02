@@ -90,3 +90,10 @@ All `mitigate` dispositions in the plan's STRIDE register are now exercised by C
 ## Known Stubs
 
 None.
+
+## Self-Check: PASSED
+
+- FOUND: `test/richtext-xss.test.tsx`
+- FOUND: `.planning/phases/10-quality-hardening-page-composition-uat/10-02-SUMMARY.md`
+- FOUND commit: `ca0beef` (test)
+- FOUND commit: `6c17130` (summary)
