@@ -14,6 +14,11 @@ import { Blogs, blogsSettingsSchema } from "./sections/Blogs";
 import { ArticleBody, articleBodySettingsSchema } from "./sections/ArticleBody";
 import { BlogHero, blogHeroSettingsSchema } from "./sections/BlogHero";
 import { BlogList, blogListSettingsSchema } from "./sections/BlogList";
+import { NosotrosHero, nosotrosHeroSettingsSchema } from "./sections/NosotrosHero";
+import { NosotrosMission, nosotrosMissionSettingsSchema } from "./sections/NosotrosMission";
+import { NosotrosStats, nosotrosStatsSettingsSchema } from "./sections/NosotrosStats";
+import { NosotrosValues, nosotrosValuesSettingsSchema } from "./sections/NosotrosValues";
+import { NosotrosTimeline, nosotrosTimelineSettingsSchema } from "./sections/NosotrosTimeline";
 import { HeroSlide, heroSlideSettingsSchema } from "./blocks/HeroSlide";
 import { Branch, branchSettingsSchema } from "./blocks/Branch";
 import { FaqPill, faqPillSettingsSchema } from "./blocks/FaqPill";
@@ -27,6 +32,9 @@ import { SocialLink, socialLinkSettingsSchema } from "./blocks/SocialLink";
 import { StoreBadge, storeBadgeSettingsSchema } from "./blocks/StoreBadge";
 import { NavLink, navLinkSettingsSchema } from "./blocks/NavLink";
 import { FooterColumn, footerColumnSettingsSchema } from "./blocks/FooterColumn";
+import { StatItem, statItemSettingsSchema } from "./blocks/StatItem";
+import { ValueCard, valueCardSettingsSchema } from "./blocks/ValueCard";
+import { TimelineItem, timelineItemSettingsSchema } from "./blocks/TimelineItem";
 
 // ---------------------------------------------------------------------------
 // The registry is the heart of a theme. Five maps, all keyed by the same
@@ -54,6 +62,11 @@ export const sectionsComponents: Record<
   "article-body": ArticleBody as React.ComponentType<Record<string, unknown>>,
   "blog-hero": BlogHero as React.ComponentType<Record<string, unknown>>,
   "blog-list": BlogList as React.ComponentType<Record<string, unknown>>,
+  "nosotros-hero": NosotrosHero as React.ComponentType<Record<string, unknown>>,
+  "nosotros-mission": NosotrosMission as React.ComponentType<Record<string, unknown>>,
+  "nosotros-stats": NosotrosStats as React.ComponentType<Record<string, unknown>>,
+  "nosotros-values": NosotrosValues as React.ComponentType<Record<string, unknown>>,
+  "nosotros-timeline": NosotrosTimeline as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
@@ -73,6 +86,11 @@ export const sectionSettingsSchemas = {
   "article-body": articleBodySettingsSchema,
   "blog-hero": blogHeroSettingsSchema,
   "blog-list": blogListSettingsSchema,
+  "nosotros-hero": nosotrosHeroSettingsSchema,
+  "nosotros-mission": nosotrosMissionSettingsSchema,
+  "nosotros-stats": nosotrosStatsSettingsSchema,
+  "nosotros-values": nosotrosValuesSettingsSchema,
+  "nosotros-timeline": nosotrosTimelineSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).
@@ -309,4 +327,48 @@ export const sectionBlocksConfig: Record<
     blocks: [{ type: "_blog-card" }],
     maxBlocks: 12,
   },
+  "nosotros-stats": {
+    // ONE ordered slot, ONE section-local block type (D-05): stat-item is
+    // exclusive to NosotrosStats and is NOT registered in the global block maps.
+    blocks: [{ type: "stat-item" }],
+    maxBlocks: 6,
+    localBlocks: [
+      {
+        type: "stat-item",
+        name: "Estadística",
+        component: StatItem as React.ComponentType<Record<string, unknown>>,
+        settings: statItemSettingsSchema,
+      },
+    ],
+  },
+  "nosotros-values": {
+    // ONE ordered slot, ONE section-local block type (D-05): value-card is
+    // exclusive to NosotrosValues and is NOT registered in the global block maps.
+    blocks: [{ type: "value-card" }],
+    maxBlocks: 9,
+    localBlocks: [
+      {
+        type: "value-card",
+        name: "Valor",
+        component: ValueCard as React.ComponentType<Record<string, unknown>>,
+        settings: valueCardSettingsSchema,
+      },
+    ],
+  },
+  "nosotros-timeline": {
+    // ONE ordered slot, ONE section-local block type (D-05): timeline-item is
+    // exclusive to NosotrosTimeline and is NOT registered in the global block maps.
+    blocks: [{ type: "timeline-item" }],
+    maxBlocks: 12,
+    localBlocks: [
+      {
+        type: "timeline-item",
+        name: "Hito",
+        component: TimelineItem as React.ComponentType<Record<string, unknown>>,
+        settings: timelineItemSettingsSchema,
+      },
+    ],
+  },
+  // nosotros-hero and nosotros-mission are NO-BLOCK sections (Pattern 4 — no
+  // sectionBlocksConfig entry), exactly like article-body / blog-hero.
 };

@@ -22,7 +22,7 @@ import {
 // D-01), so we render DOM-free with renderToStaticMarkup and assert only on the
 // returned HTML string. Coverage is registry-driven on purpose: components are
 // never imported by name here, so any future section/block addition is forced
-// to appear in these loops (the drift guards pin the 15/14 census).
+// to appear in these loops (the drift guards pin the 20/17 census).
 // ---------------------------------------------------------------------------
 
 // The three CHROME sections pass `empty={null}` to BlocksSlot, so their
@@ -45,7 +45,16 @@ const CHROME_NULL_EMPTY = new Set<string>([
 // markup assertions above the guard — only the EmptyState-marker assertion is
 // exempted, mirroring CHROME_NULL_EMPTY. Do NOT weaken the marker for the
 // existing content sections.
-const NO_BLOCK_SECTIONS = new Set<string>(["article-body", "blog-hero"]);
+const NO_BLOCK_SECTIONS = new Set<string>([
+  "article-body",
+  "blog-hero",
+  // The two Phase 9 About-page content sections (09-01/09-02) accept NO child
+  // blocks (Pattern 4 — no sectionBlocksConfig entry). nosotros-hero paints its
+  // hero chrome; nosotros-mission delegates its empty case to RichText's "Sin
+  // contenido" placeholder. Exempt the EmptyState marker, not the no-throw.
+  "nosotros-hero",
+  "nosotros-mission",
+]);
 
 // The EmptyState marker string content sections fall through to at published
 // zero (src/lib/empty-state.tsx default heading).
@@ -91,12 +100,12 @@ const allBlocks: Array<
 const sectionEntries = Object.entries(sectionsComponents);
 
 describe("empty-state matrix — drift guards (census)", () => {
-  it("collects exactly 15 sections", () => {
-    expect(sectionEntries.length).toBe(15);
+  it("collects exactly 20 sections", () => {
+    expect(sectionEntries.length).toBe(20);
   });
 
-  it("collects exactly 14 block components (3 global + 11 section-local)", () => {
-    expect(allBlocks.length).toBe(14);
+  it("collects exactly 17 block components (3 global + 14 section-local)", () => {
+    expect(allBlocks.length).toBe(17);
   });
 });
 
