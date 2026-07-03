@@ -1,26 +1,38 @@
 import * as React from "react";
 
 import { BlocksSlot } from "@/lib/blocks-slot";
+import { ImageGuard } from "@/lib/image-guard";
 
-// NosotrosTimeline (NOS-05, D-04) — the "De una idea a una red" vertical
-// timeline band. A light band with an INLINE centered header (eyebrow + display
-// title, each guarded — NOT SectionHeading, per RESEARCH Pitfall 2) over a
-// single BlocksSlot of section-local `timeline-item` blocks.
+// NosotrosTimeline (NOS-05, D-04) — the "De una idea a una red" HISTORY band.
+// A light band with an INLINE centered header (eyebrow + display title, each
+// guarded — NOT SectionHeading, per RESEARCH Pitfall 2) over a responsive
+// 2-column row: the timeline rail on the LEFT and a tall rounded IMAGE banner
+// on the RIGHT (per the FixoCargo HISTORY screenshot).
 //
-// The vertical connector is drawn on the BlocksSlot wrapper via
-// `border-l-2 border-brand-yellow` on a `flex flex-col gap-4 pl-6` container —
-// NEVER an `absolute`ly-positioned line and never a bracketed-coordinate rule.
-// Layout classes live on the wrapper className only. The default BlocksSlot
-// EmptyState is KEPT (do NOT pass empty={null}) so a zero-item timeline shows
-// "Sin elementos", never a blank gap (D-04).
+// The vertical connector is a DOTTED yellow rule drawn on the BlocksSlot
+// wrapper via `border-l-2 border-dotted border-brand-yellow` on a
+// `flex flex-col gap-4 pl-6` container — NEVER an `absolute`ly-positioned line
+// and never a bracketed-coordinate rule. Layout classes live on the wrapper
+// className only. The default BlocksSlot EmptyState is KEPT (do NOT pass
+// empty={null}) so a zero-item timeline shows "Sin elementos", never a blank
+// gap (D-04).
 //
-// Single-column vertical rail — no decorative image field (keeps the
-// coordinate-free connector proof clean; the optional image is out of scope).
+// The banner is an ImageGuard inside a rounded card — coordinate-free: the
+// 2-column split uses fraction widths (`lg:w-3/5` / `lg:w-2/5`) and the image
+// height comes from ImageGuard's numeric `ratio` prop, never a bracketed px.
+// Mobile stacks (`flex-col`) timeline-then-banner; nothing is hidden.
 //
 // No state, no event handlers, no hex literals, @/ imports only.
 export interface NosotrosTimelineProps {
   eyebrow?: string;
   heading?: string;
+  bannerImage?: {
+    id: string;
+    url?: string;
+    alt?: string;
+    width?: number;
+    height?: number;
+  };
   renderBlocks?: () => React.ReactNode;
   sectionId?: string;
   sectionName?: string;
@@ -29,6 +41,7 @@ export interface NosotrosTimelineProps {
 export const NosotrosTimeline = ({
   eyebrow = "Nuestra historia",
   heading = "De una idea a una red",
+  bannerImage,
   renderBlocks,
 }: NosotrosTimelineProps): React.ReactNode => {
   return (
@@ -47,16 +60,29 @@ export const NosotrosTimeline = ({
           )}
         </div>
 
-        <BlocksSlot
-          renderBlocks={renderBlocks}
-          className="mt-8 flex flex-col gap-4 border-l-2 border-brand-yellow pl-6"
-        />
+        <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-12">
+          <div className="lg:w-3/5">
+            <BlocksSlot
+              renderBlocks={renderBlocks}
+              className="flex flex-col gap-4 border-l-2 border-dotted border-brand-yellow pl-6"
+            />
+          </div>
+          <div className="lg:w-2/5">
+            <div className="overflow-hidden rounded-3xl bg-card shadow-lg">
+              <ImageGuard
+                url={bannerImage?.url}
+                alt={bannerImage?.alt}
+                ratio={760 / 900}
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );
 };
 
-// Exactly 2 editable fields, ids → camelCase props.
+// Exactly 3 editable fields, ids → camelCase props.
 export const nosotrosTimelineSettingsSchema = [
   {
     id: "eyebrow",
@@ -69,5 +95,11 @@ export const nosotrosTimelineSettingsSchema = [
     label: "Título",
     type: "text",
     default: "De una idea a una red",
+  },
+  {
+    id: "bannerImage",
+    label: "Imagen lateral",
+    type: "image_picker",
+    default: undefined,
   },
 ];
