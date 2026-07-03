@@ -11,6 +11,14 @@ import { ImageGuard } from "@/lib/image-guard";
 // coordinates — and hides when `showBadge` is off (default on) or when both
 // badge fields are empty.
 //
+// OPTIONAL full-bleed hero background (mirrors the ATF Hero slide treatment):
+// when `backgroundImage.url` is set, a full-bleed object-cover <img> plus a
+// fixed bg-black/50 overlay paint BEHIND the two-column content (which stacks
+// above via a `relative` container), and the heading/subtitle flip to white for
+// legibility. When unset, the section keeps its ORIGINAL `bg-background` design
+// (navy heading, muted subtitle) untouched. The team-image card, experience
+// badge, and CTA guards are identical in both modes.
+//
 // Stateless: no useState, no effects, no refs, no event handlers, no render-time
 // window/document — renders under node renderToStaticMarkup. Every text field is
 // React-escaped JSX (never dangerouslySetInnerHTML, T-09-03). CTA anchors render
@@ -25,6 +33,13 @@ export interface TeamImage {
 }
 
 export interface NosotrosHeroProps {
+  backgroundImage?: {
+    id: string;
+    url?: string;
+    alt?: string;
+    width?: number;
+    height?: number;
+  };
   eyebrow?: string;
   heading?: string;
   subtitle?: string;
@@ -41,6 +56,7 @@ export interface NosotrosHeroProps {
 }
 
 export const NosotrosHero = ({
+  backgroundImage,
   eyebrow,
   heading,
   subtitle,
@@ -57,9 +73,41 @@ export const NosotrosHero = ({
   // field carries copy — never a bare navy chip.
   const badgeVisible = showBadge && (Boolean(badgeNumber) || Boolean(badgeLabel));
 
+  // Full-bleed background mode (image-conditional). Truthy url → hero treatment
+  // + white text over a dark overlay; falsy → the original bg-background design.
+  const hasBg = Boolean(backgroundImage?.url);
+
+  const sectionClassName = hasBg
+    ? "relative overflow-hidden section-padding-y"
+    : "bg-background section-padding-y";
+  // In image mode the container must stack above the overlay (relative).
+  const containerClassName = hasBg
+    ? "container relative mx-auto container-padding-x"
+    : "container mx-auto container-padding-x";
+  const headingClassName = hasBg
+    ? "font-display italic text-white text-3xl lg:text-5xl leading-tight"
+    : "font-display italic text-brand-navy text-3xl lg:text-5xl leading-tight";
+  const subtitleClassName = hasBg
+    ? "font-gill text-lg text-white/90 max-w-xl"
+    : "font-gill text-lg text-muted-foreground max-w-xl";
+
   return (
-    <section className="bg-background section-padding-y">
-      <div className="container mx-auto container-padding-x">
+    <section className={sectionClassName}>
+      {/* Full-bleed hero background (mirrors HeroSlide): object-cover <img> +
+          fixed ~50% dark overlay, both BEHIND the content. Rendered only when a
+          background image url is set. */}
+      {hasBg ? (
+        <>
+          <img
+            src={backgroundImage!.url}
+            alt={backgroundImage?.alt ?? ""}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div aria-hidden className="absolute inset-0 bg-black/50" />
+        </>
+      ) : null}
+
+      <div className={containerClassName}>
         <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:gap-12">
           {/* Text column — each field guarded so an empty value renders nothing. */}
           <div className="flex flex-col items-start gap-6 lg:flex-1">
@@ -70,15 +118,11 @@ export const NosotrosHero = ({
             ) : null}
 
             {heading ? (
-              <h1 className="font-display italic text-brand-navy text-3xl lg:text-5xl leading-tight">
-                {heading}
-              </h1>
+              <h1 className={headingClassName}>{heading}</h1>
             ) : null}
 
             {subtitle ? (
-              <p className="font-gill text-lg text-muted-foreground max-w-xl">
-                {subtitle}
-              </p>
+              <p className={subtitleClassName}>{subtitle}</p>
             ) : null}
 
             {/* CTA row — each anchor rendered ONLY when its label is non-empty
@@ -135,11 +179,18 @@ export const NosotrosHero = ({
   );
 };
 
-// Eleven editable fields, ids → camelCase props, in the locked order. Spanish
-// labels + defaults per UI-SPEC Copywriting Contract. `showBadge` (checkbox,
-// default true) drives the badge visibility; `teamImage` opens the media
-// library; the CTA urls are `url` inputs.
+// Twelve editable fields, ids → camelCase props, in the locked order. Spanish
+// labels + defaults per UI-SPEC Copywriting Contract. `backgroundImage` (first,
+// image_picker, optional) toggles the full-bleed hero background; `showBadge`
+// (checkbox, default true) drives the badge visibility; `teamImage` opens the
+// media library; the CTA urls are `url` inputs.
 export const nosotrosHeroSettingsSchema = [
+  {
+    id: "backgroundImage",
+    label: "Imagen de fondo",
+    type: "image_picker",
+    default: undefined,
+  },
   {
     id: "eyebrow",
     label: "Etiqueta superior",

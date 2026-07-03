@@ -99,10 +99,38 @@ describe("NosotrosHero", () => {
     expect(html).not.toContain("+10");
   });
 
-  it("nosotrosHeroSettingsSchema has 11 entries in the locked order with showBadge default true", () => {
-    expect(nosotrosHeroSettingsSchema).toHaveLength(11);
+  it("renders the full-bleed background image + dark overlay when backgroundImage.url is set", () => {
+    const html = renderToStaticMarkup(
+      <NosotrosHero
+        backgroundImage={{ id: "1", url: "/hero.jpg", alt: "Fondo" }}
+        heading="Movemos el mundo a tus manos"
+        subtitle="Somos Fixocargo"
+      />,
+    );
+    expect(html).toContain('src="/hero.jpg"');
+    expect(html).toContain("object-cover");
+    expect(html).toContain("bg-black/50");
+    // Text flips to white-on-dark for legibility.
+    expect(html).toContain("text-white");
+    // Original navy/muted treatment is NOT used in image mode.
+    expect(html).not.toContain("text-brand-navy");
+    expect(html).not.toContain("bg-background");
+  });
+
+  it("keeps the original bg-background design (no overlay) when backgroundImage is unset", () => {
+    const html = renderToStaticMarkup(
+      <NosotrosHero heading="Movemos el mundo a tus manos" subtitle="Somos Fixocargo" />,
+    );
+    expect(html).toContain("bg-background");
+    expect(html).toContain("text-brand-navy");
+    expect(html).not.toContain("bg-black/50");
+  });
+
+  it("nosotrosHeroSettingsSchema has 12 entries in the locked order with backgroundImage first and showBadge default true", () => {
+    expect(nosotrosHeroSettingsSchema).toHaveLength(12);
     const ids = nosotrosHeroSettingsSchema.map((s) => s.id);
     expect(ids).toEqual([
+      "backgroundImage",
       "eyebrow",
       "heading",
       "subtitle",
@@ -115,6 +143,10 @@ describe("NosotrosHero", () => {
       "badgeNumber",
       "badgeLabel",
     ]);
+    const backgroundImage = nosotrosHeroSettingsSchema.find(
+      (s) => s.id === "backgroundImage",
+    );
+    expect(backgroundImage?.type).toBe("image_picker");
     const showBadge = nosotrosHeroSettingsSchema.find((s) => s.id === "showBadge");
     expect(showBadge?.type).toBe("checkbox");
     expect(showBadge?.default).toBe(true);
