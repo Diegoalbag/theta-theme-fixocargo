@@ -1,11 +1,14 @@
 import * as React from "react";
 
 // TimelineItem (NOS-05) — section-local block for the NosotrosTimeline vertical
-// rail. A single milestone row: a coordinate-free dot marker pulled onto the
-// parent section's yellow rail with a negative-margin scale utility (`-ms-6`),
-// NEVER `absolute` positioning and NEVER a bracketed offset like `-ml-[9px]`,
-// followed by a card with an authored TEXT year (incl. "HOY"), a title, and a
-// body. Each text field is guarded so a blank field renders nothing.
+// rail. A single milestone row (`relative pl-11`) with the dot as an `absolute
+// left-0 top-1.5` marker in the left gutter, sitting ON the parent section's
+// solid-yellow absolute-overlay line; a `ring-4 ring-muted` halo in the band
+// color punches a gap around the dot. This absolute-marker approach is
+// intentional — it matches the shipped FixoCargo HISTORY design and the
+// section's overlay connector. The card carries an authored TEXT year (incl.
+// "HOY"), a title, and a body; each text field is guarded so a blank field
+// renders nothing.
 //
 // No state, no event handlers, no hex literals, @/ imports only.
 export interface TimelineItemProps {
@@ -22,15 +25,15 @@ export const TimelineItem = ({
   body = "",
 }: TimelineItemProps): React.ReactNode => {
   return (
-    <div className="flex items-start gap-4">
-      {/* Dot marker on the rail: a yellow dot pulled onto the parent section's
-          dotted `border-l-2` connector with a negative-margin scale utility.
-          A `ring-4 ring-muted` halo in the band color punches the dot over the
-          dotted line (coordinate-free — the band is `bg-muted`). Never
-          `absolute`, never a bracketed offset. */}
+    <div className="relative pl-11">
+      {/* Dot marker on the rail: a yellow dot as an absolute marker in the left
+          gutter, sitting ON the parent section's solid-yellow overlay line. A
+          `ring-4 ring-muted` halo in the band color (`bg-muted`) punches a gap
+          around the dot. `top-1.5` aligns the dot center with the line and the
+          card's first line. */}
       <span
         aria-hidden="true"
-        className="-ms-6 mt-1 size-4 shrink-0 rounded-full bg-brand-yellow ring-4 ring-muted"
+        className="absolute left-0 top-1.5 size-4 rounded-full bg-brand-yellow ring-4 ring-muted"
       />
       <div className="flex flex-col items-start rounded-xl bg-card px-6 py-5 shadow">
         {year && (

@@ -9,11 +9,15 @@ import { ImageGuard } from "@/lib/image-guard";
 // 2-column row: the timeline rail on the LEFT and a tall rounded IMAGE banner
 // on the RIGHT (per the FixoCargo HISTORY screenshot).
 //
-// The vertical connector is a DOTTED yellow rule drawn on the BlocksSlot
-// wrapper via `border-l-2 border-dotted border-brand-yellow` on a
-// `flex flex-col gap-4 pl-6` container — NEVER an `absolute`ly-positioned line
-// and never a bracketed-coordinate rule. Layout classes live on the wrapper
-// className only. The default BlocksSlot EmptyState is KEPT (do NOT pass
+// The vertical connector is a SOLID yellow line drawn as an absolute OVERLAY
+// over the rail column: the column is a `relative` positioning context and the
+// line is an `aria-hidden` sibling BEFORE BlocksSlot with
+// `pointer-events-none absolute left-[7px] top-3.5 bottom-10 w-0.5 bg-brand-yellow`.
+// The bracketed `left-[7px]` is intentional and authorized — it centers the 2px
+// line under the 16px dot (whose center sits at 8px). The line renders behind
+// the dots by DOM order; each dot's `ring-muted` halo punches the gap. This
+// matches the shipped FixoCargo HISTORY design and the sidebar-nav overlay
+// technique. The default BlocksSlot EmptyState is KEPT (do NOT pass
 // empty={null}) so a zero-item timeline shows "Sin elementos", never a blank
 // gap (D-04).
 //
@@ -54,17 +58,21 @@ export const NosotrosTimeline = ({
             </p>
           )}
           {heading && (
-            <h2 className="font-display text-3xl italic text-brand-navy lg:text-5xl">
+            <h2 className="font-aku text-3xl italic text-brand-navy lg:text-5xl">
               {heading}
             </h2>
           )}
         </div>
 
         <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-12">
-          <div className="lg:w-3/5">
+          <div className="relative lg:w-3/5">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute left-[7px] top-3.5 bottom-10 w-0.5 bg-brand-yellow"
+            />
             <BlocksSlot
               renderBlocks={renderBlocks}
-              className="flex flex-col gap-4 border-l-2 border-dotted border-brand-yellow pl-6"
+              className="flex flex-col gap-4"
             />
           </div>
           <div className="lg:w-2/5">
