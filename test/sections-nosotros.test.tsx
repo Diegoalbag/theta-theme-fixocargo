@@ -112,6 +112,13 @@ describe("NosotrosHero", () => {
     expect(html).toContain("bg-black/50");
     // Text flips to white-on-dark for legibility.
     expect(html).toContain("text-white");
+    // Image mode matches the default hero (HeroSlide) height + typography.
+    expect(html).toContain("min-h-[30vh]");
+    expect(html).toContain("md:min-h-[560px]");
+    expect(html).toContain("font-aku");
+    expect(html).toContain("lg:text-8xl");
+    expect(html).toContain("font-gill");
+    expect(html).toContain("md:text-2xl");
     // Original navy/muted treatment is NOT used in image mode.
     expect(html).not.toContain("text-brand-navy");
     expect(html).not.toContain("bg-background");

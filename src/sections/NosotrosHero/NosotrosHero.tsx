@@ -77,18 +77,20 @@ export const NosotrosHero = ({
   // + white text over a dark overlay; falsy → the original bg-background design.
   const hasBg = Boolean(backgroundImage?.url);
 
+  // Image mode mirrors the default hero (HeroSlide): full min-height band with
+  // vertically-centered content and the same white heading/subtitle typography.
   const sectionClassName = hasBg
-    ? "relative overflow-hidden section-padding-y"
+    ? "relative overflow-hidden section-padding-y min-h-[30vh] md:min-h-[560px] flex items-center"
     : "bg-background section-padding-y";
   // In image mode the container must stack above the overlay (relative).
   const containerClassName = hasBg
     ? "container relative mx-auto container-padding-x"
     : "container mx-auto container-padding-x";
   const headingClassName = hasBg
-    ? "font-display italic text-white text-3xl lg:text-5xl leading-tight"
+    ? "font-aku font-bold text-white text-4xl md:text-6xl lg:text-8xl"
     : "font-display italic text-brand-navy text-3xl lg:text-5xl leading-tight";
   const subtitleClassName = hasBg
-    ? "font-gill text-lg text-white/90 max-w-xl"
+    ? "font-gill text-white text-lg md:text-2xl"
     : "font-gill text-lg text-muted-foreground max-w-xl";
 
   return (
