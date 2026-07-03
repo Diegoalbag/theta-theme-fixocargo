@@ -24,11 +24,13 @@ export const TimelineItem = ({
   return (
     <div className="flex items-start gap-4">
       {/* Dot marker on the rail: a yellow dot pulled onto the parent section's
-          `border-l-2` connector with a negative-margin scale utility. Never
+          dotted `border-l-2` connector with a negative-margin scale utility.
+          A `ring-4 ring-muted` halo in the band color punches the dot over the
+          dotted line (coordinate-free — the band is `bg-muted`). Never
           `absolute`, never a bracketed offset. */}
       <span
         aria-hidden="true"
-        className="-ms-6 mt-1 size-4 shrink-0 rounded-full bg-brand-yellow"
+        className="-ms-6 mt-1 size-4 shrink-0 rounded-full bg-brand-yellow ring-4 ring-muted"
       />
       <div className="flex flex-col items-start rounded-xl bg-card px-6 py-5 shadow">
         {year && (

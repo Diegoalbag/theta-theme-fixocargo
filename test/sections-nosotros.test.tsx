@@ -300,18 +300,52 @@ describe("NosotrosTimeline", () => {
     expect(html).toContain("Sin elementos");
   });
 
-  it("renders provided blocks on the coordinate-free yellow rail", () => {
+  it("renders provided blocks on the coordinate-free DOTTED yellow rail", () => {
     const html = renderToStaticMarkup(
       <NosotrosTimeline renderBlocks={() => [<span key="a">child</span>]} />,
     );
     expect(html).toContain("child");
     expect(html).toContain("border-l-2");
+    expect(html).toContain("border-dotted");
     expect(html).toContain("border-brand-yellow");
-    expect(html).not.toContain(ABSOLUTE);
+    // NOTE: the section now embeds an ImageGuard banner, whose sanctioned
+    // `absolute inset-0` overlay legitimately introduces "absolute" (see the
+    // static-audit allow-list). The connector rail itself stays coordinate-free
+    // (border/flex only) and the TimelineItem dot proof still bans "absolute".
   });
 
-  it("nosotrosTimelineSettingsSchema has 2 entries", () => {
-    expect(nosotrosTimelineSettingsSchema).toHaveLength(2);
+  it("lays the rail and banner in a responsive 2-column row (timeline left, image right)", () => {
+    const html = renderToStaticMarkup(
+      <NosotrosTimeline renderBlocks={() => [<span key="a">child</span>]} />,
+    );
+    expect(html).toContain("lg:flex-row");
+    expect(html).toContain("lg:w-3/5");
+    expect(html).toContain("lg:w-2/5");
+    // Banner is an ImageGuard: with bannerImage unset it shows the placeholder.
+    expect(html).toContain("Agrega una imagen");
+    expect(html).toContain("rounded-3xl");
+  });
+
+  it("renders the banner image when bannerImage.url is set", () => {
+    const html = renderToStaticMarkup(
+      <NosotrosTimeline
+        bannerImage={{ id: "1", url: "/banner.jpg", alt: "Historia" }}
+        renderBlocks={() => []}
+      />,
+    );
+    expect(html).toContain('src="/banner.jpg"');
+    // EmptyState still renders for the zero-block timeline column.
+    expect(html).toContain("Sin elementos");
+  });
+
+  it("nosotrosTimelineSettingsSchema has 3 entries [eyebrow,heading,bannerImage]", () => {
+    expect(nosotrosTimelineSettingsSchema).toHaveLength(3);
+    const ids = nosotrosTimelineSettingsSchema.map((s) => s.id);
+    expect(ids).toEqual(["eyebrow", "heading", "bannerImage"]);
+    const banner = nosotrosTimelineSettingsSchema.find(
+      (s) => s.id === "bannerImage",
+    );
+    expect(banner?.type).toBe("image_picker");
   });
 });
 
