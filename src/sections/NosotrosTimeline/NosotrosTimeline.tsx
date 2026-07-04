@@ -9,11 +9,12 @@ import { ImageGuard } from "@/lib/image-guard";
 // 2-column row: the timeline rail on the LEFT and a tall rounded IMAGE banner
 // on the RIGHT (per the FixoCargo HISTORY screenshot).
 //
-// The vertical connector is a SOLID yellow line drawn as an absolute OVERLAY
+// The vertical connector is a DOTTED yellow line drawn as an absolute OVERLAY
 // that paints ON TOP OF the cards (not in a left gutter): the column is a
 // `relative` positioning context and the line is an `aria-hidden` sibling
-// BEFORE BlocksSlot with
-// `pointer-events-none absolute left-6 top-2 bottom-2 z-10 w-0.5 bg-brand-yellow`.
+// BEFORE BlocksSlot with `pointer-events-none absolute left-6 top-2 bottom-2
+// z-10 border-l-2 border-dotted border-brand-yellow` (the 2px dotted left
+// border IS the line — its left edge sits at 24px, same as the dot center).
 // `z-10` lifts the line above the full-width cards so it reads over each card
 // surface and runs continuously through the gaps into the next card; `left-6`
 // (24px) centers the 2px line on the dot that lives INSIDE each card. Each
@@ -70,7 +71,7 @@ export const NosotrosTimeline = ({
           <div className="relative lg:w-3/5">
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute left-6 top-2 bottom-2 z-10 w-0.5 bg-brand-yellow"
+              className="pointer-events-none absolute left-6 top-2 bottom-2 z-10 border-l-2 border-dotted border-brand-yellow"
             />
             <BlocksSlot
               renderBlocks={renderBlocks}
