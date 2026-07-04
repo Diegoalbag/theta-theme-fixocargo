@@ -9,17 +9,21 @@ import { ImageGuard } from "@/lib/image-guard";
 // 2-column row: the timeline rail on the LEFT and a tall rounded IMAGE banner
 // on the RIGHT (per the FixoCargo HISTORY screenshot).
 //
-// The vertical connector is a DOTTED yellow line that paints ON TOP OF the
-// cards (not a left-gutter rail). It is NOT one section-level overlay — instead
-// each TimelineItem draws its OWN segment from its dot DOWN to the next item's
-// dot (an `after:` pseudo-element, see TimelineItem), and the LAST item hides
-// its segment (`last:after:hidden`). That makes the line start exactly at the
-// first dot and end exactly at the last dot with no dangling ends, robust to
-// any card height. This section therefore only owns the header + 2-column
-// layout; the `flex flex-col gap-4` rail MUST keep `gap-4` (16px) because the
-// per-item segment overhang is tuned to that gap. The default BlocksSlot
-// EmptyState is KEPT (do NOT pass empty={null}) so a zero-item timeline shows
-// "Sin elementos", never a blank gap (D-04).
+// The vertical connector is a DOTTED yellow line drawn as a SINGLE absolute
+// OVERLAY that paints ON TOP OF the cards (not a left-gutter rail): the column
+// is a `relative` context and the line is an `aria-hidden` sibling BEFORE
+// BlocksSlot with `pointer-events-none absolute left-6 top-8 bottom-28 z-10
+// border-l-2 border-dotted border-brand-yellow`. `z-10` lifts it over the
+// full-width cards; `left-6` (24px) centers it on the in-card dots; each
+// TimelineItem dot sits on top at `z-20`. `top-8` (32px) pins the line to start
+// exactly at the FIRST dot (deterministic — first card is at column top). The
+// `bottom-28` inset trims the tail near the LAST dot; it is a FIXED estimate,
+// not exact, because a single overlay cannot locate the last dot's y — the
+// blocks are stateless (no index) and the customizer wraps each block, so CSS
+// `:last-child` matches every item and can't mark the last. Nudge `bottom-28`
+// if the timeline's last-card height changes. The default BlocksSlot EmptyState
+// is KEPT (do NOT pass empty={null}) so a zero-item timeline shows "Sin
+// elementos", never a blank gap (D-04).
 //
 // The banner is an ImageGuard inside a rounded card — coordinate-free: the
 // 2-column split uses fraction widths (`lg:w-3/5` / `lg:w-2/5`) and the image
@@ -65,7 +69,11 @@ export const NosotrosTimeline = ({
         </div>
 
         <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-12">
-          <div className="lg:w-3/5">
+          <div className="relative lg:w-3/5">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute left-6 top-8 bottom-28 z-10 border-l-2 border-dotted border-brand-yellow"
+            />
             <BlocksSlot
               renderBlocks={renderBlocks}
               className="flex flex-col gap-4"
