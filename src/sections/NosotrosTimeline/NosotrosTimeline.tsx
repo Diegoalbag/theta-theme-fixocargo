@@ -9,20 +9,17 @@ import { ImageGuard } from "@/lib/image-guard";
 // 2-column row: the timeline rail on the LEFT and a tall rounded IMAGE banner
 // on the RIGHT (per the FixoCargo HISTORY screenshot).
 //
-// The vertical connector is a DOTTED yellow line drawn as an absolute OVERLAY
-// that paints ON TOP OF the cards (not in a left gutter): the column is a
-// `relative` positioning context and the line is an `aria-hidden` sibling
-// BEFORE BlocksSlot with `pointer-events-none absolute left-6 top-2 bottom-2
-// z-10 border-l-2 border-dotted border-brand-yellow` (the 2px dotted left
-// border IS the line — its left edge sits at 24px, same as the dot center).
-// `z-10` lifts the line above the full-width cards so it reads over each card
-// surface and runs continuously through the gaps into the next card; `left-6`
-// (24px) centers the 2px line on the dot that lives INSIDE each card. Each
-// TimelineItem dot sits on top of the line at `z-20` with a card-colored halo.
-// This is the user-directed over-the-card treatment (deviates from the shipped
-// gutter-rail design). The default BlocksSlot EmptyState is KEPT (do NOT pass
-// empty={null}) so a zero-item timeline shows "Sin elementos", never a blank
-// gap (D-04).
+// The vertical connector is a DOTTED yellow line that paints ON TOP OF the
+// cards (not a left-gutter rail). It is NOT one section-level overlay — instead
+// each TimelineItem draws its OWN segment from its dot DOWN to the next item's
+// dot (an `after:` pseudo-element, see TimelineItem), and the LAST item hides
+// its segment (`last:after:hidden`). That makes the line start exactly at the
+// first dot and end exactly at the last dot with no dangling ends, robust to
+// any card height. This section therefore only owns the header + 2-column
+// layout; the `flex flex-col gap-4` rail MUST keep `gap-4` (16px) because the
+// per-item segment overhang is tuned to that gap. The default BlocksSlot
+// EmptyState is KEPT (do NOT pass empty={null}) so a zero-item timeline shows
+// "Sin elementos", never a blank gap (D-04).
 //
 // The banner is an ImageGuard inside a rounded card — coordinate-free: the
 // 2-column split uses fraction widths (`lg:w-3/5` / `lg:w-2/5`) and the image
@@ -68,11 +65,7 @@ export const NosotrosTimeline = ({
         </div>
 
         <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-12">
-          <div className="relative lg:w-3/5">
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute left-6 top-2 bottom-2 z-10 border-l-2 border-dotted border-brand-yellow"
-            />
+          <div className="lg:w-3/5">
             <BlocksSlot
               renderBlocks={renderBlocks}
               className="flex flex-col gap-4"
