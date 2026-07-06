@@ -25,10 +25,13 @@ import { ImageGuard } from "@/lib/image-guard";
 // is KEPT (do NOT pass empty={null}) so a zero-item timeline shows "Sin
 // elementos", never a blank gap (D-04).
 //
-// The banner is an ImageGuard inside a rounded card — coordinate-free: the
-// 2-column split uses fraction widths (`lg:w-3/5` / `lg:w-2/5`) and the image
-// height comes from ImageGuard's numeric `ratio` prop, never a bracketed px.
-// Mobile stacks (`flex-col`) timeline-then-banner; nothing is hidden.
+// The banner is a fill-mode ImageGuard inside a rounded card. The 2-column
+// split is equal-width (`lg:w-1/2` each) and the row is NOT `items-start`, so
+// on desktop both columns stretch to the same height and the banner card's
+// `lg:h-full` fills the timeline's height (the ImageGuard `fill` image covers
+// it, object-cover). On mobile the columns stack (`flex-col`) and the card
+// falls back to an `aspect-[3/4]` box so it can't collapse without a column
+// height to fill. Nothing is hidden.
 //
 // No state, no event handlers, no hex literals, @/ imports only.
 export interface NosotrosTimelineProps {
@@ -68,7 +71,7 @@ export const NosotrosTimeline = ({
           )}
         </div>
 
-        <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-12">
+        <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:gap-12">
           <div className="relative lg:w-1/2">
             <div
               aria-hidden="true"
@@ -80,12 +83,8 @@ export const NosotrosTimeline = ({
             />
           </div>
           <div className="lg:w-1/2">
-            <div className="overflow-hidden rounded-3xl bg-card shadow-lg">
-              <ImageGuard
-                url={bannerImage?.url}
-                alt={bannerImage?.alt}
-                ratio={760 / 900}
-              />
+            <div className="relative aspect-[3/4] overflow-hidden rounded-3xl bg-card shadow-lg lg:aspect-auto lg:h-full">
+              <ImageGuard url={bannerImage?.url} alt={bannerImage?.alt} fill />
             </div>
           </div>
         </div>
