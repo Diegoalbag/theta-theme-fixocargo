@@ -269,12 +269,37 @@ describe("BenefitCard", () => {
     expect(html).toContain('href="/beneficio"');
   });
 
-  it("benefitCardSettingsSchema has 4 entries [icon,title,body,linkUrl] with icon as select", () => {
-    expect(benefitCardSettingsSchema).toHaveLength(4);
+  it("benefitCardSettingsSchema has 5 entries [icon,title,body,linkUrl,variant] with icon as select and variant defaulting to dark", () => {
+    expect(benefitCardSettingsSchema).toHaveLength(5);
     const ids = benefitCardSettingsSchema.map((s) => s.id);
-    expect(ids).toEqual(["icon", "title", "body", "linkUrl"]);
+    expect(ids).toEqual(["icon", "title", "body", "linkUrl", "variant"]);
     const iconSetting = benefitCardSettingsSchema.find((s) => s.id === "icon");
     expect(iconSetting?.type).toBe("select");
+    const variantSetting = benefitCardSettingsSchema.find(
+      (s) => s.id === "variant",
+    );
+    expect(variantSetting?.type).toBe("select");
+    expect(variantSetting?.default).toBe("dark");
+    expect(variantSetting?.options).toEqual(
+      expect.arrayContaining([
+        { value: "dark", label: "Oscuro" },
+        { value: "light", label: "Claro" },
+      ]),
+    );
+  });
+
+  it("default (no variant / dark) render stays byte-identical: 'Conoce más' present, navy Card, yellow icon chip", () => {
+    const html = renderToStaticMarkup(<BenefitCard />);
+    expect(html).toContain("Conoce más");
+    expect(html).toContain("bg-brand-navy");
+    expect(html).toContain("bg-brand-yellow");
+  });
+
+  it("variant=\"light\" render has NO 'Conoce más' link, a navy icon chip, and the surface Card border (not bg-brand-navy)", () => {
+    const html = renderToStaticMarkup(<BenefitCard variant="light" />);
+    expect(html).not.toContain("Conoce más");
+    expect(html).toContain("bg-brand-navy"); // the light IconChip background
+    expect(html).toContain("border-border"); // the `surface` Card variant
   });
 });
 
