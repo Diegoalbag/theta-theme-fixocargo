@@ -24,12 +24,21 @@ import { Button } from "@/components/ui/button";
 // unknown value NEVER crashes (QA-03, D-04). The benefit-card default/fallback
 // glyph is `truck` per the FixoCargo design.
 //
+// `variant` (quick task 260706-qqi) adds a second styling axis: "dark"
+// (default) is the ORIGINAL Beneficios card, byte-identical to before this
+// axis existed — its className strings are untouched. "light" is the
+// BeneficiosGrid white card: a `surface` Card, a navy IconChip, a navy title,
+// a muted-foreground gill body, and NO "Conoce más" link at all. benefit-card
+// is now promoted to a TRUE global block (src/registry.ts), reused by both the
+// original Beneficios section and the new BeneficiosGrid section.
+//
 // No state, no event handlers, no hex literals, @/ imports only.
 export interface BenefitCardProps {
   icon?: string;
   title?: string;
   body?: string;
   linkUrl?: string;
+  variant?: "dark" | "light";
   blockId?: string;
   blockType?: string;
 }
@@ -55,37 +64,56 @@ export const BenefitCard = ({
   title = "Entrega Rápida y Segura",
   body = "Tus paquetes llegan a tiempo y en perfecto estado, con seguimiento de principio a fin.",
   linkUrl = "#",
+  variant = "dark",
 }: BenefitCardProps): React.ReactNode => {
   // Defensive default — an unknown/arbitrary select value degrades to the Truck
   // glyph and can never inject a component or reach the DOM as code.
   const Icon = iconMap[icon] ?? Truck;
+  const isLight = variant === "light";
 
   return (
     <Card
-      variant="navy-dark"
+      variant={isLight ? "surface" : "navy-dark"}
       className="flex flex-col p-7 gap-4 shadow-2xl"
     >
-      <IconChip background="yellow" size="lg">
+      <IconChip background={isLight ? "navy" : "yellow"} size="lg">
         <Icon aria-hidden="true" />
       </IconChip>
 
-      <h3 className="font-gotham font-bold text-white text-2xl leading-tight">
+      <h3
+        className={
+          isLight
+            ? "font-gotham font-bold text-2xl leading-tight text-brand-navy"
+            : "font-gotham font-bold text-white text-2xl leading-tight"
+        }
+      >
         {title}
       </h3>
 
       {body && (
-        <p className="font-opensans text-white/80 text-lg leading-5">{body}</p>
+        <p
+          className={
+            isLight
+              ? "font-gill text-muted-foreground text-lg leading-5"
+              : "font-opensans text-white/80 text-lg leading-5"
+          }
+        >
+          {body}
+        </p>
       )}
 
-      <Button variant="link" asChild className="text-brand-white w-min!">
-        <a href={linkUrl || "#"}>Conoce más</a>
-      </Button>
+      {!isLight && (
+        <Button variant="link" asChild className="text-brand-white w-min!">
+          <a href={linkUrl || "#"}>Conoce más</a>
+        </Button>
+      )}
     </Card>
   );
 };
 
-// Exactly 4 editable fields, ids → camelCase props. Same enum option list as
-// ServiceItem; default/fallback glyph is `truck`.
+// Exactly 5 editable fields, ids → camelCase props. Same enum option list as
+// ServiceItem; default/fallback glyph is `truck`. `variant` (quick task
+// 260706-qqi) is the dark/light styling axis — dark is the original card.
 export const benefitCardSettingsSchema = [
   {
     id: "icon",
@@ -122,5 +150,15 @@ export const benefitCardSettingsSchema = [
     type: "url",
     default: "#",
     placeholder: "https://…",
+  },
+  {
+    id: "variant",
+    label: "Estilo",
+    type: "select",
+    default: "dark",
+    options: [
+      { value: "dark", label: "Oscuro" },
+      { value: "light", label: "Claro" },
+    ],
   },
 ];

@@ -37,6 +37,12 @@ import { StatItem, statItemSettingsSchema } from "./blocks/StatItem";
 import { ValueCard, valueCardSettingsSchema } from "./blocks/ValueCard";
 import { TimelineItem, timelineItemSettingsSchema } from "./blocks/TimelineItem";
 import { FaqItem, faqItemSettingsSchema } from "./blocks/FaqItem";
+import { BeneficiosGrid, beneficiosGridSettingsSchema } from "./sections/BeneficiosGrid";
+import { AppFeatures, appFeaturesSettingsSchema } from "./sections/AppFeatures";
+import { PlanReferimiento, planReferimientoSettingsSchema } from "./sections/PlanReferimiento";
+import { ListaRegalos, listaRegalosSettingsSchema } from "./sections/ListaRegalos";
+import { AppFeatureItem, appFeatureItemSettingsSchema } from "./blocks/AppFeatureItem";
+import { GiftStep, giftStepSettingsSchema } from "./blocks/GiftStep";
 
 // ---------------------------------------------------------------------------
 // The registry is the heart of a theme. Five maps, all keyed by the same
@@ -70,6 +76,10 @@ export const sectionsComponents: Record<
   "nosotros-values": NosotrosValues as React.ComponentType<Record<string, unknown>>,
   "nosotros-timeline": NosotrosTimeline as React.ComponentType<Record<string, unknown>>,
   "faq": Faq as React.ComponentType<Record<string, unknown>>,
+  "beneficios-grid": BeneficiosGrid as React.ComponentType<Record<string, unknown>>,
+  "app-features": AppFeatures as React.ComponentType<Record<string, unknown>>,
+  "plan-referimiento": PlanReferimiento as React.ComponentType<Record<string, unknown>>,
+  "lista-regalos": ListaRegalos as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
@@ -95,6 +105,10 @@ export const sectionSettingsSchemas = {
   "nosotros-values": nosotrosValuesSettingsSchema,
   "nosotros-timeline": nosotrosTimelineSettingsSchema,
   "faq": faqSettingsSchema,
+  "beneficios-grid": beneficiosGridSettingsSchema,
+  "app-features": appFeaturesSettingsSchema,
+  "plan-referimiento": planReferimientoSettingsSchema,
+  "lista-regalos": listaRegalosSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).
@@ -109,6 +123,13 @@ export const blocksComponents: Record<
   // expansion — so it never leaks into the Footer / AnnouncementBar block menus.
   // Both consumers reference it explicitly via `blocks: [{ type: "_blog-card" }]`.
   "_blog-card": BlogCard as React.ComponentType<Record<string, unknown>>,
+  // PROMOTED (quick task 260706-qqi): benefit-card was section-local to
+  // Beneficios; it is now a TRUE global (no `_` prefix — its dark default is
+  // a normal, freely-offerable content block) so the new `beneficios-grid`
+  // section can reuse it. Both sections reference it EXPLICITLY via
+  // `blocks: [{ type: "benefit-card" }]`. The key stays literally unchanged
+  // ("benefit-card") so existing published Beneficios instances keep working.
+  "benefit-card": BenefitCard as React.ComponentType<Record<string, unknown>>,
 };
 
 // Block settings schemas keyed by block type.
@@ -128,6 +149,7 @@ export const blockSettingsSchemas: Record<
   "social-link": socialLinkSettingsSchema,
   "store-badge": storeBadgeSettingsSchema,
   "_blog-card": blogCardSettingsSchema,
+  "benefit-card": benefitCardSettingsSchema,
 };
 
 // Per-section block config: which blocks each section accepts.
@@ -250,18 +272,14 @@ export const sectionBlocksConfig: Record<
     ],
   },
   "beneficios": {
-    // ONE ordered slot, ONE section-local block type (D-06): benefit-card is
-    // exclusive to Beneficios and is NOT registered in the global block maps.
+    // ONE ordered slot referencing the PROMOTED global `benefit-card` (quick
+    // task 260706-qqi). benefit-card is no longer exclusive to Beneficios — it
+    // is now a shared global block (registered in blocksComponents /
+    // blockSettingsSchemas above), reused by the new `beneficios-grid`
+    // section too, so the per-section local declaration is redundant and has
+    // been removed. `blocks`/`maxBlocks` stay unchanged.
     blocks: [{ type: "benefit-card" }],
     maxBlocks: 6,
-    localBlocks: [
-      {
-        type: "benefit-card",
-        name: "Beneficio",
-        component: BenefitCard as React.ComponentType<Record<string, unknown>>,
-        settings: benefitCardSettingsSchema,
-      },
-    ],
   },
   "descarga-app": {
     // SHARED block reuse (D-05): the app-store badge row accepts the global
@@ -389,6 +407,42 @@ export const sectionBlocksConfig: Record<
       },
     ],
   },
-  // nosotros-hero and nosotros-mission are NO-BLOCK sections (Pattern 4 — no
-  // sectionBlocksConfig entry), exactly like article-body / blog-hero.
+  "beneficios-grid": {
+    // SHARED block reuse (quick task 260706-qqi): the BeneficiosGrid slot
+    // reuses the promoted global `benefit-card` block — no localBlocks key at
+    // all, same pattern as `blog-list` referencing `_blog-card`.
+    blocks: [{ type: "benefit-card" }],
+    maxBlocks: 8,
+  },
+  "app-features": {
+    // ONE ordered slot, ONE section-local block type: app-feature-item is
+    // exclusive to AppFeatures and is NOT registered in the global block maps.
+    blocks: [{ type: "app-feature-item" }],
+    maxBlocks: 6,
+    localBlocks: [
+      {
+        type: "app-feature-item",
+        name: "Función de la app",
+        component: AppFeatureItem as React.ComponentType<Record<string, unknown>>,
+        settings: appFeatureItemSettingsSchema,
+      },
+    ],
+  },
+  "lista-regalos": {
+    // ONE ordered slot, ONE section-local block type: gift-step is exclusive
+    // to ListaRegalos and is NOT registered in the global block maps.
+    blocks: [{ type: "gift-step" }],
+    maxBlocks: 3,
+    localBlocks: [
+      {
+        type: "gift-step",
+        name: "Paso",
+        component: GiftStep as React.ComponentType<Record<string, unknown>>,
+        settings: giftStepSettingsSchema,
+      },
+    ],
+  },
+  // nosotros-hero, nosotros-mission, and plan-referimiento are NO-BLOCK
+  // sections (Pattern 4 — no sectionBlocksConfig entry), exactly like
+  // article-body / blog-hero.
 };

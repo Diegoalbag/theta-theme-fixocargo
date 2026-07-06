@@ -54,26 +54,35 @@ const NO_BLOCK_SECTIONS = new Set<string>([
   // contenido" placeholder. Exempt the EmptyState marker, not the no-throw.
   "nosotros-hero",
   "nosotros-mission",
+  // plan-referimiento (quick task 260706-qqi) has no child-block slot at all
+  // (Pattern 4 — no sectionBlocksConfig entry): a fixed 2-card, settings-only
+  // layout. It never renders the default EmptyState marker.
+  "plan-referimiento",
 ]);
 
 // The EmptyState marker string content sections fall through to at published
 // zero (src/lib/empty-state.tsx default heading).
 const EMPTY_STATE_MARKER = "Sin elementos";
 
-// Build the FULL block-component census. blocksComponents now holds THREE
-// shared/global blocks (social-link, store-badge, _blog-card); the other 11
-// components live section-local under sectionBlocksConfig[key].localBlocks[].
-// component. Walking blocksComponents alone would cover 3 of 14 — we MUST
+// Build the FULL block-component census. blocksComponents now holds FOUR
+// shared/global blocks (social-link, store-badge, _blog-card, benefit-card);
+// the rest live section-local under sectionBlocksConfig[key].localBlocks[].
+// component. Walking blocksComponents alone would miss most of them — we MUST
 // flatMap localBlocks to reach hero-slide, address-card, tool-pill,
-// service-item, promo-banner, benefit-card, branch, faq-pill, blog-card,
-// nav-link, footer-column.
+// service-item, promo-banner, branch, faq-pill, blog-card, nav-link,
+// footer-column, stat-item, value-card, timeline-item, faq-item,
+// app-feature-item, gift-step.
 // (promo-banner is DEPRECATED — Servicios no longer OFFERS it and drives the
 // right rail via section settings — but its localBlock config is retained for
 // back-compat with legacy instances, so it is still in this census.
 // blog-card was PROMOTED (08-02) to the private global `_blog-card`, so the
 // same component now appears once in blocksComponents (as `_blog-card`) AND
 // once section-local in blogs.localBlocks (the deprecated `blog-card`
-// back-compat alias) — net +1 block versus the pre-promotion census.)
+// back-compat alias) — net +1 block versus the pre-promotion census.
+// benefit-card was PROMOTED (quick task 260706-qqi) to the true global
+// `benefit-card` (no `_` prefix — it is a normal, freely-offerable content
+// block); Beneficios' section-local declaration was removed, so unlike
+// blog-card there is no local back-compat alias left for it.)
 const localBlockEntries: Array<
   [string, React.ComponentType<Record<string, unknown>>]
 > = Object.values(sectionBlocksConfig).flatMap((cfg) =>
@@ -113,15 +122,27 @@ const sectionEntries = Object.entries(sectionsComponents);
 // normal content section (NOT chrome, NOT no-block), so it stays OUT of
 // CHROME_NULL_EMPTY and NO_BLOCK_SECTIONS and MUST fall through to the "Sin
 // elementos" assertion in the zero-block loop (Faq keeps the default EmptyState).
-// If the live registry ever diverges from 21/18, reconcile these guards to the
+// Quick task 260706-qqi (+4 sections / +2 net blocks): adds the FixoCargo
+// "Beneficios" page — beneficiosGrid, appFeatures, planReferimiento,
+// listaRegalos → 25 sections. beneficios-grid, app-features, and
+// lista-regalos are normal content sections (NOT chrome, NOT no-block) and
+// fall through to the "Sin elementos" assertion; plan-referimiento has no
+// child-block slot at all and is added to NO_BLOCK_SECTIONS. On the block
+// side, `benefit-card` is PROMOTED from section-local (beneficios) to a true
+// global (blocksComponents now holds 4: social-link, store-badge,
+// _blog-card, benefit-card) — Beneficios' own local declaration is removed
+// (-1 local), while app-feature-item and gift-step are added as new
+// section-local blocks (+2 local) → net local 15-1+2=16, plus the 4 global =
+// 20 total blocks.
+// If the live registry ever diverges from 25/20, reconcile these guards to the
 // TRUE count with a comment — never delete a guard, never weaken a loop.
 describe("empty-state matrix — drift guards (census)", () => {
-  it("collects exactly 21 sections", () => {
-    expect(sectionEntries.length).toBe(21);
+  it("collects exactly 25 sections", () => {
+    expect(sectionEntries.length).toBe(25);
   });
 
-  it("collects exactly 18 block components (3 global + 15 section-local)", () => {
-    expect(allBlocks.length).toBe(18);
+  it("collects exactly 20 block components (4 global + 16 section-local)", () => {
+    expect(allBlocks.length).toBe(20);
   });
 });
 
