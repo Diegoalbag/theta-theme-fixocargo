@@ -42,9 +42,11 @@ function schemaDefaults(
   );
 }
 
-// Build the negative-assertion target at runtime so the substring is
-// unambiguous (mirrors the FaqPill/Branch empty-href precedent): the components
-// draw every rail/divider coordinate-free, so "absolute" must never appear.
+// Build the assertion target at runtime so the substring is unambiguous
+// (mirrors the FaqPill/Branch empty-href precedent). Most rails/dividers stay
+// coordinate-free so "absolute" must not appear — EXCEPT the TimelineItem dot,
+// which is intentionally an absolute in-card node in the user-directed overlay
+// redesign (see its test below), so that proof asserts the opposite.
 const ABSOLUTE = "abso" + "lute";
 
 describe("NosotrosHero", () => {
@@ -308,20 +310,21 @@ describe("NosotrosTimeline", () => {
     expect(html).toContain("border-l-2");
     expect(html).toContain("border-dotted");
     expect(html).toContain("border-brand-yellow");
-    // NOTE: the section now embeds an ImageGuard banner, whose sanctioned
-    // `absolute inset-0` overlay legitimately introduces "absolute" (see the
-    // static-audit allow-list). The connector rail itself stays coordinate-free
-    // (border/flex only) and the TimelineItem dot proof still bans "absolute".
+    // NOTE: in the user-directed overlay redesign the dotted connector is an
+    // absolute overlay drawn over the cards (left-6/top-8/bottom-28) and the
+    // banner ImageGuard also uses `absolute inset-0`, so "absolute" legitimately
+    // appears at the section level. This proof only pins the dotted-rail classes
+    // (border-l-2 / border-dotted / border-brand-yellow).
   });
 
-  it("lays the rail and banner in a responsive 2-column row (timeline left, image right)", () => {
+  it("lays the rail and banner in equal 50/50 columns (timeline left, image right)", () => {
     const html = renderToStaticMarkup(
       <NosotrosTimeline renderBlocks={() => [<span key="a">child</span>]} />,
     );
     expect(html).toContain("lg:flex-row");
-    expect(html).toContain("lg:w-3/5");
-    expect(html).toContain("lg:w-2/5");
-    // Banner is an ImageGuard: with bannerImage unset it shows the placeholder.
+    // Equal-width columns (user-directed: timeline + banner share the space).
+    expect(html).toContain("lg:w-1/2");
+    // Banner is a fill-mode ImageGuard: with bannerImage unset it shows the placeholder.
     expect(html).toContain("Agrega una imagen");
     expect(html).toContain("rounded-3xl");
   });
@@ -350,10 +353,13 @@ describe("NosotrosTimeline", () => {
 });
 
 describe("TimelineItem", () => {
-  it("renders the default year and no absolute positioning", () => {
+  it("renders the default year with the dot as an absolute in-card node", () => {
     const html = renderToStaticMarkup(<TimelineItem />);
     expect(html).toContain("HOY");
-    expect(html).not.toContain(ABSOLUTE);
+    // The dot is an absolute node inside the card (user-directed overlay
+    // redesign; supersedes the original coordinate-free NOS-05 dot marker).
+    expect(html).toContain(ABSOLUTE);
+    expect(html).toContain("bg-brand-yellow");
   });
 
   it("timelineItemSettingsSchema has 3 entries [year,title,body]", () => {
