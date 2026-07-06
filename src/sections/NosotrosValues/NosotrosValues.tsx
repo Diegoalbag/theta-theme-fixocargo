@@ -9,9 +9,9 @@ import { BlocksSlot } from "@/lib/blocks-slot";
 // empty={null}) so a zero-card section shows "Sin elementos" instead of a blank
 // gap (D-04). Layout lives on the wrapper className only, never on the slot.
 //
-// The header is inline (NOT SectionHeading) because SectionHeading bakes
-// font-aku and a non-yellow eyebrow; UI-SPEC wants a font-display italic title
-// and a text-brand-yellow eyebrow (RESEARCH Pitfall 2).
+// The header is inline (NOT SectionHeading) because SectionHeading bakes a
+// non-yellow eyebrow; this wants a font-aku italic title and a
+// text-brand-yellow eyebrow (RESEARCH Pitfall 2).
 //
 // No state, no event handlers, no hex literals, @/ imports only.
 export interface NosotrosValuesProps {
@@ -37,7 +37,7 @@ export const NosotrosValues = ({
             </p>
           )}
           {heading && (
-            <h2 className="font-display italic text-brand-navy text-3xl lg:text-5xl">
+            <h2 className="font-aku italic text-brand-navy text-3xl lg:text-5xl">
               {heading}
             </h2>
           )}

@@ -71,7 +71,8 @@ export const NosotrosHero = ({
 }: NosotrosHeroProps): React.ReactNode => {
   // Badge visibility (D-03): only when the toggle is on AND at least one badge
   // field carries copy — never a bare navy chip.
-  const badgeVisible = showBadge && (Boolean(badgeNumber) || Boolean(badgeLabel));
+  const badgeVisible =
+    showBadge && (Boolean(badgeNumber) || Boolean(badgeLabel));
 
   // Full-bleed background mode (image-conditional). Truthy url → hero treatment
   // + white text over a dark overlay; falsy → the original bg-background design.
@@ -88,7 +89,7 @@ export const NosotrosHero = ({
     : "container mx-auto container-padding-x";
   const headingClassName = hasBg
     ? "font-aku font-bold text-white text-4xl md:text-6xl lg:text-8xl"
-    : "font-display italic text-brand-navy text-3xl lg:text-5xl leading-tight";
+    : "font-aku italic text-brand-navy text-3xl lg:text-5xl leading-tight";
   const subtitleClassName = hasBg
     ? "font-gill text-white text-lg md:text-2xl"
     : "font-gill text-lg text-muted-foreground max-w-xl";
@@ -119,25 +120,21 @@ export const NosotrosHero = ({
               </p>
             ) : null}
 
-            {heading ? (
-              <h1 className={headingClassName}>{heading}</h1>
-            ) : null}
+            {heading ? <h1 className={headingClassName}>{heading}</h1> : null}
 
-            {subtitle ? (
-              <p className={subtitleClassName}>{subtitle}</p>
-            ) : null}
+            {subtitle ? <p className={subtitleClassName}>{subtitle}</p> : null}
 
             {/* CTA row — each anchor rendered ONLY when its label is non-empty
                 (T-09-04: no empty-href anchors). */}
             {primaryCtaLabel || secondaryCtaLabel ? (
               <div className="flex flex-wrap items-center gap-4">
                 {primaryCtaLabel ? (
-                  <Button variant="pill" asChild>
+                  <Button size="lg" variant="pill" asChild>
                     <a href={primaryCtaUrl || "#"}>{primaryCtaLabel}</a>
                   </Button>
                 ) : null}
                 {secondaryCtaLabel ? (
-                  <Button variant="pill-outline" asChild>
+                  <Button size="lg" variant="pill-outline" asChild>
                     <a href={secondaryCtaUrl || "#"}>{secondaryCtaLabel}</a>
                   </Button>
                 ) : null}
@@ -147,7 +144,7 @@ export const NosotrosHero = ({
 
           {/* Image column — the team-image card. ImageGuard paints the dashed
               "Agrega una imagen" placeholder when no url is set. */}
-          <div className="flex flex-col gap-4 lg:flex-1">
+          <div className="relative flex flex-col gap-4 lg:flex-1">
             <div className="relative rounded-3xl overflow-hidden bg-card shadow-lg">
               <ImageGuard
                 url={teamImage?.url}
@@ -159,10 +156,10 @@ export const NosotrosHero = ({
             {/* Experience badge (D-03) — in normal flow at the card's lower edge
                 via flex, NOT absolute coordinates. */}
             {badgeVisible ? (
-              <div className="flex">
-                <div className="rounded-2xl bg-brand-navy px-5 py-4 flex items-center gap-3">
+              <div className="flex absolute -left-7 bottom-10">
+                <div className="rounded-2xl max-w-3xs bg-brand-navy px-5 py-4 flex justify-between items-center gap-3">
                   {badgeNumber ? (
-                    <span className="font-display italic text-brand-yellow text-4xl leading-none">
+                    <span className="font-aku italic text-brand-yellow text-4xl leading-none">
                       {badgeNumber}
                     </span>
                   ) : null}

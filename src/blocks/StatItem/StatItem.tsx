@@ -17,7 +17,7 @@ export const StatItem = ({
 }: StatItemProps): React.ReactNode => {
   return (
     <div className="flex flex-col items-center justify-center gap-2 px-5 text-center">
-      <span className="font-display italic text-brand-yellow text-4xl lg:text-6xl leading-none">
+      <span className="font-aku italic text-brand-yellow text-4xl lg:text-6xl leading-none">
         {number}
       </span>
       <span className="font-gotham font-bold text-sm tracking-wide text-white">

@@ -65,7 +65,7 @@ export const ValueCard = ({
       </IconChip>
 
       {title && (
-        <h3 className="font-gotham font-bold text-xl text-brand-navy mb-3">
+        <h3 className="uppercase font-gotham font-bold text-xl text-brand-navy mb-3">
           {title}
         </h3>
       )}

@@ -33,7 +33,7 @@ export const NosotrosMission = ({
           {/* Heading column — omitted entirely when empty. */}
           <div>
             {heading ? (
-              <h2 className="heading-lg font-gotham font-bold text-brand-navy">
+              <h2 className="heading-lg font-gotham font-bold uppercase text-brand-navy">
                 {heading}
               </h2>
             ) : null}

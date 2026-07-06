@@ -37,14 +37,14 @@ export const NosotrosStats = ({
           </p>
         )}
         {heading && (
-          <h2 className="font-display italic text-white text-3xl lg:text-5xl">
+          <h2 className="font-aku italic text-white text-3xl lg:text-5xl">
             {heading}
           </h2>
         )}
 
         <BlocksSlot
           renderBlocks={renderBlocks}
-          className="mt-8 flex flex-col divide-y divide-white/12 sm:flex-row sm:divide-y-0 [&>*:not(:first-child)]:sm:border-l [&>*:not(:first-child)]:sm:border-white/12"
+          className="flex flex-col justify-between divide-y divide-white/12 sm:flex-row sm:divide-y-0 [&>*:not(:first-child)]:sm:border-l [&>*:not(:first-child)]:sm:border-white/12"
         />
       </div>
     </section>

@@ -23,7 +23,7 @@ const buttonVariants = cva(
         pill: "rounded-full bg-brand-yellow text-brand-navy h-11 px-6 hover:bg-brand-yellow/90",
         navy: "rounded-full bg-brand-navy text-white h-11 px-6 hover:bg-brand-navy/90",
         "pill-outline":
-          "rounded-full border border-brand-navy text-brand-navy h-11 px-6 hover:bg-brand-navy/5",
+          "rounded-full border border-brand-yellow text-brand-yellow h-11 px-6 hover:bg-brand-yellow/5",
         // ToolsBar quick-action pill (D-08): full-width yellow pill with a navy
         // gotham-bold label and a trailing navy IconChip. Pair with `size="tool"`
         // for its tall responsive height — the height MUST live on the size axis
