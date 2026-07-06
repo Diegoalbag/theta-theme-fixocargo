@@ -19,6 +19,7 @@ import { NosotrosMission, nosotrosMissionSettingsSchema } from "./sections/Nosot
 import { NosotrosStats, nosotrosStatsSettingsSchema } from "./sections/NosotrosStats";
 import { NosotrosValues, nosotrosValuesSettingsSchema } from "./sections/NosotrosValues";
 import { NosotrosTimeline, nosotrosTimelineSettingsSchema } from "./sections/NosotrosTimeline";
+import { Faq, faqSettingsSchema } from "./sections/Faq";
 import { HeroSlide, heroSlideSettingsSchema } from "./blocks/HeroSlide";
 import { Branch, branchSettingsSchema } from "./blocks/Branch";
 import { FaqPill, faqPillSettingsSchema } from "./blocks/FaqPill";
@@ -35,6 +36,7 @@ import { FooterColumn, footerColumnSettingsSchema } from "./blocks/FooterColumn"
 import { StatItem, statItemSettingsSchema } from "./blocks/StatItem";
 import { ValueCard, valueCardSettingsSchema } from "./blocks/ValueCard";
 import { TimelineItem, timelineItemSettingsSchema } from "./blocks/TimelineItem";
+import { FaqItem, faqItemSettingsSchema } from "./blocks/FaqItem";
 
 // ---------------------------------------------------------------------------
 // The registry is the heart of a theme. Five maps, all keyed by the same
@@ -67,6 +69,7 @@ export const sectionsComponents: Record<
   "nosotros-stats": NosotrosStats as React.ComponentType<Record<string, unknown>>,
   "nosotros-values": NosotrosValues as React.ComponentType<Record<string, unknown>>,
   "nosotros-timeline": NosotrosTimeline as React.ComponentType<Record<string, unknown>>,
+  "faq": Faq as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
@@ -91,6 +94,7 @@ export const sectionSettingsSchemas = {
   "nosotros-stats": nosotrosStatsSettingsSchema,
   "nosotros-values": nosotrosValuesSettingsSchema,
   "nosotros-timeline": nosotrosTimelineSettingsSchema,
+  "faq": faqSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).
@@ -366,6 +370,22 @@ export const sectionBlocksConfig: Record<
         name: "Hito",
         component: TimelineItem as React.ComponentType<Record<string, unknown>>,
         settings: timelineItemSettingsSchema,
+      },
+    ],
+  },
+  "faq": {
+    // ONE ordered slot, ONE section-local block type (D-07): faq-item is
+    // exclusive to Faq and is NOT registered in the global block maps. Cap 12
+    // mirrors nosotros-timeline for a long repeating Q&A list (faq-pill uses 8
+    // for a compact pill row; a full Q&A list warrants the higher cap).
+    blocks: [{ type: "faq-item" }],
+    maxBlocks: 12,
+    localBlocks: [
+      {
+        type: "faq-item",
+        name: "Pregunta frecuente",
+        component: FaqItem as React.ComponentType<Record<string, unknown>>,
+        settings: faqItemSettingsSchema,
       },
     ],
   },
