@@ -69,7 +69,7 @@ export const NosotrosTimeline = ({
         </div>
 
         <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-12">
-          <div className="relative lg:w-3/5">
+          <div className="relative lg:w-1/2">
             <div
               aria-hidden="true"
               className="pointer-events-none absolute left-6 top-8 bottom-28 z-10 border-l-2 border-dotted border-brand-yellow"
@@ -79,7 +79,7 @@ export const NosotrosTimeline = ({
               className="flex flex-col gap-4"
             />
           </div>
-          <div className="lg:w-2/5">
+          <div className="lg:w-1/2">
             <div className="overflow-hidden rounded-3xl bg-card shadow-lg">
               <ImageGuard
                 url={bannerImage?.url}
