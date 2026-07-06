@@ -1,6 +1,7 @@
 import * as React from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, MessageCircleQuestionMark } from "lucide-react";
 
+import { IconChip } from "@/components/ui/icon-chip";
 import { RichText } from "@/lib/rich-text";
 
 // FaqItem — section-local block for the Faq band. A no-JS native
@@ -37,13 +38,29 @@ export const FaqItem = ({
     <details
       name="faq"
       open={isExpanded}
-      className="group rounded-2xl border border-border bg-card shadow-sm px-6 py-4"
+      // `<summary>` MUST stay a direct child of `<details>` for the native
+      // disclosure toggle to work, so the open-state accent border can't live
+      // on a wrapping descendant (that would require `group-open:`, which only
+      // matches descendants of an open `.group`, never the group element
+      // itself). Instead this uses Tailwind's `open:` variant, which targets
+      // the element's OWN `[open]` attribute directly — no wrapper needed.
+      className="group rounded-2xl border-2 border-transparent bg-card shadow-sm px-6 py-4 transition-colors open:border-brand-yellow"
     >
       <summary className="list-none cursor-pointer flex items-center justify-between gap-4 [&::-webkit-details-marker]:hidden marker:content-['']">
-        <span className="font-gotham font-bold text-brand-navy">{question}</span>
+        <span className="flex items-center gap-4">
+          <IconChip background="navy" size="md">
+            <MessageCircleQuestionMark
+              aria-hidden="true"
+              className="text-brand-yellow"
+            />
+          </IconChip>
+          <span className="font-gotham font-bold text-brand-navy">
+            {question}
+          </span>
+        </span>
         <ChevronDown
           aria-hidden="true"
-          className="size-5 text-brand-navy transition-transform group-open:rotate-180"
+          className="size-5 text-brand-navy transition-transform group-open:rotate-180 group-open:text-brand-yellow"
         />
       </summary>
 
