@@ -326,19 +326,31 @@
 
 /* Blaze appends one <button> per slide into .blaze-pagination; the active dot
  * gets the `active` class. Styled as the design's dot row (brand-yellow active,
- * outline inactive). */
+ * outline inactive). The button itself is an invisible >=24x24px tappable hit
+ * area (target-size audit); the visual 14x14px dot lives on ::before so the
+ * on-screen appearance is unchanged. */
 .blaze-pagination button {
-  width: 14px;
-  height: 14px;
+  width: 24px;
+  height: 24px;
   padding: 0;
-  border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  border: none;
   background: transparent;
   font-size: 0;
   line-height: 0;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.blaze-pagination button.active {
+.blaze-pagination button::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: transparent;
+}
+.blaze-pagination button.active::before {
   background: var(--brand-yellow);
   border-color: var(--brand-yellow);
 }
