@@ -285,6 +285,24 @@ function isMetaobjectRef(val: unknown): val is { type: "metaobject_ref"; value: 
 }
 
 /**
+ * Type predicate for an image-typed field value: `{ type: "image", value: ... }`
+ * where `value` is either a bare numeric/string id (id-only, not yet hydrated with
+ * a url) or an `{ id, url, formats? }` object.
+ */
+function isImageTypedValue(
+  val: unknown
+): val is {
+  type: "image";
+  value: { id?: number | string | null; url?: string | null; formats?: unknown } | number | string | null;
+} {
+  return (
+    typeof val === "object" &&
+    val !== null &&
+    (val as Record<string, unknown>).type === "image"
+  );
+}
+
+/**
  * Normalize a single metaobject entry field value.
  * Image fields are stored in Strapi as stringified JSON (e.g. '{"id":15,"url":"..."}').
  * This parses them back to objects so the theme receives clean, ready-to-use data.
@@ -336,6 +354,29 @@ function resolveRefsInData(
     }
   }
   return resolved;
+}
+
+// Batched formats lookup (D-01): Strapi's GraphQL plugin auto-exposes
+// `plugin::upload.file`'s pluralName `files` as query `uploadFiles` (confirmed via
+// @strapi/plugin-graphql's naming builder — getFindQueryName = lowerFirst(pluralTypeName)
+// = `uploadFiles`). Collector logic (collectImageIds/mergeImageFormats) depends only
+// on the RESPONSE shape `{ id, formats }`, not this query name.
+const getUploadFilesFormatsQuery = gql`
+  query GetUploadFilesFormats($ids: [ID!]) {
+    uploadFiles(filters: { id: { in: $ids } }) {
+      id
+      formats
+    }
+  }
+`;
+
+interface UploadFileFormatsEntry {
+  id: string | number;
+  formats?: unknown;
+}
+
+interface UploadFilesFormatsResponse {
+  uploadFiles: UploadFileFormatsEntry[];
 }
 
 /**
@@ -457,6 +498,140 @@ function resolveDynamicSources(page: StrapiPage): StrapiPage {
 }
 
 /**
+ * Collect every distinct numeric image id referenced anywhere in a page — walks
+ * the SAME three sources resolvePageMetaobjectRefs walks (sections, blocks per
+ * section, page.metafields), deduped via a Set. Bare numeric/string ids (no url
+ * yet) and `{id,url}` object values are both collected. Used to batch-fetch
+ * `formats` for every image field in ONE query (D-01) instead of per-field.
+ */
+export function collectImageIds(page: StrapiPage): number[] {
+  const ids = new Set<number>();
+
+  function collectFrom(data: Record<string, unknown> | undefined | null): void {
+    for (const val of Object.values(data ?? {})) {
+      if (!isImageTypedValue(val)) continue;
+      const raw =
+        typeof val.value === "number" || typeof val.value === "string"
+          ? val.value
+          : val.value?.id;
+      const numericId = typeof raw === "string" ? Number(raw) : raw;
+      if (typeof numericId === "number" && !Number.isNaN(numericId)) {
+        ids.add(numericId);
+      }
+    }
+  }
+
+  const template = singlePageTemplate(page);
+  for (const section of template?.sections ?? []) {
+    collectFrom(section.data);
+    for (const block of section.blocks ?? []) {
+      collectFrom(block.data);
+    }
+  }
+  collectFrom(page.metafields);
+
+  return [...ids];
+}
+
+/**
+ * Immutably merge resolved `formats` INTO each image-typed value's existing
+ * `{id,url}` wrapper (value.formats) — writes ONLY `formats`, never touches
+ * `id`/`url`. Walks the SAME shape collectImageIds walks (sections, blocks,
+ * metafields). An id absent from `formatsById` is left completely UNCHANGED (no
+ * `formats` key added, no throw) — this is the fail-open behavior for
+ * deleted/stale file ids.
+ */
+export function mergeImageFormats(
+  page: StrapiPage,
+  formatsById: Map<number, unknown>
+): StrapiPage {
+  function mergeValue(val: unknown): unknown {
+    if (!isImageTypedValue(val)) return val;
+    const raw =
+      typeof val.value === "number" || typeof val.value === "string"
+        ? val.value
+        : val.value?.id;
+    const numericId = typeof raw === "string" ? Number(raw) : raw;
+    if (typeof numericId !== "number" || Number.isNaN(numericId) || !formatsById.has(numericId)) {
+      return val;
+    }
+    const existingValue =
+      typeof val.value === "number" || typeof val.value === "string"
+        ? { id: val.value }
+        : val.value;
+    return {
+      ...val,
+      value: { ...existingValue, formats: formatsById.get(numericId) },
+    };
+  }
+
+  function mergeData(
+    data: Record<string, unknown> | undefined | null
+  ): Record<string, unknown> {
+    const result: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(data ?? {})) {
+      result[key] = mergeValue(val);
+    }
+    return result;
+  }
+
+  const template = singlePageTemplate(page);
+
+  return {
+    ...page,
+    metafields: page.metafields ? mergeData(page.metafields) : page.metafields,
+    page_template: template
+      ? {
+          ...template,
+          sections: (template.sections ?? []).map((section) => ({
+            ...section,
+            data: mergeData(section.data),
+            blocks: (section.blocks ?? []).map((block) => ({
+              ...block,
+              data: mergeData(block.data),
+            })),
+          })),
+        }
+      : page.page_template,
+  };
+}
+
+/**
+ * Resolve real Strapi `formats` onto every image field in a page, FRESH at READ
+ * time (D-01) — MUST NOT be persisted into the saved data JSON blob at customizer
+ * save time (grep-confirmed: strapiAdapter.ts/puckAdapter.ts only ever write
+ * `{id,url}`), so a later Strapi-side backfill (Plan 07) is picked up without any
+ * customizer re-save. Skips the network round-trip entirely when the page has no
+ * image fields. Fails open on any network error (matches every other network call
+ * in this file): logs via console.warn and returns the page UNCHANGED.
+ */
+export async function resolveImageFormats(page: StrapiPage): Promise<StrapiPage> {
+  const ids = collectImageIds(page);
+  if (ids.length === 0) return page;
+
+  try {
+    const response = await strapiClient.request<UploadFilesFormatsResponse>(
+      getUploadFilesFormatsQuery,
+      { ids }
+    );
+    const formatsById = new Map<number, unknown>();
+    for (const file of response.uploadFiles ?? []) {
+      if (file.formats == null) continue;
+      const numericId = typeof file.id === "number" ? file.id : Number(file.id);
+      if (Number.isNaN(numericId)) continue;
+      formatsById.set(numericId, file.formats);
+    }
+    return mergeImageFormats(page, formatsById);
+  } catch (error) {
+    console.warn(
+      "Failed to resolve image formats from Strapi:",
+      error instanceof Error ? error.message : String(error)
+    );
+    return page;
+  }
+}
+
+/**
  * Fetch the Site singleton's liveTheme pointer (D-04). Returns the live theme's
  * documentId / name / builtAssetUrl, or null when unset (D-09 ambiguous tenant) or
  * unconfigured. Read-only path: uses the public NEXT_PUBLIC_STRAPI_TOKEN (V4).
@@ -529,7 +704,7 @@ export const fetchPageBySlug = cache(async (slug: string): Promise<StrapiPage | 
         : [];
       const page: StrapiPage = { ...rawPage, page_template: templates[0] ?? null };
       const withResolvedRefs = await resolvePageMetaobjectRefs(page);
-      return resolveDynamicSources(withResolvedRefs);
+      return resolveImageFormats(resolveDynamicSources(withResolvedRefs));
     }
 
     let response: StrapiPagesResponse;
@@ -560,7 +735,7 @@ export const fetchPageBySlug = cache(async (slug: string): Promise<StrapiPage | 
     if (!page) return null;
 
     const withResolvedRefs = await resolvePageMetaobjectRefs(page);
-    return resolveDynamicSources(withResolvedRefs);
+    return resolveImageFormats(resolveDynamicSources(withResolvedRefs));
   } catch (error) {
     console.error(`Failed to fetch page with slug "${slug}" from Strapi:`, error);
     // During build time, return null instead of throwing to allow build to continue

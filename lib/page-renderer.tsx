@@ -109,6 +109,13 @@ interface PageRendererProps {
    * server-stylesheet path in app/[slug]/page.tsx and older callers that pass it.
    */
   themeCssUrl?: string;
+  /**
+   * Optional URL for the non-blocking DEFERRED CSS chunk (theme.bundle.deferred.css,
+   * D-05/D-06/D-07). Loaded via a second, isolated `<link precedence="theme-deferred">`
+   * AFTER mount so it never competes with the critical `precedence="theme"` stylesheet
+   * for render-blocking priority.
+   */
+  themeCssDeferredUrl?: string;
 }
 
 /**
@@ -121,7 +128,13 @@ interface PageRendererProps {
  * content), and theme state is seeded from the loader cache so client-side
  * navigations paint instantly.
  */
-export function PageRenderer({ page, themeBundleUrl, themeName, themeCssUrl }: PageRendererProps) {
+export function PageRenderer({
+  page,
+  themeBundleUrl,
+  themeName,
+  themeCssUrl,
+  themeCssDeferredUrl,
+}: PageRendererProps) {
   // Seed from the loader cache synchronously so an already-loaded theme (e.g. a
   // client-side navigation between pages) renders on the first paint with no flash.
   const [themeModule, setThemeModule] = useState<LoadedThemeModule | null>(() =>
@@ -147,6 +160,28 @@ export function PageRenderer({ page, themeBundleUrl, themeName, themeCssUrl }: P
       data-theme-stylesheet={themeName}
     />
   ) : null;
+
+  // Deferred (non-blocking, `theme-deferred` precedence) theme stylesheet
+  // (D-05/D-06/D-07, RESEARCH Pitfall 2 mitigation, T-11-13). This is an ISOLATED
+  // useState/useEffect pair — deliberately NOT merged into the themeModule/loading/
+  // error state above — so React 19's "wait for a newly-introduced stylesheet to
+  // load before committing" behavior is scoped to only this no-op render, never
+  // stalling the actual theme load/render sequence.
+  const [deferredReady, setDeferredReady] = useState(false);
+  useEffect(() => {
+    const ric =
+      (window as any).requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 0));
+    const id = ric(() => setDeferredReady(true));
+    return () => (window as any).cancelIdleCallback?.(id);
+  }, []);
+  // `precedence="theme-deferred"` is a DIFFERENT precedence than the critical
+  // stylesheet's `precedence="theme"` — React 19 only orders stylesheets within
+  // the same precedence group, so this deferred link never gets hoisted ahead of
+  // (or blocks) the critical `theme` stylesheet. Emitted, as a sibling of
+  // {themeStylesheet}, in EVERY render branch below (loading / error / main) so it
+  // starts loading regardless of whether the theme bundle has finished loading —
+  // deduped by React (by href) across the loading -> loaded transition, same as
+  // {themeStylesheet}.
 
   useEffect(() => {
     // Check cache first
@@ -177,6 +212,14 @@ export function PageRenderer({ page, themeBundleUrl, themeName, themeCssUrl }: P
     return (
       <>
         {themeStylesheet}
+        {deferredReady && themeCssDeferredUrl && (
+          <link
+            rel="stylesheet"
+            href={themeCssDeferredUrl}
+            precedence="theme-deferred"
+            data-theme-stylesheet-deferred={themeName}
+          />
+        )}
         <link rel="preload" as="script" href={themeBundleUrl} crossOrigin="anonymous" />
         <div className="min-h-screen" aria-hidden="true" />
       </>
@@ -187,6 +230,14 @@ export function PageRenderer({ page, themeBundleUrl, themeName, themeCssUrl }: P
     return (
       <>
         {themeStylesheet}
+        {deferredReady && themeCssDeferredUrl && (
+          <link
+            rel="stylesheet"
+            href={themeCssDeferredUrl}
+            precedence="theme-deferred"
+            data-theme-stylesheet-deferred={themeName}
+          />
+        )}
         <div className="flex min-h-screen items-center justify-center">
           <div className="text-center">
             <p className="text-lg font-semibold text-destructive">Error loading theme</p>
@@ -211,6 +262,14 @@ export function PageRenderer({ page, themeBundleUrl, themeName, themeCssUrl }: P
   return (
     <>
       {themeStylesheet}
+      {deferredReady && themeCssDeferredUrl && (
+        <link
+          rel="stylesheet"
+          href={themeCssDeferredUrl}
+          precedence="theme-deferred"
+          data-theme-stylesheet-deferred={themeName}
+        />
+      )}
       <div className="min-h-screen">
         {sortedSections.map((section, index) => {
         const resolvedKey = getSectionComponentKey(

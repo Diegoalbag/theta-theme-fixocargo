@@ -23,6 +23,7 @@ if (process.env.NEXT_PUBLIC_STRAPI_URL) {
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  productionBrowserSourceMaps: true,
   images: {
     remotePatterns,
   },
