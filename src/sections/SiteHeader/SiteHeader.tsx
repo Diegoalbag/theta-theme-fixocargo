@@ -73,6 +73,10 @@ export const SiteHeader = ({
             <img
               src={logo.url}
               alt={logo.alt ?? ""}
+              width={logo.width ?? 200}
+              height={logo.height ?? 40}
+              loading="lazy"
+              decoding="async"
               className="h-10 w-auto object-contain"
             />
           ) : (

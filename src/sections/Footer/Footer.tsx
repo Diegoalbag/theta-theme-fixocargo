@@ -55,6 +55,10 @@ export const Footer = ({
               <img
                 src={logo.url}
                 alt={logo.alt ?? "FixoCargo"}
+                width={logo.width ?? 270}
+                height={logo.height ?? 54}
+                loading="lazy"
+                decoding="async"
                 className="h-[54px] w-auto object-contain"
               />
             ) : (
