@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { GraphQLClient } from "graphql-request";
 import { gql } from "graphql-request";
 import { resolvePageForLiveTheme } from "./live-resolve";
@@ -459,8 +460,13 @@ function resolveDynamicSources(page: StrapiPage): StrapiPage {
  * Fetch the Site singleton's liveTheme pointer (D-04). Returns the live theme's
  * documentId / name / builtAssetUrl, or null when unset (D-09 ambiguous tenant) or
  * unconfigured. Read-only path: uses the public NEXT_PUBLIC_STRAPI_TOKEN (V4).
+ *
+ * Wrapped in React `cache()` so the multiple call sites that need this per request
+ * (generateMetadata's fetchPageBySlug, Page()'s fetchPageBySlug, Page()'s explicit
+ * resolveLiveBundle call) share ONE network round-trip instead of 3 — request-scoped
+ * only, so "always fetch fresh data" across requests is unaffected.
  */
-export async function fetchSite(): Promise<StrapiSite | null> {
+export const fetchSite = cache(async (): Promise<StrapiSite | null> => {
   if (!graphqlEndpoint) {
     console.warn("Strapi GraphQL endpoint not configured. Cannot fetch site.");
     return null;
@@ -474,7 +480,7 @@ export async function fetchSite(): Promise<StrapiSite | null> {
     // Build-time-safe: never throw, let callers fall back to env.
     return null;
   }
-}
+});
 
 /**
  * Fetch a single page by slug, resolved STRICTLY through Site.liveTheme (D-04/MT-04).
@@ -488,8 +494,13 @@ export async function fetchSite(): Promise<StrapiSite | null> {
  * honoring the inline relation filter (A2). If the filtered query outright errors on
  * the inline filter syntax, we fall back to the unfiltered query and let the JS
  * resolver pick the bound template.
+ *
+ * Wrapped in React `cache()` so generateMetadata and Page() — which both need this
+ * per request for the same slug — share ONE round-trip (site + page query [+
+ * metaobject refs]) instead of running the whole chain twice. Request-scoped only:
+ * a new request still fetches fully fresh data from Strapi.
  */
-export async function fetchPageBySlug(slug: string): Promise<StrapiPage | null> {
+export const fetchPageBySlug = cache(async (slug: string): Promise<StrapiPage | null> => {
   if (!graphqlEndpoint) {
     console.warn("Strapi GraphQL endpoint not configured. Cannot fetch page.");
     return null;
@@ -559,4 +570,4 @@ export async function fetchPageBySlug(slug: string): Promise<StrapiPage | null> 
     }
     return null;
   }
-}
+});
