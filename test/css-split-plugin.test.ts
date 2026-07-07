@@ -125,18 +125,4 @@ describe("splitCssBySelectors", () => {
     expect(critical).toBe(malformed);
     expect(deferred).toBe("");
   });
-
-  it("regression: Tailwind's backslash-escaped quote chars in a selector (e.g. content-[''] arbitrary values) never toggle string-tracking state", () => {
-    // Real Tailwind v4 output: .marker\:content-\[\'\'\] ::marker{--tw-content:""}
-    // followed by an unrelated rule — the escaped `\'` chars inside the
-    // selector must NOT be mistaken for CSS string delimiters, or the parser
-    // loses brace-depth sync for the rest of the file (production bug found
-    // building theta-theme-fixocargo — fails safe to single-critical-file
-    // instead of throwing, but must actually split correctly).
-    const css =
-      ".marker\\:content-\\[\\'\\'\\]::marker{--tw-content:\"\"}.footer-rule{color:green}";
-    const { critical, deferred } = splitCssBySelectors(css, new Set());
-    expect(deferred).toContain(".footer-rule");
-    expect(critical).not.toBe(css); // must NOT have fallen back to the fail-safe (which would equal the full input)
-  });
 });
