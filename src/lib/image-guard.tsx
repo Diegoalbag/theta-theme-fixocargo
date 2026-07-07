@@ -1,6 +1,7 @@
 import type React from "react";
 
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { buildSrcSet, type ImageFormats } from "@/lib/image-srcset";
 
 export interface ImageGuardProps {
   url?: string | null;
@@ -10,6 +11,7 @@ export interface ImageGuardProps {
   className?: string;
   width?: number;
   height?: number;
+  formats?: ImageFormats | null;
 }
 
 // Renders an <img> when a url is present, otherwise a neutral placeholder box
@@ -29,14 +31,18 @@ export const ImageGuard = ({
   className,
   width,
   height,
+  formats,
 }: ImageGuardProps): React.ReactNode => {
   if (fill) {
+    const { srcSet, sizes } = buildSrcSet(formats, "100vw");
     return url ? (
       <img
         src={url}
         alt={alt}
         width={width}
         height={height}
+        srcSet={srcSet}
+        sizes={sizes}
         loading="lazy"
         decoding="async"
         className={`absolute inset-0 h-full w-full rounded-2xl object-cover ${className ?? ""}`}
@@ -48,6 +54,7 @@ export const ImageGuard = ({
     );
   }
 
+  const { srcSet, sizes } = buildSrcSet(formats, undefined);
   return (
     <AspectRatio ratio={ratio}>
       {url ? (
@@ -56,6 +63,8 @@ export const ImageGuard = ({
           alt={alt}
           width={width}
           height={height}
+          srcSet={srcSet}
+          sizes={sizes}
           loading="lazy"
           decoding="async"
           className={`absolute inset-0 h-full w-full rounded-2xl object-contain ${className ?? ""}`}
