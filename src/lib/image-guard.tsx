@@ -8,6 +8,8 @@ export interface ImageGuardProps {
   ratio?: number;
   fill?: boolean;
   className?: string;
+  width?: number;
+  height?: number;
 }
 
 // Renders an <img> when a url is present, otherwise a neutral placeholder box
@@ -25,16 +27,22 @@ export const ImageGuard = ({
   ratio = 16 / 9,
   fill = false,
   className,
+  width,
+  height,
 }: ImageGuardProps): React.ReactNode => {
   if (fill) {
     return url ? (
       <img
         src={url}
         alt={alt}
+        width={width}
+        height={height}
+        loading="lazy"
+        decoding="async"
         className={`absolute inset-0 h-full w-full rounded-2xl object-cover ${className ?? ""}`}
       />
     ) : (
-      <div className="bg-secondary text-muted-foreground absolute inset-0 flex items-center justify-center rounded-2xl border-2 border-dashed border-border text-sm">
+      <div className="bg-secondary text-secondary-foreground absolute inset-0 flex items-center justify-center rounded-2xl border-2 border-dashed border-border text-sm">
         Agrega una imagen
       </div>
     );
@@ -46,10 +54,14 @@ export const ImageGuard = ({
         <img
           src={url}
           alt={alt}
+          width={width}
+          height={height}
+          loading="lazy"
+          decoding="async"
           className={`absolute inset-0 h-full w-full rounded-2xl object-contain ${className ?? ""}`}
         />
       ) : (
-        <div className="bg-secondary text-muted-foreground absolute inset-0 flex items-center justify-center rounded-2xl border-2 border-dashed border-border text-sm">
+        <div className="bg-secondary text-secondary-foreground absolute inset-0 flex items-center justify-center rounded-2xl border-2 border-dashed border-border text-sm">
           Agrega una imagen
         </div>
       )}
