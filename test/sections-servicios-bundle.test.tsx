@@ -65,10 +65,56 @@ describe("ServiciosHero", () => {
     expect(html).not.toContain("Sin elementos");
   });
 
-  it("serviciosHeroSettingsSchema has exactly 7 entries", () => {
-    expect(serviciosHeroSettingsSchema).toHaveLength(7);
+  it("without backgroundImage: renders bg-brand-navy on the section and NO <img> tag", () => {
+    const html = renderToStaticMarkup(<ServiciosHero />);
+    expect(html).toContain("bg-brand-navy");
+    expect(html).not.toContain("<img");
+  });
+
+  it("with backgroundImage: renders a full-bleed <img> + bg-black/50 overlay behind content, section becomes relative overflow-hidden", () => {
+    const html = renderToStaticMarkup(
+      <ServiciosHero
+        backgroundImage={{
+          id: "1",
+          url: "https://example.com/bg.jpg",
+          alt: "Flota",
+          width: 1600,
+          height: 900,
+        }}
+      />,
+    );
+    expect(html).toContain('src="https://example.com/bg.jpg"');
+    expect(html).toContain("object-cover");
+    expect(html).toContain("bg-black/50");
+    expect(html).toContain("relative overflow-hidden");
+    // img + overlay must appear BEFORE the container div (behind content in paint order)
+    const imgIndex = html.indexOf("<img");
+    const containerIndex = html.indexOf("container");
+    expect(imgIndex).toBeGreaterThan(-1);
+    expect(imgIndex).toBeLessThan(containerIndex);
+  });
+
+  it("with backgroundImage: existing text/tile classes never flip (no color change)", () => {
+    const html = renderToStaticMarkup(
+      <ServiciosHero
+        backgroundImage={{
+          id: "1",
+          url: "https://example.com/bg.jpg",
+          alt: "Flota",
+        }}
+      />,
+    );
+    expect(html).toContain("text-brand-yellow");
+    expect(html).toContain("text-white");
+    expect(html).toContain("bg-brand-yellow");
+    expect(html).toContain("bg-white/5");
+  });
+
+  it("serviciosHeroSettingsSchema has exactly 8 entries with backgroundImage first", () => {
+    expect(serviciosHeroSettingsSchema).toHaveLength(8);
     const ids = serviciosHeroSettingsSchema.map((s) => s.id);
     expect(ids).toEqual([
+      "backgroundImage",
       "kicker",
       "headline",
       "body",
@@ -77,6 +123,11 @@ describe("ServiciosHero", () => {
       "secondaryCtaLabel",
       "secondaryCtaUrl",
     ]);
+    const bgSetting = serviciosHeroSettingsSchema.find(
+      (s) => s.id === "backgroundImage",
+    );
+    expect(bgSetting?.type).toBe("image_picker");
+    expect(bgSetting?.label).toBe("Imagen de fondo");
   });
 });
 
