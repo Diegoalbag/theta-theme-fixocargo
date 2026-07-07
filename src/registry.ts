@@ -43,6 +43,12 @@ import { PlanReferimiento, planReferimientoSettingsSchema } from "./sections/Pla
 import { ListaRegalos, listaRegalosSettingsSchema } from "./sections/ListaRegalos";
 import { AppFeatureItem, appFeatureItemSettingsSchema } from "./blocks/AppFeatureItem";
 import { GiftStep, giftStepSettingsSchema } from "./blocks/GiftStep";
+import { ServiciosHero, serviciosHeroSettingsSchema } from "./sections/ServiciosHero";
+import { ServiciosList, serviciosListSettingsSchema } from "./sections/ServiciosList";
+import { ProcesoEnvio, procesoEnvioSettingsSchema } from "./sections/ProcesoEnvio";
+import { ServiciosCta, serviciosCtaSettingsSchema } from "./sections/ServiciosCta";
+import { ServiceCard, serviceCardSettingsSchema } from "./blocks/ServiceCard";
+import { ProcessStep, processStepSettingsSchema } from "./blocks/ProcessStep";
 
 // ---------------------------------------------------------------------------
 // The registry is the heart of a theme. Five maps, all keyed by the same
@@ -80,6 +86,10 @@ export const sectionsComponents: Record<
   "app-features": AppFeatures as React.ComponentType<Record<string, unknown>>,
   "plan-referimiento": PlanReferimiento as React.ComponentType<Record<string, unknown>>,
   "lista-regalos": ListaRegalos as React.ComponentType<Record<string, unknown>>,
+  "servicios-hero": ServiciosHero as React.ComponentType<Record<string, unknown>>,
+  "servicios-list": ServiciosList as React.ComponentType<Record<string, unknown>>,
+  "proceso-envio": ProcesoEnvio as React.ComponentType<Record<string, unknown>>,
+  "servicios-cta": ServiciosCta as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
@@ -109,6 +119,10 @@ export const sectionSettingsSchemas = {
   "app-features": appFeaturesSettingsSchema,
   "plan-referimiento": planReferimientoSettingsSchema,
   "lista-regalos": listaRegalosSettingsSchema,
+  "servicios-hero": serviciosHeroSettingsSchema,
+  "servicios-list": serviciosListSettingsSchema,
+  "proceso-envio": procesoEnvioSettingsSchema,
+  "servicios-cta": serviciosCtaSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).
@@ -442,7 +456,41 @@ export const sectionBlocksConfig: Record<
       },
     ],
   },
-  // nosotros-hero, nosotros-mission, and plan-referimiento are NO-BLOCK
-  // sections (Pattern 4 — no sectionBlocksConfig entry), exactly like
-  // article-body / blog-hero.
+  "servicios-list": {
+    // ONE ordered slot, ONE section-local block type: service-card is
+    // exclusive to ServiciosList and is NOT registered in the global block
+    // maps.
+    blocks: [{ type: "service-card" }],
+    maxBlocks: 6,
+    localBlocks: [
+      {
+        type: "service-card",
+        name: "Servicio",
+        component: ServiceCard as React.ComponentType<Record<string, unknown>>,
+        settings: serviceCardSettingsSchema,
+      },
+    ],
+  },
+  "proceso-envio": {
+    // ONE ordered slot, ONE section-local block type: process-step is
+    // exclusive to ProcesoEnvio and is NOT registered in the global block
+    // maps. maxBlocks is capped at exactly 4 — the section's connector
+    // overlay and 4-column grid are tuned for a single non-wrapping row,
+    // matching the design's fixed 4-step flow.
+    blocks: [{ type: "process-step" }],
+    maxBlocks: 4,
+    localBlocks: [
+      {
+        type: "process-step",
+        name: "Paso",
+        component: ProcessStep as React.ComponentType<Record<string, unknown>>,
+        settings: processStepSettingsSchema,
+      },
+    ],
+  },
+  // nosotros-hero, nosotros-mission, plan-referimiento, servicios-hero, and
+  // servicios-cta are NO-BLOCK sections (Pattern 4 — no sectionBlocksConfig
+  // entry), exactly like article-body / blog-hero. servicios-hero's 4 tiles
+  // are fixed decorative JSX; servicios-cta's 2 banners are settings-driven
+  // via the reused PromoBanner block — neither has a child-block slot.
 };

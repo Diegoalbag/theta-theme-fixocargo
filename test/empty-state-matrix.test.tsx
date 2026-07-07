@@ -58,6 +58,13 @@ const NO_BLOCK_SECTIONS = new Set<string>([
   // (Pattern 4 — no sectionBlocksConfig entry): a fixed 2-card, settings-only
   // layout. It never renders the default EmptyState marker.
   "plan-referimiento",
+  // servicios-hero and servicios-cta (quick task 260707-etz) have no
+  // child-block slot at all (Pattern 4 — no sectionBlocksConfig entry):
+  // servicios-hero's 4 icon tiles are fixed decorative JSX, servicios-cta's
+  // 2 promo banners are settings-driven via the reused PromoBanner block.
+  // Neither ever renders the default EmptyState marker.
+  "servicios-hero",
+  "servicios-cta",
 ]);
 
 // The EmptyState marker string content sections fall through to at published
@@ -71,7 +78,7 @@ const EMPTY_STATE_MARKER = "Sin elementos";
 // flatMap localBlocks to reach hero-slide, address-card, tool-pill,
 // service-item, promo-banner, branch, faq-pill, blog-card, nav-link,
 // footer-column, stat-item, value-card, timeline-item, faq-item,
-// app-feature-item, gift-step.
+// app-feature-item, gift-step, service-card, process-step.
 // (promo-banner is DEPRECATED — Servicios no longer OFFERS it and drives the
 // right rail via section settings — but its localBlock config is retained for
 // back-compat with legacy instances, so it is still in this census.
@@ -134,15 +141,25 @@ const sectionEntries = Object.entries(sectionsComponents);
 // (-1 local), while app-feature-item and gift-step are added as new
 // section-local blocks (+2 local) → net local 15-1+2=16, plus the 4 global =
 // 20 total blocks.
-// If the live registry ever diverges from 25/20, reconcile these guards to the
+// Quick task 260707-etz (+4 sections / +2 local blocks): adds the FixoCargo
+// "Servicios" page bundle — servicios-hero, servicios-list, proceso-envio,
+// servicios-cta → 29 sections. servicios-list and proceso-envio are normal
+// content sections (NOT chrome, NOT no-block) and fall through to the "Sin
+// elementos" assertion; servicios-hero and servicios-cta have no
+// child-block slot at all and are added to NO_BLOCK_SECTIONS. On the block
+// side, service-card (servicios-list) and process-step (proceso-envio) are
+// new section-local-only blocks (never promoted to the global maps) → net
+// local 16+2=18, plus the 4 global = 22 total blocks.
+//
+// If the live registry ever diverges from 29/22, reconcile these guards to the
 // TRUE count with a comment — never delete a guard, never weaken a loop.
 describe("empty-state matrix — drift guards (census)", () => {
-  it("collects exactly 25 sections", () => {
-    expect(sectionEntries.length).toBe(25);
+  it("collects exactly 29 sections", () => {
+    expect(sectionEntries.length).toBe(29);
   });
 
-  it("collects exactly 20 block components (4 global + 16 section-local)", () => {
-    expect(allBlocks.length).toBe(20);
+  it("collects exactly 22 block components (4 global + 18 section-local)", () => {
+    expect(allBlocks.length).toBe(22);
   });
 });
 
