@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
+import { buildSrcSet, type ImageFormats } from "@/lib/image-srcset";
 
 // HeroSlide — section-local block for the Hero (ATF-01) Blaze Slider carousel.
 // Blaze sizes each slide to the full track width via `.blaze-track > *`, so the
@@ -20,6 +21,7 @@ export interface HeroSlideProps {
     alt?: string;
     width?: number;
     height?: number;
+    formats?: ImageFormats | null;
   };
   heading?: string;
   subtitle?: string;
@@ -36,6 +38,7 @@ export const HeroSlide = ({
   ctaLabel,
   ctaUrl,
 }: HeroSlideProps): React.ReactNode => {
+  const { srcSet, sizes } = buildSrcSet(backgroundImage?.formats, "100vw");
   return (
     <article className="relative flex items-center overflow-hidden min-h-[30vh] md:min-h-[560px]">
       {/* Full-bleed per-slide background — url-guard (RESEARCH Pattern 2, D-04).
@@ -47,6 +50,8 @@ export const HeroSlide = ({
           alt={backgroundImage.alt ?? ""}
           width={backgroundImage.width}
           height={backgroundImage.height}
+          srcSet={srcSet}
+          sizes={sizes}
           loading="eager"
           fetchPriority="high"
           decoding="async"

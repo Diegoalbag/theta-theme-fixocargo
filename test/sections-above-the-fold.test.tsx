@@ -124,6 +124,30 @@ describe("HeroSlide", () => {
       "ctaUrl",
     ]);
   });
+
+  // Plan 04 (D-01): background image emits srcset/sizes when formats data is present.
+  it("renders a srcset attribute on the background image when backgroundImage.formats is supplied", () => {
+    const html = renderToStaticMarkup(
+      <HeroSlide
+        backgroundImage={{
+          id: "x",
+          url: "https://e/x.jpg",
+          formats: { large: { url: "https://e/x-large.jpg", width: 1000 } },
+        }}
+      />,
+    );
+    // React 19's renderToStaticMarkup emits the literal `srcSet` prop casing
+    // (never lowercased to `srcset`) — HTML attribute names are
+    // case-insensitive to a real browser, so match case-insensitively here.
+    expect(html).toMatch(/srcset=/i);
+  });
+
+  it("renders no srcset attribute on the background image when formats is omitted", () => {
+    const html = renderToStaticMarkup(
+      <HeroSlide backgroundImage={{ id: "x", url: "https://e/x.jpg" }} />,
+    );
+    expect(html).not.toMatch(/srcset=/i);
+  });
 });
 
 describe("DireccionCards", () => {

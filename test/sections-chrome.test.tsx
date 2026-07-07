@@ -124,6 +124,30 @@ describe("SiteHeader", () => {
     const ids = siteHeaderSettingsSchema.map((s) => s.id);
     expect(ids).toEqual(["logo", "accountLabel", "accountUrl"]);
   });
+
+  // Plan 04 (D-01): logo emits srcset/sizes when formats data is present.
+  it("renders a srcset attribute on the logo when logo.formats is supplied", () => {
+    const html = renderToStaticMarkup(
+      <SiteHeader
+        logo={{
+          id: "1",
+          url: "/logo.png",
+          formats: { small: { url: "/logo-small.png", width: 200 } },
+        }}
+      />,
+    );
+    // React 19's renderToStaticMarkup emits the literal `srcSet` prop casing
+    // (never lowercased to `srcset`) — HTML attribute names are
+    // case-insensitive to a real browser, so match case-insensitively here.
+    expect(html).toMatch(/srcset=/i);
+  });
+
+  it("renders no srcset attribute on the logo when formats is omitted", () => {
+    const html = renderToStaticMarkup(
+      <SiteHeader logo={{ id: "1", url: "/logo.png" }} />,
+    );
+    expect(html).not.toMatch(/srcset=/i);
+  });
 });
 
 describe("Footer", () => {
@@ -172,5 +196,29 @@ describe("Footer", () => {
       "privacyLabel",
       "privacyUrl",
     ]);
+  });
+
+  // Plan 04 (D-01): logo emits srcset/sizes when formats data is present.
+  it("renders a srcset attribute on the logo when logo.formats is supplied", () => {
+    const html = renderToStaticMarkup(
+      <Footer
+        logo={{
+          id: "1",
+          url: "/logo.png",
+          formats: { small: { url: "/logo-small.png", width: 270 } },
+        }}
+      />,
+    );
+    // React 19's renderToStaticMarkup emits the literal `srcSet` prop casing
+    // (never lowercased to `srcset`) — HTML attribute names are
+    // case-insensitive to a real browser, so match case-insensitively here.
+    expect(html).toMatch(/srcset=/i);
+  });
+
+  it("renders no srcset attribute on the logo when formats is omitted", () => {
+    const html = renderToStaticMarkup(
+      <Footer logo={{ id: "1", url: "/logo.png" }} />,
+    );
+    expect(html).not.toMatch(/srcset=/i);
   });
 });

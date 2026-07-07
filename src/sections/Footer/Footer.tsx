@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import { BlocksSlot } from "@/lib/blocks-slot";
+import { buildSrcSet, type ImageFormats } from "@/lib/image-srcset";
 
 // Footer (CHR-03) — site-wide footer with logo, mixed blocks band, and legal row.
 //
@@ -24,6 +25,7 @@ export interface FooterProps {
     alt?: string;
     width?: number;
     height?: number;
+    formats?: ImageFormats | null;
   };
   copyright?: string;
   termsLabel?: string;
@@ -44,6 +46,7 @@ export const Footer = ({
   privacyUrl,
   renderBlocks,
 }: FooterProps): React.ReactNode => {
+  const { srcSet, sizes } = buildSrcSet(logo?.formats, "270px");
   return (
     <footer className="bg-brand-navy text-white">
       <div className="container mx-auto container-padding-x py-10 lg:py-14">
@@ -57,6 +60,8 @@ export const Footer = ({
                 alt={logo.alt ?? "FixoCargo"}
                 width={logo.width ?? 270}
                 height={logo.height ?? 54}
+                srcSet={srcSet}
+                sizes={sizes}
                 loading="lazy"
                 decoding="async"
                 className="h-[54px] w-auto object-contain"
