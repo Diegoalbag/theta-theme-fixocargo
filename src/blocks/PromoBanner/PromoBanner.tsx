@@ -41,6 +41,10 @@ export const PromoBanner = ({
         <img
           src={backgroundImage.url}
           alt={backgroundImage.alt ?? ""}
+          width={backgroundImage.width}
+          height={backgroundImage.height}
+          loading="lazy"
+          decoding="async"
           className="absolute inset-0 h-full w-full object-cover"
         />
       ) : (

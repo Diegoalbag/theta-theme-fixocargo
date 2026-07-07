@@ -61,6 +61,10 @@ export const DescargaApp = ({
         <img
           src={backgroundImage.url}
           alt={backgroundImage.alt ?? ""}
+          width={backgroundImage.width}
+          height={backgroundImage.height}
+          loading="lazy"
+          decoding="async"
           className="absolute inset-0 h-full w-full object-cover"
         />
       ) : (
@@ -101,6 +105,8 @@ export const DescargaApp = ({
                 url={phoneImage1?.url}
                 alt={phoneImage1?.alt ?? ""}
                 ratio={9 / 16}
+                width={phoneImage1?.width}
+                height={phoneImage1?.height}
               />
             </div>
             <div className="w-40 md:w-56 lg:w-64">
@@ -109,6 +115,8 @@ export const DescargaApp = ({
                 url={phoneImage2?.url}
                 alt={phoneImage2?.alt ?? ""}
                 ratio={9 / 16}
+                width={phoneImage2?.width}
+                height={phoneImage2?.height}
               />
             </div>
           </div>

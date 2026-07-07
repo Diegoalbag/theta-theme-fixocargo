@@ -104,6 +104,10 @@ export const NosotrosHero = ({
           <img
             src={backgroundImage!.url}
             alt={backgroundImage?.alt ?? ""}
+            width={backgroundImage?.width}
+            height={backgroundImage?.height}
+            loading="lazy"
+            decoding="async"
             className="absolute inset-0 h-full w-full object-cover"
           />
           <div aria-hidden className="absolute inset-0 bg-black/50" />
@@ -150,6 +154,8 @@ export const NosotrosHero = ({
                 url={teamImage?.url}
                 alt={teamImage?.alt}
                 ratio={760 / 900}
+                width={teamImage?.width}
+                height={teamImage?.height}
               />
             </div>
 
