@@ -13,8 +13,24 @@ import { Button } from "@/components/ui/button";
 // — a locked decision, never props-driven and never a block slot. Passing
 // arbitrary/unrelated props never changes or removes them.
 //
+// OPTIONAL full-bleed background (quick task 260707-kpz, mirrors the
+// NosotrosHero pattern): when `backgroundImage.url` is set, a full-bleed
+// object-cover <img> plus a bg-black/50 overlay paint BEHIND the existing
+// content (which stacks above via a `relative` container). Unlike
+// NosotrosHero, ServiciosHero's text/tile colors NEVER flip — this section is
+// already dark (bg-brand-navy, white/yellow text) by default, so every
+// existing class stays exactly as-is in both modes. When unset, the section
+// renders byte-identical to its original solid bg-brand-navy design.
+//
 // No state, no event handlers, no hex literals, @/ imports only.
 export interface ServiciosHeroProps {
+  backgroundImage?: {
+    id: string;
+    url?: string;
+    alt?: string;
+    width?: number;
+    height?: number;
+  };
   kicker?: string;
   headline?: string;
   body?: string;
@@ -56,6 +72,7 @@ const HeroServiceTile = ({
 };
 
 export const ServiciosHero = ({
+  backgroundImage,
   kicker = "Courier en República Dominicana",
   headline = "Nuestros Servicios",
   body = "Del pick up en Estados Unidos a la entrega en tu puerta: carga aérea y marítima, gestión aduanal, exportación e importación desde Europa. Todo lo que necesitas para mover tu mercancía, en un solo lugar.",
@@ -64,9 +81,39 @@ export const ServiciosHero = ({
   secondaryCtaLabel = "Cotiza tu envío",
   secondaryCtaUrl = "#",
 }: ServiciosHeroProps): React.ReactNode => {
+  // Full-bleed background mode (image-conditional). Truthy url → image +
+  // overlay behind content; falsy → the original solid bg-brand-navy design.
+  // NOTE: unlike NosotrosHero, no text/tile color class ever changes here —
+  // ServiciosHero is already dark by default in both modes.
+  const hasBg = Boolean(backgroundImage?.url);
+  const sectionClassName = hasBg
+    ? "relative overflow-hidden section-padding-y"
+    : "bg-brand-navy section-padding-y";
+  const containerClassName = hasBg
+    ? "container relative mx-auto container-padding-x"
+    : "container mx-auto container-padding-x";
+
   return (
-    <section className="bg-brand-navy section-padding-y">
-      <div className="container mx-auto container-padding-x">
+    <section className={sectionClassName}>
+      {/* Full-bleed hero background (mirrors NosotrosHero): object-cover
+          <img> + fixed ~50% dark overlay, both BEHIND the content. Rendered
+          only when a background image url is set. */}
+      {hasBg ? (
+        <>
+          <img
+            src={backgroundImage!.url}
+            alt={backgroundImage?.alt ?? ""}
+            width={backgroundImage?.width}
+            height={backgroundImage?.height}
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div aria-hidden className="absolute inset-0 bg-black/50" />
+        </>
+      ) : null}
+
+      <div className={containerClassName}>
         <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
           <div className="flex flex-col items-start gap-6">
             {kicker && (
@@ -114,9 +161,17 @@ export const ServiciosHero = ({
   );
 };
 
-// Exactly 7 editable fields, ids → camelCase props. The 4 icon tiles above are
-// literal JSX — never props-driven, never listed here.
+// Exactly 8 editable fields, ids → camelCase props. `backgroundImage` (first,
+// image_picker, optional) toggles the full-bleed background; when unset the
+// section keeps its original solid bg-brand-navy design untouched. The 4
+// icon tiles above are literal JSX — never props-driven, never listed here.
 export const serviciosHeroSettingsSchema = [
+  {
+    id: "backgroundImage",
+    label: "Imagen de fondo",
+    type: "image_picker",
+    default: undefined,
+  },
   {
     id: "kicker",
     label: "Etiqueta superior",
