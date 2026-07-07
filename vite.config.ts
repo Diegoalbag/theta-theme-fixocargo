@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'path';
 import { readFileSync } from 'node:fs';
+import { createCssSplitPlugin } from './vite-plugins/css-split';
 
 const pkg = JSON.parse(readFileSync(resolve(__dirname, "package.json"), "utf-8"));
 
@@ -14,6 +15,15 @@ const iifeGlobalName = pkg.name
   .filter(Boolean)
   .map((s: string) => s.charAt(0).toUpperCase() + s.slice(1))
   .join("");
+
+// Phase 11 Plan 05 (D-05/D-06/D-07): sections/blocks whose styles ship
+// SYNCHRONOUSLY in theme.bundle.css (critical) rather than the async-loaded
+// theme.bundle.deferred.css. Keys must match src/registry.ts's
+// sectionsComponents/blocksComponents kebab-case keys exactly. This is a
+// GENERIC, copyable convention — any theme author marks their own first-
+// viewport sections here; the platform's loading logic (page-renderer.tsx /
+// app/[slug]/page.tsx) treats every theme's split identically.
+const criticalSections = ["site-header", "hero", "hero-slide"];
 
 export default defineConfig({
   define: {
@@ -29,6 +39,7 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    createCssSplitPlugin({ criticalSections }),
   ],
   resolve: {
     alias: {

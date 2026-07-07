@@ -106,11 +106,16 @@ function findMatchingBrace(text: string, openIndex: number): number {
   let inString: string | null = null;
   while (i < text.length) {
     const ch = text[i];
+    // A backslash always escapes the following character — both inside a CSS
+    // string AND outside one (Tailwind emits selectors like
+    // `.marker\:content-\[\'\'\]` where `\'` is an escaped literal quote
+    // character in the SELECTOR, not a string delimiter). Consume both chars
+    // universally so an escaped quote never toggles string-tracking state.
+    if (ch === "\\") {
+      i += 2;
+      continue;
+    }
     if (inString) {
-      if (ch === "\\") {
-        i += 2;
-        continue;
-      }
       if (ch === inString) inString = null;
       i++;
       continue;
@@ -127,7 +132,9 @@ function findMatchingBrace(text: string, openIndex: number): number {
     }
     i++;
   }
-  throw new Error("splitCssBySelectors: unbalanced braces");
+  throw new Error(
+    `splitCssBySelectors: unbalanced braces starting at ${openIndex}: ${text.slice(openIndex, openIndex + 80)}`,
+  );
 }
 
 /** Splits `text` into top-level CSS statements (brace-blocks or `;`-terminated). */
@@ -138,11 +145,12 @@ function parseTopLevelStatements(text: string): CssStatement[] {
   let inString: string | null = null;
   while (i < text.length) {
     const ch = text[i];
+    // See findMatchingBrace: a backslash escapes the following char universally.
+    if (ch === "\\") {
+      i += 2;
+      continue;
+    }
     if (inString) {
-      if (ch === "\\") {
-        i += 2;
-        continue;
-      }
       if (ch === inString) inString = null;
       i++;
       continue;
