@@ -49,6 +49,12 @@ import { ProcesoEnvio, procesoEnvioSettingsSchema } from "./sections/ProcesoEnvi
 import { ServiciosCta, serviciosCtaSettingsSchema } from "./sections/ServiciosCta";
 import { ServiceCard, serviceCardSettingsSchema } from "./blocks/ServiceCard";
 import { ProcessStep, processStepSettingsSchema } from "./blocks/ProcessStep";
+import { Fixolidario, fixolidarioSettingsSchema } from "./sections/Fixolidario";
+import {
+  FranquiciasInternacionales,
+  franquiciasInternacionalesSettingsSchema,
+} from "./sections/FranquiciasInternacionales";
+import { PartnerCard, partnerCardSettingsSchema } from "./blocks/PartnerCard";
 
 // ---------------------------------------------------------------------------
 // The registry is the heart of a theme. Five maps, all keyed by the same
@@ -90,6 +96,8 @@ export const sectionsComponents: Record<
   "servicios-list": ServiciosList as React.ComponentType<Record<string, unknown>>,
   "proceso-envio": ProcesoEnvio as React.ComponentType<Record<string, unknown>>,
   "servicios-cta": ServiciosCta as React.ComponentType<Record<string, unknown>>,
+  "fixolidario": Fixolidario as React.ComponentType<Record<string, unknown>>,
+  "franquicias-internacionales": FranquiciasInternacionales as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
@@ -123,6 +131,8 @@ export const sectionSettingsSchemas = {
   "servicios-list": serviciosListSettingsSchema,
   "proceso-envio": procesoEnvioSettingsSchema,
   "servicios-cta": serviciosCtaSettingsSchema,
+  "fixolidario": fixolidarioSettingsSchema,
+  "franquicias-internacionales": franquiciasInternacionalesSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).
@@ -488,9 +498,31 @@ export const sectionBlocksConfig: Record<
       },
     ],
   },
-  // nosotros-hero, nosotros-mission, plan-referimiento, servicios-hero, and
-  // servicios-cta are NO-BLOCK sections (Pattern 4 — no sectionBlocksConfig
-  // entry), exactly like article-body / blog-hero. servicios-hero's 4 tiles
-  // are fixed decorative JSX; servicios-cta's 2 banners are settings-driven
-  // via the reused PromoBanner block — neither has a child-block slot.
+  "fixolidario": {
+    // ONE ordered slot, ONE section-local block type: partner-card is
+    // exclusive to Fixolidario and is NOT registered in the global block
+    // maps. maxBlocks 8 (double the 4 shown in the mockup) gives room to add
+    // partners beyond the default set, consistent with the open-ended
+    // repeating-list precedent (servicios-list caps at 6, sucursales/
+    // servicios cap at 8) rather than proceso-envio's exactly-4 fixed-flow
+    // precedent.
+    blocks: [{ type: "partner-card" }],
+    maxBlocks: 8,
+    localBlocks: [
+      {
+        type: "partner-card",
+        name: "Aliado",
+        component: PartnerCard as React.ComponentType<Record<string, unknown>>,
+        settings: partnerCardSettingsSchema,
+      },
+    ],
+  },
+  // nosotros-hero, nosotros-mission, plan-referimiento, servicios-hero,
+  // servicios-cta, and franquicias-internacionales are NO-BLOCK sections
+  // (Pattern 4 — no sectionBlocksConfig entry), exactly like article-body /
+  // blog-hero. servicios-hero's 4 tiles are fixed decorative JSX;
+  // servicios-cta's 2 banners are settings-driven via the reused PromoBanner
+  // block; franquicias-internacionales' offer/why lists are flat settings
+  // fields with fixed decorative icons — none of them has a child-block
+  // slot.
 };
