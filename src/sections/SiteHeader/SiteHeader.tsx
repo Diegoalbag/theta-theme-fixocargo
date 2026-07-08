@@ -34,6 +34,7 @@ export interface SiteHeaderProps {
     height?: number;
     formats?: ImageFormats | null;
   };
+  logoUrl?: string;
   accountLabel?: string;
   accountUrl?: string;
   renderBlocks?: () => React.ReactNode;
@@ -43,6 +44,7 @@ export interface SiteHeaderProps {
 
 export const SiteHeader = ({
   logo,
+  logoUrl,
   accountLabel,
   accountUrl,
   renderBlocks,
@@ -73,17 +75,19 @@ export const SiteHeader = ({
         {/* Logo */}
         <div className="shrink-0">
           {logo?.url ? (
-            <img
-              src={logo.url}
-              alt={logo.alt ?? ""}
-              width={logo.width ?? 200}
-              height={logo.height ?? 40}
-              srcSet={srcSet}
-              sizes={sizes}
-              loading="lazy"
-              decoding="async"
-              className="h-10 w-auto object-contain"
-            />
+            <a href={logoUrl || "/"} className="inline-block">
+              <img
+                src={logo.url}
+                alt={logo.alt ?? ""}
+                width={logo.width ?? 200}
+                height={logo.height ?? 40}
+                srcSet={srcSet}
+                sizes={sizes}
+                loading="lazy"
+                decoding="async"
+                className="h-10 w-auto object-contain"
+              />
+            </a>
           ) : (
             <div className="h-10 w-[120px] rounded border-2 border-dashed border-white/30 flex items-center justify-center text-white/30 text-xs">
               Logo
@@ -140,6 +144,12 @@ export const siteHeaderSettingsSchema = [
     label: "Logo",
     type: "image_picker",
     default: undefined,
+  },
+  {
+    id: "logoUrl",
+    label: "Enlace del logo",
+    type: "url",
+    default: "/",
   },
   {
     id: "accountLabel",

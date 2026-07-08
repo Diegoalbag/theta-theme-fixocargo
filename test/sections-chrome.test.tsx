@@ -116,13 +116,27 @@ describe("SiteHeader", () => {
     expect(html).toContain("Inicio");
   });
 
-  it("siteHeaderSettingsSchema has exactly 3 entries", () => {
-    expect(siteHeaderSettingsSchema).toHaveLength(3);
+  it("siteHeaderSettingsSchema has exactly 4 entries", () => {
+    expect(siteHeaderSettingsSchema).toHaveLength(4);
   });
 
-  it("siteHeaderSettingsSchema ids are logo, accountLabel, accountUrl", () => {
+  it("siteHeaderSettingsSchema ids are logo, logoUrl, accountLabel, accountUrl", () => {
     const ids = siteHeaderSettingsSchema.map((s) => s.id);
-    expect(ids).toEqual(["logo", "accountLabel", "accountUrl"]);
+    expect(ids).toEqual(["logo", "logoUrl", "accountLabel", "accountUrl"]);
+  });
+
+  it("wraps the logo image in a link to logoUrl (defaulting to /)", () => {
+    const html = renderToStaticMarkup(
+      <SiteHeader logo={{ id: "1", url: "/logo.png" }} logoUrl="/inicio" />,
+    );
+    expect(html).toMatch(/<a href="\/inicio"[^>]*><img[^>]*src="\/logo\.png"/);
+  });
+
+  it("defaults the logo link to / when logoUrl is omitted", () => {
+    const html = renderToStaticMarkup(
+      <SiteHeader logo={{ id: "1", url: "/logo.png" }} />,
+    );
+    expect(html).toMatch(/<a href="\/"[^>]*><img/);
   });
 
   // Plan 04 (D-01): logo emits srcset/sizes when formats data is present.
