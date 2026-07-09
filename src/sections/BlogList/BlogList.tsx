@@ -95,7 +95,7 @@ export const BlogList = ({
   const activeIndex = parseInt(activeChip, 10) - 1;
 
   return (
-    <section className="bg-background section-padding-y">
+    <section className="bg-transparent section-padding-y">
       <div className="container mx-auto container-padding-x">
         {/* Optional light heading — rendered only when a heading prop is present
             so an empty header emits no <h2> (BlogHero:57 precedent). */}

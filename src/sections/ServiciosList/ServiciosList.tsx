@@ -26,7 +26,7 @@ export const ServiciosList = ({
   renderBlocks,
 }: ServiciosListProps): React.ReactNode => {
   return (
-    <section className="bg-background section-padding-y">
+    <section className="bg-transparent section-padding-y">
       <div className="container mx-auto container-padding-x">
         <div className="flex flex-col items-start gap-3">
           {eyebrow && (

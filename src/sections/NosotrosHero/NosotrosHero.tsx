@@ -15,7 +15,7 @@ import { ImageGuard } from "@/lib/image-guard";
 // when `backgroundImage.url` is set, a full-bleed object-cover <img> plus a
 // fixed bg-black/50 overlay paint BEHIND the two-column content (which stacks
 // above via a `relative` container), and the heading/subtitle flip to white for
-// legibility. When unset, the section keeps its ORIGINAL `bg-background` design
+// legibility. When unset, the section keeps its transparent background
 // (navy heading, muted subtitle) untouched. The team-image card, experience
 // badge, and CTA guards are identical in both modes.
 //
@@ -75,14 +75,14 @@ export const NosotrosHero = ({
     showBadge && (Boolean(badgeNumber) || Boolean(badgeLabel));
 
   // Full-bleed background mode (image-conditional). Truthy url → hero treatment
-  // + white text over a dark overlay; falsy → the original bg-background design.
+  // + white text over a dark overlay; falsy → the original transparent design.
   const hasBg = Boolean(backgroundImage?.url);
 
   // Image mode mirrors the default hero (HeroSlide): full min-height band with
   // vertically-centered content and the same white heading/subtitle typography.
   const sectionClassName = hasBg
     ? "relative overflow-hidden section-padding-y min-h-[30vh] md:min-h-[560px] flex items-center"
-    : "bg-background section-padding-y";
+    : "bg-transparent section-padding-y";
   // In image mode the container must stack above the overlay (relative).
   const containerClassName = hasBg
     ? "container relative mx-auto container-padding-x"

@@ -122,7 +122,7 @@ export const Sucursales = ({
   });
 
   return (
-    <section ref={rootRef} className="bg-background section-padding-y">
+    <section ref={rootRef} className="bg-transparent section-padding-y">
       <div className="container mx-auto container-padding-x">
         <SectionHeading variant="light" title={heading} subtitle={subtitle} />
 

@@ -30,7 +30,7 @@ export const Blogs = ({
   renderBlocks,
 }: BlogsProps): React.ReactNode => {
   return (
-    <section className="bg-background section-padding-y">
+    <section className="bg-transparent section-padding-y">
       <div className="container mx-auto container-padding-x">
         <SectionHeading
           className="flex flex-col md:flex-row gap-4 justify-between"

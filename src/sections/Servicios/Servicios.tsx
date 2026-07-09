@@ -72,7 +72,7 @@ export const Servicios = ({
   renderBlocks,
 }: ServiciosProps): React.ReactNode => {
   return (
-    <section className="bg-background section-padding-y">
+    <section className="bg-transparent section-padding-y">
       <div className="container mx-auto container-padding-x">
         <SectionHeading
           title={heading ?? "Nuestros Servicios"}

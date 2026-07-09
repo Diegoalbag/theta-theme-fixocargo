@@ -27,7 +27,7 @@ export const NosotrosMission = ({
   body,
 }: NosotrosMissionProps): React.ReactNode => {
   return (
-    <section className="bg-background section-padding-y">
+    <section className="bg-transparent section-padding-y">
       <div className="container mx-auto container-padding-x">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
           {/* Heading column — omitted entirely when empty. */}

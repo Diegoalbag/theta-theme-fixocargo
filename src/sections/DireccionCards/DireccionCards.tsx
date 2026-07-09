@@ -20,7 +20,7 @@ export const DireccionCards = ({
   renderBlocks,
 }: DireccionCardsProps): React.ReactNode => {
   return (
-    <section className="bg-background section-padding-y pb-10">
+    <section className="bg-transparent section-padding-y pb-10">
       <div className="container mx-auto container-padding-x">
         <BlocksSlot
           renderBlocks={renderBlocks}

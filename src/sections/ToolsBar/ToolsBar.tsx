@@ -22,7 +22,7 @@ export const ToolsBar = ({
   renderBlocks,
 }: ToolsBarProps): React.ReactNode => {
   return (
-    <section className="bg-background py-6 md:py-10">
+    <section className="bg-transparent py-6 md:py-10">
       <div className="container mx-auto container-padding-x">
         <BlocksSlot
           renderBlocks={renderBlocks}

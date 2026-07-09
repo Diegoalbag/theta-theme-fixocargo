@@ -29,7 +29,7 @@ export const ArticleBody = ({
   body,
 }: ArticleBodyProps): React.ReactNode => {
   return (
-    <section className="bg-background section-padding-y">
+    <section className="bg-transparent section-padding-y">
       <div className="container mx-auto container-padding-x max-w-3xl">
         {/* Optional heading (D-07) — omitted entirely when empty. */}
         {heading ? (
