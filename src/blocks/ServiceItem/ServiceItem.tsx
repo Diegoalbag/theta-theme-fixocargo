@@ -61,7 +61,7 @@ export const ServiceItem = ({
   const Icon = iconMap[icon] ?? Package;
 
   return (
-    <details open={isExpanded} className="group shadow py-5 px-7 rounded-2xl">
+    <details open={isExpanded} className="group bg-card shadow py-5 px-7 rounded-2xl">
       <summary className="list-none cursor-pointer flex items-center justify-between gap-4 [&::-webkit-details-marker]:hidden marker:content-['']">
         <span className="flex items-center gap-4">
           <IconChip background="navy" size="md">
