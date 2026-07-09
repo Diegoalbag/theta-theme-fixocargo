@@ -124,12 +124,16 @@ export const decorativeBackdropSettingsSchema = [
     id: "horizontalOffset",
     label: "Ajuste horizontal (px)",
     type: "number",
+    min: -1000,
+    max: 1000,
     default: 0,
   },
   {
     id: "widthPx",
     label: "Ancho (px)",
     type: "number",
+    min: 50,
+    max: 2000,
     default: 600,
   },
   {
