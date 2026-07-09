@@ -126,11 +126,11 @@ describe("NosotrosHero", () => {
     expect(html).not.toContain("bg-background");
   });
 
-  it("keeps the original bg-background design (no overlay) when backgroundImage is unset", () => {
+  it("keeps a transparent background (no overlay) when backgroundImage is unset", () => {
     const html = renderToStaticMarkup(
       <NosotrosHero heading="Movemos el mundo a tus manos" subtitle="Somos Fixocargo" />,
     );
-    expect(html).toContain("bg-background");
+    expect(html).toContain("bg-transparent");
     expect(html).toContain("text-brand-navy");
     expect(html).not.toContain("bg-black/50");
   });
