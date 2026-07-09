@@ -2,26 +2,31 @@ import type React from "react";
 
 // DecorativeBackdrop (quick task 260709-buk) — a zero-height, self-anchored,
 // no-block settings-only section that paints an absolutely-positioned
-// decorative image bleeding DOWNWARD across the following sections in the
-// page's section list.
+// decorative image BEHIND every sibling section, regardless of where in the
+// page's section list it's placed.
 //
-// 1. PLACEMENT / DIRECTION: this section is zero-height and must be placed
-//    immediately BEFORE the group of sections it should visually sit behind.
-//    Sections paint in page-section-list DOM order with no ancestor
-//    establishing overflow/clipping; a zero-height section between section N
-//    and N+1 paints OVER N (comes after N in the DOM) but BEHIND N+1, N+2, …
-//    (they come later in the DOM and paint on top of it). This section only
-//    supports reaching DOWNWARD — do not attempt to make it reach upward by
-//    reordering z-index or position tricks; that is a different, unsupported
-//    design.
+// 1. PLACEMENT / PHYSICAL REACH: this section is zero-height. Visually, the
+//    image only extends DOWNWARD from this section's own anchor point (see
+//    `reachVh`/`horizontalPosition` below) — so it must still be placed near
+//    (immediately before) the group of sections it should visually cover.
+//    Stacking is handled separately (point 3) — placement only controls
+//    where in physical page space the image appears, not whether it's
+//    behind other content.
 // 2. OWN POSITIONING CONTEXT: the root establishes its OWN `position:
 //    relative` positioning context rather than depending on any external
 //    ancestor or `position: fixed` — the customizer wraps each section in
 //    `position: relative` but the live site does not, so anchoring to this
 //    section's own closer root resolves identically in both environments.
-// 3. NO Z-INDEX: there is deliberately no `z-index` setting on this section —
-//    stacking order is implicit via DOM/section-list placement only. Do not
-//    add one without revisiting point 1.
+// 3. HARDCODED NEGATIVE Z-INDEX: the image has `zIndex: -1` baked in (never a
+//    merchant-facing setting). Neither this section's own root nor the
+//    platform's section wrappers (page-renderer.tsx on the live site,
+//    RelayOverlay in the customizer) set a `z-index`, so none of them
+//    establish a new stacking context — the image and every sibling section
+//    share ONE stacking context. Within a shared stacking context, CSS
+//    always paints negative-z-index positioned content BEHIND normal in-flow
+//    content, regardless of DOM order. This is what makes the image sit
+//    behind sections both before AND after it in the section list, on both
+//    the live site and in the customizer.
 export interface DecorativeBackdropProps {
   image?: {
     id: string;
@@ -83,6 +88,7 @@ export const DecorativeBackdrop = ({
             height: `${reachVh}vh`,
             opacity: opacity / 100,
             transform: `translateX(${translateX})`,
+            zIndex: -1,
             ...anchorStyle,
           }}
         />
