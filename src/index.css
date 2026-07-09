@@ -226,6 +226,17 @@
  * Typographic + layout helper classes used by the example sections.
  * ------------------------------------------------------------------------- */
 @layer base {
+  /* Prevents decorative full-bleed elements (e.g. DecorativeBackdrop) from
+     ever creating a page-level horizontal scrollbar when a merchant nudges
+     them past the viewport edge — clip at the document root instead. No
+     `position: sticky` is used anywhere in this theme, so forcing overflow-y
+     to its browser-computed `auto` (a side effect of setting overflow-x on
+     html/body) has no sticky-positioning fallout to worry about. */
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
   button {
     cursor: pointer;
   }
