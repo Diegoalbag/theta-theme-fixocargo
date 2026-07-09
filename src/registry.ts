@@ -55,6 +55,10 @@ import {
   franquiciasInternacionalesSettingsSchema,
 } from "./sections/FranquiciasInternacionales";
 import { PartnerCard, partnerCardSettingsSchema } from "./blocks/PartnerCard";
+import {
+  DecorativeBackdrop,
+  decorativeBackdropSettingsSchema,
+} from "./sections/DecorativeBackdrop";
 
 // ---------------------------------------------------------------------------
 // The registry is the heart of a theme. Five maps, all keyed by the same
@@ -98,6 +102,7 @@ export const sectionsComponents: Record<
   "servicios-cta": ServiciosCta as React.ComponentType<Record<string, unknown>>,
   "fixolidario": Fixolidario as React.ComponentType<Record<string, unknown>>,
   "franquicias-internacionales": FranquiciasInternacionales as React.ComponentType<Record<string, unknown>>,
+  "decorative-backdrop": DecorativeBackdrop as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
@@ -133,6 +138,7 @@ export const sectionSettingsSchemas = {
   "servicios-cta": serviciosCtaSettingsSchema,
   "fixolidario": fixolidarioSettingsSchema,
   "franquicias-internacionales": franquiciasInternacionalesSettingsSchema,
+  "decorative-backdrop": decorativeBackdropSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).
@@ -518,11 +524,13 @@ export const sectionBlocksConfig: Record<
     ],
   },
   // nosotros-hero, nosotros-mission, plan-referimiento, servicios-hero,
-  // servicios-cta, and franquicias-internacionales are NO-BLOCK sections
-  // (Pattern 4 — no sectionBlocksConfig entry), exactly like article-body /
-  // blog-hero. servicios-hero's 4 tiles are fixed decorative JSX;
-  // servicios-cta's 2 banners are settings-driven via the reused PromoBanner
-  // block; franquicias-internacionales' offer/why lists are flat settings
-  // fields with fixed decorative icons — none of them has a child-block
-  // slot.
+  // servicios-cta, franquicias-internacionales, and decorative-backdrop are
+  // NO-BLOCK sections (Pattern 4 — no sectionBlocksConfig entry), exactly
+  // like article-body / blog-hero. servicios-hero's 4 tiles are fixed
+  // decorative JSX; servicios-cta's 2 banners are settings-driven via the
+  // reused PromoBanner block; franquicias-internacionales' offer/why lists
+  // are flat settings fields with fixed decorative icons; decorative-backdrop
+  // (quick task 260709-buk) has no blocks slot at all because it is a
+  // settings-only decorative image layer (zero-height, self-anchored) — none
+  // of them has a child-block slot.
 };

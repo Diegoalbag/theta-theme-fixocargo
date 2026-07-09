@@ -73,6 +73,14 @@ const NO_BLOCK_SECTIONS = new Set<string>([
   // partner-card blocks slot and MUST fall through to the "Sin elementos"
   // assertion below.
   "franquicias-internacionales",
+  // decorative-backdrop (quick task 260709-buk) has no child-block slot at
+  // all (Pattern 4 — no sectionBlocksConfig entry). It always renders a
+  // zero-height aria-hidden wrapper even with blank props (satisfying the
+  // blank-props totality assertion below), but the <img> — and therefore all
+  // visible content — is fully conditional on image.url; it never renders
+  // the default "Sin elementos" EmptyState marker since it has no
+  // child-block slot at all.
+  "decorative-backdrop",
 ]);
 
 // The EmptyState marker string content sections fall through to at published
@@ -165,12 +173,17 @@ const sectionEntries = Object.entries(sectionsComponents);
 // On the block side, partner-card (fixolidario) is a new section-local-only
 // block (never promoted to the global maps) → net local 18+1=19, plus the
 // 4 global = 23 total blocks.
+// Quick task 260709-buk (+1 section / +0 blocks): adds decorative-backdrop,
+// a no-block settings-only decorative image layer (zero-height,
+// self-anchored, image-conditional <img>) → 32 sections, 23 blocks
+// unchanged (this task registers zero new blocks). decorative-backdrop has
+// no child-block slot at all and is added to NO_BLOCK_SECTIONS.
 //
-// If the live registry ever diverges from 31/23, reconcile these guards to the
+// If the live registry ever diverges from 32/23, reconcile these guards to the
 // TRUE count with a comment — never delete a guard, never weaken a loop.
 describe("empty-state matrix — drift guards (census)", () => {
-  it("collects exactly 31 sections", () => {
-    expect(sectionEntries.length).toBe(31);
+  it("collects exactly 32 sections", () => {
+    expect(sectionEntries.length).toBe(32);
   });
 
   it("collects exactly 23 block components (4 global + 19 section-local)", () => {
