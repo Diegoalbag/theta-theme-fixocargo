@@ -133,7 +133,7 @@ export const decorativeBackdropSettingsSchema = [
     label: "Ancho (px)",
     type: "number",
     min: 50,
-    max: 2000,
+    max: 5000,
     default: 600,
   },
   {
