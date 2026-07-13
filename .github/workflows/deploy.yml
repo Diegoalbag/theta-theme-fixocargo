@@ -219,6 +219,27 @@ jobs:
             echo "css_found=false" >> $GITHUB_OUTPUT
             echo "No theme CSS file found (optional)"
           fi
+          # Phase 11 Plan 05: deferred CSS chunk (theme.bundle.deferred.css),
+          # emitted alongside the critical CSS by the css-split Vite plugin. It
+          # is the sibling of $CSS_FILE with `.deferred.css` in place of `.css`.
+          # The live theme-site derives its URL as bundle `.js` -> `.deferred.css`
+          # (resolveLiveBundle), so it MUST be served next to the bundle or the
+          # deferred <link> 404s and below-the-fold styles never load. Optional:
+          # a theme built without the split simply has no deferred file.
+          DEFERRED_CSS_FILE=""
+          if [ -n "$CSS_FILE" ]; then
+            CAND="${CSS_FILE%.css}.deferred.css"
+            [ -f "$CAND" ] && DEFERRED_CSS_FILE="$CAND"
+          fi
+          if [ -n "$DEFERRED_CSS_FILE" ]; then
+            echo "deferred_css_file=$DEFERRED_CSS_FILE" >> $GITHUB_OUTPUT
+            echo "deferred_css_found=true" >> $GITHUB_OUTPUT
+            echo "✓ Deferred theme CSS found: $DEFERRED_CSS_FILE"
+            ls -lh "$DEFERRED_CSS_FILE"
+          else
+            echo "deferred_css_found=false" >> $GITHUB_OUTPUT
+            echo "No deferred theme CSS file found (optional; theme not css-split)"
+          fi
           echo "================================"
 
       - name: Validate workflow inputs (workflow_dispatch)
@@ -268,11 +289,23 @@ jobs:
             ls -lh dist/theme.bundle.css public/theme.bundle.css
             GIT_ADD="$GIT_ADD dist/theme.bundle.css public/theme.bundle.css"
           fi
+          # Phase 11 Plan 05: carry the deferred CSS onto the build branch too.
+          if [ "${{ steps.build-theme.outputs.deferred_css_found }}" = "true" ]; then
+            DEFERRED_CSS_FILE="${{ steps.build-theme.outputs.deferred_css_file }}"
+            cp "theme-source/$DEFERRED_CSS_FILE" dist/theme.bundle.deferred.css 2>/dev/null || cp "theme-source/$DEFERRED_CSS_FILE" dist/
+            cp dist/theme.bundle.deferred.css public/theme.bundle.deferred.css
+            echo "✓ Deferred theme CSS copied to dist/ and public/theme.bundle.deferred.css"
+            ls -lh dist/theme.bundle.deferred.css public/theme.bundle.deferred.css
+            GIT_ADD="$GIT_ADD dist/theme.bundle.deferred.css public/theme.bundle.deferred.css"
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f dist/theme.bundle.js public/theme.bundle.js
           if [ "${{ steps.build-theme.outputs.css_found }}" = "true" ]; then
             git add -f dist/theme.bundle.css public/theme.bundle.css
+          fi
+          if [ "${{ steps.build-theme.outputs.deferred_css_found }}" = "true" ]; then
+            git add -f dist/theme.bundle.deferred.css public/theme.bundle.deferred.css
           fi
           git status --short
           if ! git diff --staged --quiet; then
@@ -323,11 +356,23 @@ jobs:
             ls -lh dist/theme.bundle.css public/theme.bundle.css
             GIT_ADD="$GIT_ADD dist/theme.bundle.css public/theme.bundle.css"
           fi
+          # Phase 11 Plan 05: carry the deferred CSS onto the build branch too.
+          if [ "${{ steps.build-theme.outputs.deferred_css_found }}" = "true" ]; then
+            DEFERRED_CSS_FILE="${{ steps.build-theme.outputs.deferred_css_file }}"
+            cp "theme-source/$DEFERRED_CSS_FILE" dist/theme.bundle.deferred.css 2>/dev/null || cp "theme-source/$DEFERRED_CSS_FILE" dist/
+            cp dist/theme.bundle.deferred.css public/theme.bundle.deferred.css
+            echo "✓ Deferred theme CSS copied to dist/ and public/theme.bundle.deferred.css"
+            ls -lh dist/theme.bundle.deferred.css public/theme.bundle.deferred.css
+            GIT_ADD="$GIT_ADD dist/theme.bundle.deferred.css public/theme.bundle.deferred.css"
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f dist/theme.bundle.js public/theme.bundle.js
           if [ "${{ steps.build-theme.outputs.css_found }}" = "true" ]; then
             git add -f dist/theme.bundle.css public/theme.bundle.css
+          fi
+          if [ "${{ steps.build-theme.outputs.deferred_css_found }}" = "true" ]; then
+            git add -f dist/theme.bundle.deferred.css public/theme.bundle.deferred.css
           fi
           git status --short
           if ! git diff --staged --quiet; then
@@ -396,6 +441,15 @@ jobs:
             ls -lh public/theme.bundle.css
           else
             echo "No dist/theme.bundle.css (theme CSS optional)"
+          fi
+          # Phase 11 Plan 05: same-origin serve the deferred CSS chunk too, so the
+          # live theme-site's deferred <link> (bundle .js -> .deferred.css) resolves.
+          if [ -f "dist/theme.bundle.deferred.css" ]; then
+            cp dist/theme.bundle.deferred.css public/theme.bundle.deferred.css
+            echo "✓ public/theme.bundle.deferred.css ready (copied from dist/)"
+            ls -lh public/theme.bundle.deferred.css
+          else
+            echo "No dist/theme.bundle.deferred.css (theme not css-split; optional)"
           fi
           echo "================================"
 
