@@ -39,7 +39,7 @@ export const Fixolidario = ({
   renderBlocks,
 }: FixolidarioProps): React.ReactNode => {
   return (
-    <section className="bg-muted section-padding-y">
+    <section className="section-padding-y">
       <div className="container mx-auto container-padding-x">
         <div className="flex flex-col items-start gap-3 max-w-3xl">
           {kicker && (

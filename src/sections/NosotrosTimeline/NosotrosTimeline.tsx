@@ -56,7 +56,7 @@ export const NosotrosTimeline = ({
   renderBlocks,
 }: NosotrosTimelineProps): React.ReactNode => {
   return (
-    <section className="bg-muted section-padding-y">
+    <section className="section-padding-y">
       <div className="container mx-auto container-padding-x">
         <div className="flex flex-col items-center text-center">
           {eyebrow && (
