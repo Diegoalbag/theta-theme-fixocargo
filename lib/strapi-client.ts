@@ -229,9 +229,14 @@ export interface StrapiSiteResponse {
 }
 
 /**
- * Fetch all pages from Strapi
+ * Fetch all pages from Strapi.
+ *
+ * Wrapped in React `cache()` for the same reason as fetchSite/fetchPageBySlug
+ * below: the root route resolves the homepage slug in BOTH generateMetadata and
+ * the page component, and without memoization that is two Strapi round trips
+ * for one render.
  */
-export async function fetchPages(): Promise<StrapiPage[]> {
+export const fetchPages = cache(async (): Promise<StrapiPage[]> => {
   if (!graphqlEndpoint) {
     console.warn("Strapi GraphQL endpoint not configured. Returning empty pages array.");
     return [];
@@ -257,7 +262,7 @@ export async function fetchPages(): Promise<StrapiPage[]> {
     console.warn("Strapi fetch failed. Returning empty array.", error instanceof Error ? error.message : String(error));
     return [];
   }
-}
+});
 
 /**
  * Fetch all metaobject entries from Strapi
