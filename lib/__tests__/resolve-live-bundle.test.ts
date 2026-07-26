@@ -32,6 +32,7 @@ describe("resolveLiveBundle — request-time bundle resolution (Finding 4 / Q3, 
     expect(resolveLiveBundle(site, env)).toEqual({
       themeBundleUrl: "https://cdn.example/aurora/theme.js",
       themeName: "Aurora",
+      themeCssDeferredUrl: "https://cdn.example/aurora/theme.deferred.css",
     });
   });
 
@@ -40,10 +41,12 @@ describe("resolveLiveBundle — request-time bundle resolution (Finding 4 / Q3, 
     expect(resolveLiveBundle(site, env)).toEqual({
       themeBundleUrl: "https://cdn.example/baked/theme.js",
       themeName: "baked-theme",
+      themeCssDeferredUrl: "https://cdn.example/baked/theme.deferred.css",
     });
     expect(resolveLiveBundle({ liveTheme: null }, { NEXT_PUBLIC_THEME_BUNDLE_URL: "u" })).toEqual({
       themeBundleUrl: "u",
       themeName: "default",
+      themeCssDeferredUrl: undefined,
     });
   });
 
@@ -54,6 +57,7 @@ describe("resolveLiveBundle — request-time bundle resolution (Finding 4 / Q3, 
     expect(resolveLiveBundle(site, env)).toEqual({
       themeBundleUrl: "https://cdn.example/baked/theme.js",
       themeName: "Aurora",
+      themeCssDeferredUrl: "https://cdn.example/baked/theme.deferred.css",
     });
   });
 
@@ -66,9 +70,36 @@ describe("resolveLiveBundle — request-time bundle resolution (Finding 4 / Q3, 
     };
     const a = resolveLiveBundle(siteA, env);
     const b = resolveLiveBundle(siteB, env);
-    expect(a).toEqual({ themeBundleUrl: "https://cdn.example/a.js", themeName: "Aurora" });
-    expect(b).toEqual({ themeBundleUrl: "https://cdn.example/b.js", themeName: "Borealis" });
+    expect(a).toEqual({
+      themeBundleUrl: "https://cdn.example/a.js",
+      themeName: "Aurora",
+      themeCssDeferredUrl: "https://cdn.example/a.deferred.css",
+    });
+    expect(b).toEqual({
+      themeBundleUrl: "https://cdn.example/b.js",
+      themeName: "Borealis",
+      themeCssDeferredUrl: "https://cdn.example/b.deferred.css",
+    });
     expect(a.themeBundleUrl).not.toBe(b.themeBundleUrl);
     expect(a.themeName).not.toBe(b.themeName);
+  });
+
+  it("themeBundleUrl undefined -> themeCssDeferredUrl is undefined (never 'undefined.deferred.css')", () => {
+    const result = resolveLiveBundle({ liveTheme: null }, {});
+    expect(result.themeBundleUrl).toBeUndefined();
+    expect(result.themeCssDeferredUrl).toBeUndefined();
+  });
+
+  it("themeBundleUrl not ending in .js -> themeCssDeferredUrl is undefined (defensive edge case)", () => {
+    const site = {
+      liveTheme: {
+        documentId: "theme-live",
+        name: "Aurora",
+        builtAssetUrl: "https://cdn.example/aurora/theme.css",
+      },
+    };
+    const result = resolveLiveBundle(site, {});
+    expect(result.themeBundleUrl).toBe("https://cdn.example/aurora/theme.css");
+    expect(result.themeCssDeferredUrl).toBeUndefined();
   });
 });

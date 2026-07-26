@@ -1,56 +1,42 @@
-import { redirect } from "next/navigation";
-import { fetchPages } from "@/lib/strapi-client";
-
-/** Always run on the server so redirect() works and data is fresh */
-export const dynamic = "force-dynamic";
+import { RenderPage, buildPageMetadata, resolveHomepageSlug } from "./_lib/render-page";
 
 /**
- * Root page — server-side redirect to the homepage.
- * Finds the page marked isHomepage, falls back to slug "home"/"homepage"/"index",
- * then falls back to the first page. Uses Next.js redirect() for an instant 307.
+ * Root route — renders the homepage IN PLACE.
+ *
+ * This used to `redirect()` to `/{slug}`, which cost a full extra round trip
+ * (measured: 1.55s for the 307, then the real page — ~3.0s to first byte for
+ * anyone landing on the domain root) and canonicalized the homepage to `/home`
+ * rather than `/`, splitting link authority between two URLs for the same
+ * content.
+ *
+ * See app/[slug]/page.tsx for why this is ISR rather than force-dynamic.
  */
-export default async function HomePage() {
-  let pages: Awaited<ReturnType<typeof fetchPages>>;
+export const revalidate = 10;
 
-  try {
-    pages = await fetchPages();
-  } catch (error) {
-    console.error("Failed to load pages:", error);
+export async function generateMetadata() {
+  return buildPageMetadata(await resolveHomepageSlug());
+}
+
+export default async function HomePage() {
+  const slug = await resolveHomepageSlug();
+
+  // Deliberately a soft empty state rather than notFound(). `fetchPages` swallows
+  // Strapi failures and returns [], so a transient outage during the build is
+  // indistinguishable here from a genuinely empty CMS — and a hard 404 baked into
+  // the prerendered root would then be served until the next revalidation. This
+  // self-heals within the `revalidate` window instead.
+  if (!slug) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <p className="text-lg font-semibold text-destructive">Error</p>
+          <p className="text-lg font-semibold">No pages found</p>
           <p className="text-sm text-muted-foreground">
-            Failed to load pages
+            Please create pages in your CMS
           </p>
         </div>
       </div>
     );
   }
 
-  // Find the homepage: isHomepage flag → common homepage slugs → first page
-  const homepage =
-    pages.find((p) => p.isHomepage) ||
-    pages.find((p) => ["home", "homepage", "index"].includes(p.slug));
-  const targetPath = homepage
-    ? `/${homepage.slug}`
-    : pages.length > 0
-      ? `/${pages[0].slug}`
-      : null;
-
-  if (targetPath) {
-    redirect(targetPath);
-  }
-
-  // No pages found
-  return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="text-center">
-        <p className="text-lg font-semibold">No pages found</p>
-        <p className="text-sm text-muted-foreground">
-          Please create pages in your CMS
-        </p>
-      </div>
-    </div>
-  );
+  return <RenderPage slug={slug} />;
 }

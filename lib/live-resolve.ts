@@ -104,6 +104,16 @@ interface BundleEnv {
 interface ResolvedBundle {
   themeBundleUrl: string | undefined;
   themeName: string;
+  /**
+   * URL of the non-blocking deferred CSS chunk, derived from the SAME resolved
+   * themeBundleUrl (theme.bundle.js -> theme.bundle.deferred.css). This is a
+   * FIXED, platform-wide naming convention shared with Plan 05 (theme repo,
+   * `createCssSplitPlugin`'s `this.emitFile({ fileName: 'theme.bundle.deferred.css' })`) —
+   * both sides derive/emit this exact string independently, with no shared
+   * runtime config between the two repos. `undefined` when themeBundleUrl is
+   * undefined or does not end in `.js` (D-05/D-06/D-07).
+   */
+  themeCssDeferredUrl: string | undefined;
 }
 
 /**
@@ -128,5 +138,14 @@ export function resolveLiveBundle(
     liveTheme?.builtAssetUrl ?? e.NEXT_PUBLIC_THEME_BUNDLE_URL;
   const themeName =
     liveTheme?.name ?? e.NEXT_PUBLIC_THEME_NAME ?? "default";
-  return { themeBundleUrl, themeName };
+  const themeCssDeferredUrl = themeBundleUrl
+    ? themeBundleUrl.replace(/\.js$/i, ".deferred.css")
+    : undefined;
+  // Defensive: only a genuine `.js` -> `.deferred.css` swap counts. If the
+  // resolved URL didn't actually end in `.js` (misconfigured env var already
+  // pointing at a `.css` asset), the replace above is a no-op and would emit a
+  // malformed deferred URL identical to the critical one — treat as undefined.
+  const safeThemeCssDeferredUrl =
+    themeCssDeferredUrl !== themeBundleUrl ? themeCssDeferredUrl : undefined;
+  return { themeBundleUrl, themeName, themeCssDeferredUrl: safeThemeCssDeferredUrl };
 }
