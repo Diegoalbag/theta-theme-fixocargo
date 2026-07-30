@@ -1,4 +1,6 @@
 import * as React from "react";
+import * as ReactDOM from "react-dom";
+import * as jsxRuntime from "react/jsx-runtime";
 import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -33,8 +35,25 @@ const fixtureSource = readFileSync(
   "utf-8"
 );
 
+/**
+ * These tests exercise the CLIENT render path, so the fixture theme module must
+ * close over the same React copy this file's `renderToStaticMarkup` is paired
+ * with -- the app's own `react` -- which is also what the browser's
+ * `theme-loader.ts` genuinely injects at runtime.
+ *
+ * `evaluateThemeSource` otherwise defaults to `ssr-react-runtime`'s pairing
+ * (Next's `next/dist/compiled/react`), which is correct for the SERVER shell but
+ * wrong here: `PageRenderer`'s own `useState` resolves its dispatcher through
+ * the app's React, so a tree mixing the two copies leaves one of them without a
+ * dispatcher and dies with "Invalid hook call". Passing the runtime explicitly
+ * keeps this test a single-React tree, matching production's client path.
+ */
 function getFixtureThemeModule() {
-  const module = evaluateThemeSource(fixtureSource, "fixture-theme");
+  const module = evaluateThemeSource(fixtureSource, "fixture-theme", {
+    React,
+    ReactDOM,
+    jsxRuntime,
+  });
   if (!module) throw new Error("fixture theme module failed to evaluate");
   return module;
 }

@@ -15,11 +15,29 @@
  * client-only fallback (SSR-04).
  */
 
-import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+// React and the renderer come from `lib/ssr-react-runtime.ts`, NOT from the
+// bare "react" / "react-dom/server" specifiers. Two separate reasons, both
+// load-bearing:
+//
+//   1. A static `import ... from "react-dom/server"` anywhere in the Server
+//      Component graph is a HARD COMPILE ERROR under Next's SWC
+//      `react-server-components` pass ("You're importing a component that
+//      imports react-dom/server"). This file is reachable from `app/page.tsx`,
+//      so the bare specifier failed every tenant build outright.
+//   2. The RSC layer aliases bare `react` to React's hookless `react-server`
+//      build, so `React.createElement` here and the React injected into the
+//      theme sandbox must BOTH come from the same full copy, paired with the
+//      renderer, or stateful sections throw and are silently skipped.
+//
+// See `ssr-react-runtime.ts`'s header for the whole mechanism.
+import {
+  React,
+  renderToStaticMarkup,
+  SSR_REACT_RUNTIME_HEALTH,
+} from "./ssr-react-runtime";
 import { resolveSectionsForRender } from "./section-resolver";
 import type { ResolvedSection } from "./section-resolver";
-import { reportSectionRenderFailure } from "./theme-evaluator";
+import { reportSectionRenderFailure, reportSsrRuntimeUnavailable } from "./theme-evaluator";
 import type { LoadedThemeModule } from "./theme-loader";
 import type { StrapiPage } from "./strapi-client";
 // Namespace import (matches this repo's `import * as Sentry from
@@ -152,6 +170,28 @@ export function buildShellHtml(args: {
   themeName: string;
 }): string | null {
   const { page, themeModule, themeName } = args;
+
+  // Gate on the server-side React runtime BEFORE attempting any section, so a
+  // platform-level breakage is reported once, under its own reason, with a
+  // diagnostic that names what broke.
+  //
+  // Without this gate the same breakage still "degrades gracefully" -- every
+  // section throws `useState is not a function`, each is caught and skipped,
+  // and this function returns `null` -- but it does so wearing the disguise of
+  // `section-render-threw`, once per section per request, which reads as "this
+  // tenant's theme is broken" rather than "the platform's React runtime is".
+  // That misattribution is the entire reason this branch exists; the returned
+  // value is deliberately identical (`null` -> today's client-only fallback,
+  // SSR-04), because a visitor-facing throw here would violate D-03.
+  if (!SSR_REACT_RUNTIME_HEALTH.healthy) {
+    try {
+      reportSsrRuntimeUnavailable(themeName, SSR_REACT_RUNTIME_HEALTH.reason);
+    } catch {
+      // Swallow, exactly as every other reporter call site in this file does:
+      // a telemetry failure must never escalate a graceful degrade into a throw.
+    }
+    return null;
+  }
 
   try {
     // CR-01 (13-06 review fix): resolution-time failures (a section whose

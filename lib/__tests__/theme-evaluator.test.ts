@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+// The React/renderer PAIR under test must be the same pair `buildSandbox`
+// injects, which is the whole point of the `ssr-react-runtime` seam. Importing
+// the bare `react-dom/server` here instead would render vm-evaluated components
+// with a renderer that never installed a hook dispatcher on the React instance
+// those components actually closed over, and `FixtureHero`'s `React.useState`
+// call would die with "Invalid hook call" — a mismatch in the TEST, not in the
+// code under test.
+import { React, renderToStaticMarkup } from "../ssr-react-runtime";
 import { readFileSync } from "node:fs";
 import {
   evaluateThemeServerSide,
@@ -206,7 +212,7 @@ describe("evaluateThemeSource — evaluates a bundle in node:vm (SSR-02)", () =>
 });
 
 describe("evaluateThemeSource — cross-realm React interop (SSR-02, Assumption A1)", () => {
-  it("renders a vm-evaluated component through the host's real react-dom/server", () => {
+  it("renders a stateful vm-evaluated component through the host's paired ssr-react-runtime renderer", () => {
     const moduleResult = evaluateThemeSource(fixtureSource, "fixture-theme");
     expect(moduleResult).not.toBeNull();
     const Hero = moduleResult!.sectionsComponents.hero;

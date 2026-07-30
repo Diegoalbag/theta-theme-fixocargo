@@ -17,9 +17,14 @@
  */
 
 import * as vm from "node:vm";
-import React from "react";
-import ReactDOM from "react-dom";
-import * as jsxRuntime from "react/jsx-runtime";
+// React / ReactDOM / the JSX runtime come from `lib/ssr-react-runtime.ts`, NOT
+// from the bare "react" / "react-dom" / "react/jsx-runtime" specifiers. In the
+// App Router's RSC layer those bare specifiers are aliased to React's
+// `react-server` build, which exports no client hooks -- injecting it here made
+// every stateful theme section throw `useState is not a function`, get skipped
+// by server-shell's per-section isolation, and silently produce an empty server
+// render. See that module's header for the full mechanism.
+import { React, ReactDOM, jsxRuntime } from "./ssr-react-runtime";
 import * as classVarianceAuthority from "class-variance-authority";
 import * as clsxModule from "clsx";
 import * as LucideReact from "lucide-react";
@@ -78,6 +83,31 @@ export const NEGATIVE_CACHE_TTL_MS = 10_000;
 export type ThemeSandbox = Record<string, unknown>;
 
 /**
+ * The React trio injected into a theme sandbox, as an overridable unit.
+ *
+ * Exists because WHICH COPY of React a theme's components close over is not a
+ * detail — it decides whether `renderToStaticMarkup` can find a hook dispatcher
+ * for them. React installs its dispatcher on one React instance, so a theme
+ * module and the renderer that consumes it must agree, and the only way to
+ * express that in a test is to be able to choose.
+ *
+ * Production never passes this: the default is `ssr-react-runtime`'s pairing,
+ * which is matched to the `renderToStaticMarkup` that `lib/server-shell.tsx`
+ * uses. It is overridden only by tests that render a vm-evaluated module through
+ * a DIFFERENT renderer -- notably `page-renderer.test.tsx`, which exercises the
+ * CLIENT render path, where the browser's `theme-loader.ts` injects the app's
+ * own React rather than Next's compiled copy.
+ */
+export type InjectedReactRuntime = {
+  React: unknown;
+  ReactDOM: unknown;
+  jsxRuntime: unknown;
+};
+
+/** The production pairing — see `lib/ssr-react-runtime.ts`. */
+export const DEFAULT_REACT_RUNTIME: InjectedReactRuntime = { React, ReactDOM, jsxRuntime };
+
+/**
  * Every degrade site in this module classifies itself with one of these
  * reasons and calls reportEvaluationFailure -- the dedicated-channel half of
  * the degrade-and-record pattern (mirrors scripts/measure-baseline.ts).
@@ -99,7 +129,18 @@ export type EvaluationFailureReason =
    * means evaluation succeeded and one specific section's component threw
    * later, during its own `renderToStaticMarkup` call.
    */
-  | "section-render-threw";
+  | "section-render-threw"
+  /**
+   * The server-side React runtime itself is unusable, so NO section could have
+   * been rendered regardless of the theme (`lib/ssr-react-runtime.ts`'s startup
+   * probe failed). Kept distinct from `section-render-threw` because the
+   * remedy is the opposite: that reason points at one theme's component code,
+   * this one points at the platform -- almost certainly a Next.js upgrade that
+   * moved or re-aliased `next/dist/compiled/react`. Without its own reason this
+   * failure would be indistinguishable from "every section in this theme
+   * happens to be broken", which is the wrong investigation.
+   */
+  | "ssr-runtime-unavailable";
 
 /**
  * The one and only reporting seam in this module. Always emits the
@@ -152,6 +193,20 @@ export function reportSectionRenderFailure(
 }
 
 /**
+ * Reporting seam for an unusable server-side React runtime
+ * (`lib/ssr-react-runtime.ts`'s probe failed). Routed through this module's one
+ * `reportEvaluationFailure` for the same reason `reportSectionRenderFailure` is:
+ * a fixed, narrow signature means no caller can ever attach section props or
+ * CMS field values to the Sentry `extra` bag (T-12-09 / T-13-03).
+ *
+ * `message` is the probe's own diagnostic string, which is composed only of API
+ * names and `typeof` results — it never carries bundle text.
+ */
+export function reportSsrRuntimeUnavailable(themeName: string, message: string): void {
+  reportEvaluationFailure("ssr-runtime-unavailable", { themeName, message });
+}
+
+/**
  * Build a fresh sandbox object carrying exactly the seven globals
  * theme-loader.ts injects in the browser, plus a frozen NODE_ENV-only
  * `process` shim, an empty `__THETA_THEMES__` registry, and a
@@ -168,13 +223,15 @@ export function reportSectionRenderFailure(
  * a silent no-op in sloppy-mode source -- either way the value never
  * changes).
  */
-export function buildSandbox(): ThemeSandbox {
+export function buildSandbox(
+  runtime: InjectedReactRuntime = DEFAULT_REACT_RUNTIME
+): ThemeSandbox {
   const sandbox: ThemeSandbox = {};
 
   const injectedGlobals: Record<string, unknown> = {
-    React,
-    ReactDOM,
-    jsxRuntime,
+    React: runtime.React,
+    ReactDOM: runtime.ReactDOM,
+    jsxRuntime: runtime.jsxRuntime,
     cva: classVarianceAuthority,
     clsx: clsxModule,
     twMerge: tailwindMerge,
@@ -297,14 +354,15 @@ export function __resetThemeEvaluatorCachesForTest(): void {
  */
 export function evaluateThemeSource(
   bundleText: string,
-  themeName: string
+  themeName: string,
+  runtime: InjectedReactRuntime = DEFAULT_REACT_RUNTIME
 ): LoadedThemeModule | null {
   if (bundleText.trim() === "") {
     return null;
   }
 
   try {
-    const sandbox = buildSandbox();
+    const sandbox = buildSandbox(runtime);
     // `microtaskMode` goes on `vm.createContext`, never on `runInContext` --
     // Node accepts the key there too but silently ignores it, which would
     // let promise-scheduled work escape the timeout entirely.
