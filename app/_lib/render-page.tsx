@@ -18,6 +18,8 @@ import type { StrapiPage } from "@/lib/strapi-client";
 import { PageRenderer } from "@/lib/page-renderer";
 import { resolveLiveBundle } from "@/lib/live-resolve";
 import { extractFirstHeroImageUrl } from "@/lib/hero-preload";
+import { evaluateThemeServerSide } from "@/lib/theme-evaluator";
+import { buildShellHtml, isSsrShellDisabled } from "@/lib/server-shell";
 
 /**
  * Resolve which page is the homepage: the `isHomepage` flag, then the
@@ -147,8 +149,40 @@ export async function RenderPage({ slug }: { slug: string | null }) {
     );
   }
 
+  // Phase 13 (SSR-01/SSR-04, D-01/D-04): server-render the page's real
+  // section markup into an opaque shell string, so a crawler that executes
+  // no JavaScript reads real content instead of PageRenderer's blank
+  // placeholder. `shellHtml` stays `undefined` -- never an empty string --
+  // whenever there is no server shell to hand off, which reproduces today's
+  // exact client-only behavior byte-for-byte. That single `undefined` state
+  // covers three cases at once: the kill switch is set (this section), the
+  // evaluator returned null (SSR-04, Phase 12's degrade-and-record contract),
+  // or every section failed to resolve/render (buildShellHtml's own null).
+  let shellHtml: string | undefined;
+  if (!isSsrShellDisabled(process.env)) {
+    // The kill switch gates the evaluator CALL itself, not merely its
+    // result -- a tenant with THETA_DISABLE_SSR_SHELL set pays nothing for
+    // server evaluation (D-04).
+    const themeModule = await evaluateThemeServerSide(themeBundleUrl, themeName);
+    if (themeModule) {
+      shellHtml = buildShellHtml({ page, themeModule, themeName }) ?? undefined;
+    }
+    // A null themeModule means evaluateThemeServerSide already degraded and
+    // reported through its own reportEvaluationFailure seam (Phase 12,
+    // D-07) -- no new failure plumbing needed here for that case.
+  }
+
   return (
     <>
+      {/*
+        The hero preload link stays unconditional even though the hero is
+        now (usually) also in shellHtml's server HTML. This link is emitted
+        in <head>, ahead of the shell body, so it still reaches the browser's
+        preload scanner earlier than the body markup does. Considered
+        conditioning it on `shellHtml == null`, but removing it would be an
+        unmeasured LCP risk for zero benefit -- performance tuning is
+        Phase 17's scope -- so it is kept exactly as it was.
+      */}
       {heroImageUrl && (
         <link
           rel="preload"
@@ -163,6 +197,7 @@ export async function RenderPage({ slug }: { slug: string | null }) {
         themeName={themeName}
         themeCssUrl={themeCssUrl || undefined}
         themeCssDeferredUrl={themeCssDeferredUrl}
+        shellHtml={shellHtml}
       />
     </>
   );

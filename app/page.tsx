@@ -11,6 +11,9 @@ import { RenderPage, buildPageMetadata, resolveHomepageSlug } from "./_lib/rende
  *
  * See app/[slug]/page.tsx for why this is ISR rather than force-dynamic.
  */
+
+// See app/[slug]/page.tsx for why this route explicitly declares the Node.js runtime.
+export const runtime = "nodejs";
 export const revalidate = 10;
 
 export async function generateMetadata() {

@@ -22,6 +22,18 @@ import { RenderPage, buildPageMetadata } from "../_lib/render-page";
  * costs essentially nothing and keeps the customizer's save -> preview loop
  * tight until the on-demand hook above is wired up.
  */
+
+/**
+ * Explicit Node.js runtime declaration.
+ *
+ * This is already the App Router default -- declared explicitly as a guard.
+ * `node:vm`, which the server-side theme evaluator added in Phase 12 depends
+ * on, does not exist on the Edge runtime. Without this declaration, a future
+ * edit that moved this segment to Edge would not fail the build; every page
+ * would simply and silently degrade to client-only rendering. See
+ * .planning/phases/12-server-side-theme-evaluation-infrastructure/SSR-07-THREAT-MODEL.md.
+ */
+export const runtime = "nodejs";
 export const revalidate = 10;
 
 interface PageProps {

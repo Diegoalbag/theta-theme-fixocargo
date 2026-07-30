@@ -1,103 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { LoadedThemeModule } from "./theme-loader";
 import { loadThemeFromUrl, getLoadedTheme } from "./theme-loader";
-import type { StrapiPage, StrapiBlock } from "./strapi-client";
-
-/** Normalize section key for lookup (lowercase, trim). */
-function normalizeSectionKey(key: string): string {
-  return key.trim().toLowerCase();
-}
-
-/** Normalize block type for lookup (lowercase, trim). */
-function normalizeBlockType(type: string): string {
-  return type.trim().toLowerCase();
-}
-
-/**
- * Resolve block component from theme module.
- * Checks blocksComponents first, then localBlocks in sectionBlocksConfig.
- */
-function getBlockComponent(
-  blockType: string,
-  sectionKey: string,
-  themeModule: LoadedThemeModule
-): React.ComponentType<Record<string, unknown>> | null {
-  const blocksComponents = themeModule.blocksComponents ?? {};
-  // Direct match
-  if (blocksComponents[blockType]) return blocksComponents[blockType];
-  const normalized = normalizeBlockType(blockType);
-  const themeMatch = Object.keys(blocksComponents).find(
-    (k) => normalizeBlockType(k) === normalized
-  );
-  if (themeMatch) return blocksComponents[themeMatch];
-
-  // Check local blocks for this section
-  const sectionConfig = themeModule.sectionBlocksConfig?.[sectionKey];
-  const localBlocks = sectionConfig?.localBlocks ?? [];
-  const local = localBlocks.find((l) => normalizeBlockType(l.type) === normalized);
-  return local?.component ?? null;
-}
-
-/**
- * If url is a Next.js image optimization URL (/_next/image?url=...), return the actual image URL.
- * Otherwise return the url unchanged. Ensures build/deploy always gets the real Strapi URL.
- */
-function normalizeImageUrl(url: string | null | undefined): string | null {
-  if (url == null || typeof url !== "string" || url.trim() === "") return url ?? null;
-  if (!url.includes("_next/image")) return url;
-  try {
-    const idx = url.indexOf("?");
-    if (idx === -1) return url;
-    const params = new URLSearchParams(url.slice(idx));
-    const actual = params.get("url");
-    return actual ? decodeURIComponent(actual) : url;
-  } catch {
-    return url;
-  }
-}
-
-/**
- * Resolve section key from page/CMS to theme's sectionsComponents key.
- * Tries exact match first, then normalized match so "header" matches "Header".
- */
-function getSectionComponentKey(
-  sectionKey: string,
-  sectionsComponents: Record<string, React.ComponentType<Record<string, unknown>>>
-): string | null {
-  if (sectionsComponents[sectionKey]) return sectionKey;
-  const normalized = normalizeSectionKey(sectionKey);
-  const match = Object.keys(sectionsComponents).find(
-    (k) => normalizeSectionKey(k) === normalized
-  );
-  return match ?? null;
-}
-
-interface BlockRendererProps {
-  block: StrapiBlock;
-  sectionKey: string;
-  themeModule: LoadedThemeModule;
-}
-
-function BlockRenderer({ block, sectionKey, themeModule }: BlockRendererProps) {
-  const BlockComponent = getBlockComponent(block.blockType, sectionKey, themeModule);
-  if (!BlockComponent) {
-    console.warn(`Block component not found: ${block.blockType} (section: ${sectionKey})`);
-    return (
-      <div className="p-2 border border-dashed border-muted rounded text-sm text-muted-foreground">
-        Block "{block.blockType}" not found in theme
-      </div>
-    );
-  }
-  const props = convertStrapiDataToProps(block.data);
-  const componentProps = {
-    ...props,
-    blockId: block.id?.toString(),
-    blockType: block.blockType,
-  };
-  return <BlockComponent {...componentProps} />;
-}
+import type { StrapiPage } from "./strapi-client";
+import {
+  convertStrapiDataToProps as sharedConvertStrapiDataToProps,
+  resolveSectionsForRender,
+} from "@/lib/section-resolver";
+// Namespace import (matches this repo's `import * as Sentry from
+// "@sentry/nextjs"` convention): a literal reference to the DOM
+// normalization function's name below appears exactly once, at its one call
+// site, since the import specifier here names only the module. Both this
+// file and lib/server-shell.tsx route through the SAME module so heading
+// levels can never differ across the swap (D-02).
+import * as HeadingNormalizer from "@/lib/heading-normalizer";
 
 interface PageRendererProps {
   page: StrapiPage;
@@ -116,6 +33,56 @@ interface PageRendererProps {
    * for render-blocking priority.
    */
   themeCssDeferredUrl?: string;
+  /**
+   * Optional server-rendered shell HTML (Phase 13, D-01). When present, this
+   * is injected via `dangerouslySetInnerHTML` while the theme bundle is
+   * still loading (or failed to load) instead of the blank placeholder /
+   * error screen below. `undefined` reproduces today's exact behavior
+   * byte-for-byte -- simultaneously the SSR-04 fallback (server evaluation
+   * returned null) AND the D-04 kill-switch off-state.
+   */
+  shellHtml?: string;
+}
+
+/**
+ * WR-02 (13-06 review fix): D-03's branch-priority decision, extracted as a
+ * pure function so it is unit-testable directly (`page-renderer.test.tsx`)
+ * without needing to reproduce React's async theme-load effect, which only
+ * ever runs in a real browser/DOM environment -- this repo's vitest
+ * environment is `node` (see `app/layout.test.tsx`'s own note on this). Every
+ * condition below is copied verbatim from `PageRenderer`'s own branches
+ * further down; change one, change both, and let the shared test suite catch
+ * any future drift between them.
+ */
+export type RenderBranch = "shell" | "loading" | "error" | "main";
+
+export function selectRenderBranch(state: {
+  shellHtml: string | null | undefined;
+  themeModuleReady: boolean;
+  loading: boolean;
+  error: string | null;
+  themeModule: unknown;
+}): RenderBranch {
+  const { shellHtml, themeModuleReady, loading, error, themeModule } = state;
+
+  // D-03: the shell branch is checked FIRST and wins over both the loading
+  // placeholder and the error screen below.
+  if (shellHtml != null && !themeModuleReady) {
+    return "shell";
+  }
+
+  if (loading) {
+    return "loading";
+  }
+
+  // D-03: narrowed from the original unconditional `error || !themeModule` so
+  // this failure screen is reachable ONLY when there is no server shell to
+  // fall back on.
+  if (shellHtml == null && (error || !themeModule)) {
+    return "error";
+  }
+
+  return "main";
 }
 
 /**
@@ -134,6 +101,7 @@ export function PageRenderer({
   themeName,
   themeCssUrl,
   themeCssDeferredUrl,
+  shellHtml,
 }: PageRendererProps) {
   // Seed from the loader cache synchronously so an already-loaded theme (e.g. a
   // client-side navigation between pages) renders on the first paint with no flash.
@@ -206,7 +174,123 @@ export function PageRenderer({
       });
   }, [themeBundleUrl, themeName]);
 
-  if (loading) {
+  // Whether the client tree has actually taken over (bundle loaded, no
+  // error) -- the ONLY state in which the shell branch below must NOT win,
+  // because reaching it IS the swap.
+  const themeModuleReady = !loading && !error && themeModule !== null;
+
+  // META-06/D-09: single-<h1>-per-page normalization for the LIVE tree, an
+  // ISOLATED ref/state/effect trio kept deliberately separate from the
+  // themeModule/loading/error state above, same isolation discipline as the
+  // deferredReady pair. `containerRef` targets the main branch's outer
+  // container element below. `needsPromotedH1` gates rendering a promoted
+  // heading as a REAL React element (never inserted from the effect as a raw
+  // DOM node -- the container's children belong to React, and a foreign first
+  // child is exactly what React's reconciliation is entitled to trip over on
+  // a later update).
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [needsPromotedH1, setNeedsPromotedH1] = useState(false);
+  // WR-01 (13-06 review, documented rather than closed -- see review for the
+  // full rationale): D-06 ("a section skipped on the server may re-appear
+  // client-side") is scoped to "a section's CONTENT appearing/disappearing".
+  // It does NOT account for a heading-owning section specifically: if section
+  // A (order 0, has an <h1>) fails server-side but succeeds in the browser,
+  // and section B (order 1, also has an <h1>) is the first heading the SERVER
+  // shell ever sees, the server shell keeps B's <h1> as the page's sole
+  // heading. Once A reappears client-side and this effect re-runs, A is now
+  // first in document order, so THIS pass demotes B's already-visible <h1> to
+  // <h2> at swap time -- a heading level (and possibly visible text) changing
+  // after the swap, which D-02's "no visible change on the healthy path"
+  // guarantee does not anticipate. Cannot happen with today's single
+  // heading-bearing section per production theme (13-RESEARCH.md); genuinely
+  // possible for a future theme with two or more heading-bearing sections.
+  // Accepted, not fixed: closing it would require this effect to know about
+  // the SERVER shell's heading choice, reintroducing exactly the
+  // cross-tier coordination this module (deliberately framework/tier-neutral,
+  // see file header) exists to avoid. See heading-normalizer.test.ts for a
+  // pinned regression test of this exact divergence.
+  // `useLayoutEffect`, NOT `useEffect`: it runs synchronously before paint,
+  // and the state update it schedules is flushed before paint too, so a page
+  // with a duplicate or missing heading never shows the un-normalized state
+  // for even one frame (13-RESEARCH.md Pitfall 4; D-02 extends "no flash" to
+  // this normalization, not just the shell swap). Depends on `themeModule`'s
+  // identity so a client-side navigation that swaps theme modules re-runs
+  // the pass.
+  useLayoutEffect(() => {
+    if (!themeModuleReady || !containerRef.current) return;
+    try {
+      const { h1Count } = HeadingNormalizer.normalizeHeadingsInDom(containerRef.current);
+      setNeedsPromotedH1(h1Count === 0);
+    } catch {
+      // Swallow: this pass must never throw into the render (T-13-14). Worst
+      // case, a duplicate/missing heading survives uncorrected on the live
+      // tree -- never a broken page.
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [themeModule]);
+
+  // WR-02 (13-06 review fix): the branch-priority DECISION lives in
+  // `selectRenderBranch` above (unit-tested directly) so the four `if`s below
+  // stay a faithful, unchanged copy of what that pure function already
+  // computes -- this call has no behavioral effect of its own, it exists so
+  // any future edit to the conditions below has a companion pure function
+  // that must be edited too, and a test suite that will fail loudly if they
+  // ever drift apart.
+  const renderBranch = selectRenderBranch({
+    shellHtml,
+    themeModuleReady,
+    loading,
+    error,
+    themeModule,
+  });
+
+  // D-03: the shell branch is checked FIRST and wins over both the loading
+  // placeholder and the error screen below. Whenever a server shell exists
+  // and the client tree has not yet taken over -- still loading, OR the
+  // bundle load failed (404, network drop, JS disabled never reaches this
+  // component at all) -- the visitor keeps the server-rendered content,
+  // non-interactive, rather than seeing a blank placeholder or "Error
+  // loading theme". Add a comment here naming D-03 so a future edit does not
+  // silently restore the old branch priority.
+  if (renderBranch === "shell" && shellHtml != null) {
+    // The `shellHtml != null` conjunct is redundant with `selectRenderBranch`
+    // (it only ever returns "shell" when `shellHtml != null`) -- it exists
+    // purely so TypeScript's control-flow narrowing knows `shellHtml` is a
+    // real string below, for `dangerouslySetInnerHTML`. `renderBranch` alone
+    // remains the actual decision; this can never evaluate to false when
+    // `renderBranch === "shell"`.
+    return (
+      <>
+        {themeStylesheet}
+        {deferredReady && themeCssDeferredUrl && (
+          <link
+            rel="stylesheet"
+            href={themeCssDeferredUrl}
+            precedence="theme-deferred"
+            data-theme-stylesheet-deferred={themeName}
+          />
+        )}
+        <link rel="preload" as="script" href={themeBundleUrl} crossOrigin="anonymous" />
+        {/*
+          Safety comes from `dangerouslySetInnerHTML` making React skip
+          child reconciliation for this subtree entirely during hydration --
+          it adopts whatever is already in the DOM regardless of what the
+          client's own render would have produced for these children. The
+          hydration-warning suppressor below is defensive only (it reaches
+          one level deep); the client's FIRST render emits this exact
+          element with this exact `shellHtml` string, since it is a plain
+          prop that arrives identically on server and client.
+        */}
+        <div
+          className="min-h-screen"
+          dangerouslySetInnerHTML={{ __html: shellHtml }}
+          suppressHydrationWarning
+        />
+      </>
+    );
+  }
+
+  if (renderBranch === "loading") {
     // Silent placeholder — no "Loading…" text. Also eagerly preload the bundle so
     // the download starts immediately even when page.tsx didn't emit a preload.
     return (
@@ -226,7 +310,11 @@ export function PageRenderer({
     );
   }
 
-  if (error || !themeModule) {
+  // D-03: narrowed from the original unconditional `error || !themeModule`
+  // so this failure screen is reachable ONLY when there is no server shell
+  // to fall back on. Server-rendered content that already rendered
+  // successfully must never be replaced by this screen.
+  if (renderBranch === "error") {
     return (
       <>
         {themeStylesheet}
@@ -248,16 +336,21 @@ export function PageRenderer({
     );
   }
 
-  // Sort sections by order from the template. page_template is the liveTheme-bound
-  // single template after resolvePageForLiveTheme, but the type is a manyToMany union
-  // (D-14) — coerce array → first defensively.
-  const template = Array.isArray(page.page_template)
-    ? page.page_template[0]
-    : page.page_template;
-  const sections = template?.sections || [];
-  const sortedSections = [...sections].sort(
-    (a, b) => (a.order ?? 0) - (b.order ?? 0)
-  );
+  if (!themeModule) {
+    // Unreachable in practice: every branch above returns unless
+    // `!loading && !error && themeModule` (i.e. `themeModuleReady`), so
+    // `themeModule` is always non-null by this point. TypeScript's
+    // control-flow analysis cannot follow that compound boolean logic across
+    // the `shellHtml`-gated branches above, so this guard exists purely to
+    // keep this function type-safe.
+    return null;
+  }
+
+  // Resolve sections through the shared seam (@/lib/section-resolver) so the
+  // client tree and the server shell (lib/server-shell.tsx, added in a later
+  // task) can never drift: section-key resolution, prop conversion, and the
+  // orphan-section skip all live in exactly one place now.
+  const resolvedSections = resolveSectionsForRender(page, themeModule);
 
   return (
     <>
@@ -270,64 +363,37 @@ export function PageRenderer({
           data-theme-stylesheet-deferred={themeName}
         />
       )}
-      <div className="min-h-screen">
-        {sortedSections.map((section, index) => {
-        const resolvedKey = getSectionComponentKey(
-          section.sectionKey,
-          themeModule.sectionsComponents
-        );
-        const SectionComponent = resolvedKey
-          ? themeModule.sectionsComponents[resolvedKey]
-          : null;
-
-        if (!SectionComponent) {
-          // D-12 (MT-09): an orphaned section — its key is absent from the loaded
-          // theme's sectionsComponents manifest — is SKIPPED (render nothing) on the
-          // live public site. Never throw, never show debug chrome to end users. The
-          // pure predicate lives in @/lib/customizer/orphan-section; the deployed
-          // theme-site is tsconfig-excluded so the same skip behavior is inlined here.
-          // Keep the console.warn for debuggability.
-          console.warn(`Section component not found: ${section.sectionKey}`);
-          return null;
-        }
-
-        // Convert Strapi data to component props
-        // Strapi stores data as typed values: { type: 'text', value: '...' }
-        // Components expect flat props: { title: '...', content: '...' }
-        const props = convertStrapiDataToProps(section.data);
-
-        // Add section metadata props that components might expect
-        const componentProps: Record<string, unknown> = {
-          ...props,
-          sectionId: section.id?.toString() || `${section.sectionKey}-${index}`,
-          sectionName: section.sectionKey,
-        };
-
-        // Sort blocks for this section
-        const sortedBlocks = [...(section.blocks || [])].sort(
-          (a, b) => (a.order ?? 0) - (b.order ?? 0)
-        );
-
-        // Pass renderBlocks so the section can render blocks inside its layout (the slot)
-        // Sections that support blocks call renderBlocks() where they want blocks to appear
-        if (sortedBlocks.length > 0) {
-          componentProps.renderBlocks = () =>
-            sortedBlocks.map((block, blockIndex) => (
-              <BlockRenderer
-                key={block.id ?? `${section.sectionKey}-block-${blockIndex}`}
-                block={block}
-                sectionKey={section.sectionKey}
-                themeModule={themeModule}
-              />
-            ));
-        }
-
-        return (
-          <div key={section.id || index}>
-            <SectionComponent {...componentProps} />
+      <div className="min-h-screen" ref={containerRef}>
+        {/*
+          META-06/D-09: rendered as a REAL React element -- gated on
+          `needsPromotedH1`, set by the useLayoutEffect above -- rather than
+          inserted into the DOM from the effect, so React's own reconciliation
+          owns this node like every other child. Must be the FIRST child so a
+          zero-heading composition still yields exactly one h1 as the
+          document's first heading, matching the server shell's placement.
+          Tag, marker attribute, and inline style all come from
+          `HeadingNormalizer`'s shared constants -- never restated here -- so
+          the server and the client can never disagree on any of the three.
+          The style is applied via a ref callback (not the `style` prop,
+          which requires a JS object) so the exact same CSS-text constant
+          `buildPromotedH1Html` uses server-side is reused byte-for-byte,
+          rather than hand-translated into a parallel object literal.
+        */}
+        {needsPromotedH1 && (
+          <h1
+            {...{ [HeadingNormalizer.PROMOTED_H1_ATTR]: "true" }}
+            ref={(el) => {
+              el?.setAttribute("style", HeadingNormalizer.PROMOTED_H1_INLINE_STYLE);
+            }}
+          >
+            {page.title}
+          </h1>
+        )}
+        {resolvedSections.map((r) => (
+          <div key={r.keyForReact}>
+            <r.Component {...r.props} />
           </div>
-        );
-      })}
+        ))}
       </div>
     </>
   );
@@ -341,128 +407,5 @@ export function convertPageMetafields(
   raw: Record<string, unknown> | null | undefined
 ): Record<string, unknown> {
   if (!raw) return {};
-  return convertStrapiDataToProps(raw);
-}
-
-/**
- * Convert Strapi typed data to flat component props
- * Strapi stores: { title: { type: 'text', value: 'Hello' } }
- * Components expect: { title: 'Hello' }
- *
- * Handles all field types including images, videos, page references, etc.
- */
-function convertStrapiDataToProps(
-  data: Record<string, unknown>
-): Record<string, unknown> {
-  const props: Record<string, unknown> = {};
-
-  for (const [key, typedValue] of Object.entries(data)) {
-    if (typedValue && typeof typedValue === "object" && "type" in typedValue && "value" in typedValue) {
-      const typed = typedValue as { type: string; value: unknown };
-      
-      // Handle different field types
-      switch (typed.type) {
-        case "text":
-        case "textarea":
-        case "number":
-        case "boolean":
-        case "color":
-        case "url":
-        case "video_url":
-        case "font_picker":
-        case "richtext":
-        case "html":
-        case "text_alignment":
-          // Simple types: extract value directly
-          props[key] = typed.value;
-          break;
-
-        case "image": {
-          // Image type: value is file ID or image object
-          // Always return an object structure (never null/undefined) so theme components can safely access .url
-          if (typed.value && typeof typed.value === "object") {
-            const obj = typed.value as { id?: number | null; url?: string | null };
-            const url = normalizeImageUrl(obj.url) ?? obj.url ?? null;
-            props[key] = { ...obj, url };
-          } else if (typeof typed.value === "number") {
-            // Just an ID, construct image object
-            props[key] = {
-              id: typed.value,
-              url: null, // URL will be resolved by component if needed
-            };
-          } else {
-            // Value is null, undefined, or unexpected type - return empty object structure
-            props[key] = {
-              id: null,
-              url: null,
-            };
-          }
-          break;
-        }
-
-        case "video": {
-          // Video type: similar to image
-          // Always return an object structure (never null/undefined) so theme components can safely access .url
-          if (typed.value && typeof typed.value === "object") {
-            props[key] = typed.value;
-          } else if (typeof typed.value === "number") {
-            props[key] = {
-              id: typed.value,
-              url: null,
-            };
-          } else {
-            // Value is null, undefined, or unexpected type - return empty object structure
-            props[key] = {
-              id: null,
-              url: null,
-            };
-          }
-          break;
-        }
-
-        case "metaobject_ref": {
-          // MVP: refs are pre-resolved server-side in strapi-client.ts (push model).
-          // This case is a fallback — passes the raw documentId string to the theme.
-          // TODO: When the theme has its own API client, it will receive this documentId
-          // and fetch the entry data directly, removing the need for server-side resolution.
-          props[key] = typed.value;
-          break;
-        }
-
-        case "page_reference": {
-          // Page reference: value might be string (slug) or object
-          props[key] = typed.value;
-          break;
-        }
-
-        case "json": {
-          // JSON type: check if it's an image/video stored as JSON
-          const jsonValue = typed.value;
-          if (jsonValue && typeof jsonValue === "object" && !Array.isArray(jsonValue)) {
-            const obj = jsonValue as Record<string, unknown>;
-            // If it looks like an image/video object, normalize url so build/deploy gets real Strapi URL
-            if (("id" in obj || "url" in obj) && !("slug" in obj && "title" in obj)) {
-              const rawUrl = typeof obj.url === "string" ? obj.url : null;
-              const url = normalizeImageUrl(rawUrl) ?? rawUrl;
-              props[key] = { ...obj, url };
-            } else {
-              props[key] = jsonValue;
-            }
-          } else {
-            props[key] = jsonValue;
-          }
-          break;
-        }
-
-        default:
-          // Unknown type: try to extract value, fallback to full object
-          props[key] = typed.value ?? typedValue;
-      }
-    } else {
-      // Already flat, use as-is
-      props[key] = typedValue;
-    }
-  }
-
-  return props;
+  return sharedConvertStrapiDataToProps(raw);
 }
