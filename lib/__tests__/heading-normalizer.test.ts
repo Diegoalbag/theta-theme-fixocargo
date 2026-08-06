@@ -164,6 +164,37 @@ describe("heading-normalizer — escaping (T-13-08, block-on-high)", () => {
       expect(countH1OpenTags(buildPromotedH1Html(payload))).toBe(1);
     }
   });
+
+  /**
+   * T-13-08 falsifiability (block-on-high) — how this mitigation is proven.
+   *
+   * 13-04-SUMMARY records that during execution `escapeHtml` was hand-neutered
+   * to an identity function, the escaping assertions confirmed RED, then the
+   * real implementation restored. That proof left no artifact.
+   *
+   * The durable replacement is NOT a separate test: it is the four
+   * positive/negative pairs above. They assert through `buildPromotedH1Html`,
+   * which calls the real `escapeHtml`, so they are wired to the actual
+   * mitigation and go red the moment it regresses.
+   *
+   * Re-verified empirically by /gsd-validate-phase on 2026-07-31: replacing
+   * `escapeHtml`'s body with `return value;` turns exactly those four tests
+   * RED (4 failed | 16 passed) and the implementation was then restored. To
+   * re-run that check, do the same and expect these four names to fail:
+   *   - "angle brackets: a script-element title ..."
+   *   - "attribute-breaking characters: double quote and single quote ..."
+   *   - "ampersand ordering: an already entity-shaped sequence ..."
+   *   - "event-handler payload: no raw angle bracket ..."
+   *
+   * Deliberately NOT added here: a test that builds strings from a local
+   * identity function and asserts those fail. Such a test is self-referential
+   * — it never invokes `escapeHtml`, stays green when the real function is
+   * neutered, and so manufactures false confidence in the phase's only
+   * high-severity threat. One was written and removed for exactly that reason.
+   *
+   * The structural `countH1OpenTags` assertion above is explicitly NOT this
+   * mitigation (13-04-PLAN) and correctly stays green under the mutation.
+   */
 });
 
 describe("heading-normalizer — DOM mechanism", () => {

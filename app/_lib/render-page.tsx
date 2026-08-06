@@ -12,11 +12,19 @@
  * routing by Next.js.
  */
 
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { fetchPages, fetchPageBySlug, fetchSite } from "@/lib/strapi-client";
 import type { StrapiPage } from "@/lib/strapi-client";
 import { PageRenderer } from "@/lib/page-renderer";
 import { resolveLiveBundle } from "@/lib/live-resolve";
+import {
+  resolveSiteOrigin,
+  buildPageMetadataFrom,
+  resolveHomepageSlugFrom,
+  NOT_FOUND_TITLE,
+} from "@/lib/seo-resolve";
+import { reportSeoDegrade } from "@/lib/seo-report";
 import { extractFirstHeroImageUrl } from "@/lib/hero-preload";
 import { evaluateThemeServerSide } from "@/lib/theme-evaluator";
 import { buildShellHtml, isSsrShellDisabled } from "@/lib/server-shell";
@@ -25,21 +33,62 @@ import { buildShellHtml, isSsrShellDisabled } from "@/lib/server-shell";
  * Resolve which page is the homepage: the `isHomepage` flag, then the
  * conventional slugs, then the first page. Mirrors the resolution the old
  * `app/page.tsx` redirect performed.
+ *
+ * The ladder itself lives in `resolveHomepageSlugFrom` (pure, in
+ * `lib/seo-resolve.ts`) so this routing decision and the canonical/sitemap
+ * decisions are the same code, not two copies that can drift. They did drift
+ * once: the canonical and sitemap honored only tier one, so a tenant with no
+ * explicitly-flagged homepage served `/` while declaring a canonical pointing
+ * at `/{slug}` and omitting `/` from the sitemap.
  */
 export async function resolveHomepageSlug(): Promise<string | null> {
-  const pages = await fetchPages();
-  const homepage =
-    pages.find((p) => p.isHomepage) ||
-    pages.find((p) => ["home", "homepage", "index"].includes(p.slug));
-  return homepage?.slug ?? pages[0]?.slug ?? null;
+  return resolveHomepageSlugFrom(await fetchPages());
 }
 
-/** Metadata shared by both routes. */
-export async function buildPageMetadata(slug: string | null) {
-  if (!slug) return { title: "Page Not Found" };
-  const page = await fetchPageBySlug(slug);
-  if (!page) return { title: "Page Not Found" };
-  return { title: page.title };
+/**
+ * Metadata shared by both routes (Phase 14). Thin fetch-and-delegate shell —
+ * all emission logic lives in the pure `buildPageMetadataFrom` (discretion
+ * call 5): a test of this shell would have to mock `@/lib/strapi-client` and
+ * would then assert the mock rather than the behavior, so this function has
+ * no dedicated test file; every metadata assertion lives in
+ * `lib/__tests__/seo-resolve.test.ts` against synthetic Strapi objects.
+ */
+export async function buildPageMetadata(slug: string | null): Promise<Metadata> {
+  if (!slug) return { title: NOT_FOUND_TITLE };
+
+  // The page and the site are independent reads — fetching them concurrently
+  // mirrors RenderPage's own block below. Both `fetchPageBySlug`/`fetchSite`
+  // are `cache()`-deduped, so the duplicate read from RenderPage's own call
+  // costs no extra round trip.
+  // `fetchPages` is read here too so the canonical can collapse to `/` for a
+  // homepage resolved by convention or first-page fallback, not just by an
+  // explicit flag (D-08). All three reads are `cache()`-deduped, and
+  // `fetchPages` is already fetched by the `/` route's own
+  // `resolveHomepageSlug()`, so this costs no extra Strapi round trip.
+  const [page, site, pages] = await Promise.all([
+    fetchPageBySlug(slug),
+    fetchSite(),
+    fetchPages(),
+  ]);
+
+  const origin = resolveSiteOrigin(site, process.env);
+  if (origin === null && page) {
+    // D-07: report the degrade, never guess an origin. Only booleans
+    // describing which inputs were present — never the values themselves
+    // (T-14-08).
+    reportSeoDegrade("origin-unresolvable", "page-metadata", {
+      hasSite: site != null,
+      hasSiteUrl: !!site?.siteUrl?.trim(),
+      hasSubdomainEnv: !!process.env.NEXT_PUBLIC_SITE_SUBDOMAIN?.trim(),
+    });
+  }
+
+  return buildPageMetadataFrom(
+    page,
+    site,
+    process.env,
+    resolveHomepageSlugFrom(pages)
+  );
 }
 
 function ConfigurationError({

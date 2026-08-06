@@ -4,7 +4,9 @@ import { gql } from "graphql-request";
 import { resolvePageForLiveTheme } from "./live-resolve";
 
 // Helper function to normalize URLs - ensures they have a protocol
-const normalizeUrl = (url: string): string => {
+// Exported (no behavior change) so `lib/seo-resolve.ts` reuses this one
+// URL-normalisation helper rather than writing a second copy (Phase 14).
+export const normalizeUrl = (url: string): string => {
   if (!url || url.trim() === '') {
     return '';
   }
@@ -60,16 +62,66 @@ interface MetaobjectEntriesResponse {
   metaobjectEntries: MetaobjectEntry[];
 }
 
+// Shared page scalar + SEO field selection (Phase 14, RESEARCH Pitfall 1 gate).
+// A plain template-literal string, not a `gql` tag — interpolated into ALL
+// THREE page queries below, including the A2 unfiltered fallback, so a
+// selection added once can never silently revert to the page-title-only
+// fallback whenever Strapi rejects the inline relation filter (the exact
+// failure mode Pitfall 1 warns about: getPageBySlugQuery and
+// getPageBySlugUnfilteredQuery are copy-pasted siblings). `updatedAt` needs
+// no schema change — Strapi provides it automatically — and is included now
+// so Plan 04's sitemap is a pure consumer of this file.
+// The `shared.seo` component's own selection. `shared.seo` is attached to
+// BOTH Page and Site (Plan 01, D-01), so this is interpolated into the page
+// selection below AND into `getSiteLiveThemeQuery` — one definition, not two
+// byte-identical copies. Phase 15 adds fields to this component; adding them
+// here reaches every query that selects `seo`, which is the same drift
+// argument PAGE_SCALAR_AND_SEO_FIELDS makes for the three page queries.
+const SEO_FIELDS = `
+  title
+  description
+  noindex
+  shareImage {
+    url
+    width
+    height
+  }
+`;
+
+// The Site singleton's scalar selection (Phase 15, SITE-01/SITE-04). One
+// definition, interpolated into `getSiteLiveThemeQuery` in place of the
+// previously-inline `name`/`siteUrl`/`siteLocale` lines — mirrors SEO_FIELDS'
+// own one-definition convention. `titleTemplate` and the three
+// `verification*` fields were created by Phase 14 but deliberately left
+// unread until this plan (14-03-D2's containment, lifted here).
+const SITE_SCALAR_FIELDS = `
+  name
+  siteUrl
+  siteLocale
+  titleTemplate
+  verificationGoogle
+  verificationBing
+  verificationYandex
+`;
+
+const PAGE_SCALAR_AND_SEO_FIELDS = `
+  documentId
+  title
+  slug
+  publishedAt
+  updatedAt
+  isHomepage
+  metafields
+  seo {
+    ${SEO_FIELDS}
+  }
+`;
+
 // GraphQL query for fetching pages
 const getPagesQuery = gql`
   query GetPages {
     pages {
-      documentId
-      title
-      slug
-      publishedAt
-      isHomepage
-      metafields
+      ${PAGE_SCALAR_AND_SEO_FIELDS}
       page_template {
         sections {
           id
@@ -98,12 +150,7 @@ const getPagesQuery = gql`
 const getPageBySlugQuery = gql`
   query GetPageBySlug($slug: String!, $liveTheme: ID!) {
     pages(filters: { slug: { eq: $slug } }) {
-      documentId
-      title
-      slug
-      publishedAt
-      isHomepage
-      metafields
+      ${PAGE_SCALAR_AND_SEO_FIELDS}
       page_template(filters: { theme: { documentId: { eq: $liveTheme } } }) {
         documentId
         theme {
@@ -132,12 +179,7 @@ const getPageBySlugQuery = gql`
 const getPageBySlugUnfilteredQuery = gql`
   query GetPageBySlugUnfiltered($slug: String!) {
     pages(filters: { slug: { eq: $slug } }) {
-      documentId
-      title
-      slug
-      publishedAt
-      isHomepage
-      metafields
+      ${PAGE_SCALAR_AND_SEO_FIELDS}
       page_template {
         documentId
         theme {
@@ -164,9 +206,25 @@ const getPageBySlugUnfilteredQuery = gql`
 // a read is fine on it; no privileged write exists in this scaffold. Selects the
 // fields the bundle resolver needs (name + builtAssetUrl) plus documentId for the
 // page-template binding filter.
+//
+// Phase 14: widened to also select `name`, `siteUrl`, `siteLocale` and `seo` as
+// top-level fields on `site` alongside `liveTheme` — this query now carries the
+// origin, locale and site-level SEO fields as well as the live-theme pointer.
+// The const name and the `GetSiteLiveTheme` operation name are kept unchanged
+// (a rename buys nothing and is a gratuitous change to a wire-visible string);
+// `name` is selected for Plan 03's site-derived layout title.
+//
+// Phase 15 (Plan 03): the scalar selection (`name`/`siteUrl`/`siteLocale`
+// plus `titleTemplate`/`verification*`) now comes from the single
+// `SITE_SCALAR_FIELDS` const above rather than four inline lines, so the
+// Site scalar names appear once in this file, not twice.
 const getSiteLiveThemeQuery = gql`
   query GetSiteLiveTheme {
     site {
+      ${SITE_SCALAR_FIELDS}
+      seo {
+        ${SEO_FIELDS}
+      }
       liveTheme {
         documentId
         name
@@ -198,13 +256,34 @@ export interface StrapiPageTemplate {
   sections?: StrapiSection[];
 }
 
+/**
+ * `shared.seo` component shape (Phase 14, Plan 01). Non-repeatable, attached
+ * to both `Page` and `Site`. Defined once and referenced from both types,
+ * mirroring how `StrapiPageTemplate` is defined once and referenced from
+ * `StrapiPage`.
+ */
+export interface StrapiSeoImage {
+  url?: string | null;
+  width?: number | null;
+  height?: number | null;
+}
+
+export interface StrapiSeo {
+  title?: string | null;
+  description?: string | null;
+  noindex?: boolean | null;
+  shareImage?: StrapiSeoImage | null;
+}
+
 export interface StrapiPage {
   documentId: string;
   title: string;
   slug: string;
   publishedAt?: string | null;
+  updatedAt?: string | null;
   isHomepage?: boolean;
   metafields?: Record<string, unknown> | null;
+  seo?: StrapiSeo | null;
   // manyToMany (D-14): the raw fetch can surface an ARRAY of theme-scoped templates.
   // resolvePageForLiveTheme narrows this to the SINGLE liveTheme-bound template
   // before render, so downstream consumers see a single object.
@@ -215,8 +294,28 @@ export interface StrapiPagesResponse {
   pages: StrapiPage[];
 }
 
-/** Site.liveTheme shape (the live pointer + bundle inputs). */
+/**
+ * Site singleton shape: the live-theme pointer + bundle inputs, plus (Phase
+ * 14) the origin, locale and site-level SEO fields the metadata resolver
+ * needs. Note the site-level locale attribute is named `siteLocale`, NOT
+ * `locale` — `@strapi/i18n`'s `extendContentTypes` unconditionally overwrites
+ * any `locale` attribute at boot with a private one that
+ * `@strapi/plugin-graphql` then drops from the schema (see 14-01-SUMMARY.md).
+ *
+ * `titleTemplate`/`verificationGoogle`/`verificationBing`/`verificationYandex`
+ * (Phase 14) were created but deliberately left unread until Phase 15
+ * (14-03-D2's containment) — read and emitted starting with this plan
+ * (SITE-01/SITE-04).
+ */
 export interface StrapiSite {
+  name?: string | null;
+  siteUrl?: string | null;
+  siteLocale?: string | null;
+  titleTemplate?: string | null;
+  verificationGoogle?: string | null;
+  verificationBing?: string | null;
+  verificationYandex?: string | null;
+  seo?: StrapiSeo | null;
   liveTheme?: {
     documentId: string;
     name?: string | null;
