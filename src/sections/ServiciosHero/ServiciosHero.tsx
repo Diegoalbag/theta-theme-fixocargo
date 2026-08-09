@@ -2,6 +2,8 @@ import * as React from "react";
 import { Plane, Ship, Truck, ClipboardCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { FULL_BLEED_SIZES, type ImageFormats } from "@/lib/image-srcset";
+import { ThemeImage } from "@/lib/theme-image";
 
 // ServiciosHero (quick task 260707-etz) — the FixoCargo "Servicios" page dark
 // hero band. A fully self-contained section with NO renderBlocks prop and NO
@@ -15,7 +17,7 @@ import { Button } from "@/components/ui/button";
 //
 // OPTIONAL full-bleed background (quick task 260707-kpz, mirrors the
 // NosotrosHero pattern): when `backgroundImage.url` is set, a full-bleed
-// object-cover <img> plus a bg-black/50 overlay paint BEHIND the existing
+// object-cover image plus a bg-black/50 overlay paint BEHIND the existing
 // content (which stacks above via a `relative` container). Unlike
 // NosotrosHero, ServiciosHero's text/tile colors NEVER flip — this section is
 // already dark (bg-brand-navy, white/yellow text) by default, so every
@@ -30,6 +32,7 @@ export interface ServiciosHeroProps {
     alt?: string;
     width?: number;
     height?: number;
+    formats?: ImageFormats | null;
   };
   kicker?: string;
   headline?: string;
@@ -96,18 +99,17 @@ export const ServiciosHero = ({
   return (
     <section className={sectionClassName}>
       {/* Full-bleed hero background (mirrors NosotrosHero): object-cover
-          <img> + fixed ~50% dark overlay, both BEHIND the content. Rendered
+          image + fixed ~50% dark overlay, both BEHIND the content. Rendered
           only when a background image url is set. */}
       {hasBg ? (
         <>
-          <img
-            src={backgroundImage!.url}
+          <ThemeImage
+            url={backgroundImage?.url}
             alt={backgroundImage?.alt ?? ""}
             width={backgroundImage?.width}
             height={backgroundImage?.height}
-            loading="lazy"
-            decoding="async"
-            className="absolute inset-0 h-full w-full object-cover"
+            formats={backgroundImage?.formats}
+            sizesHint={FULL_BLEED_SIZES}
           />
           <div aria-hidden className="absolute inset-0 bg-black/50" />
         </>

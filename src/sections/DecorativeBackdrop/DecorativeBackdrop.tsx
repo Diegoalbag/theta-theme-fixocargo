@@ -1,5 +1,8 @@
 import type React from "react";
 
+import type { ImageFormats } from "@/lib/image-srcset";
+import { ThemeImage } from "@/lib/theme-image";
+
 // DecorativeBackdrop (quick task 260709-buk) — a zero-height, self-anchored,
 // no-block settings-only section that paints an absolutely-positioned
 // decorative image BEHIND every sibling section, regardless of where in the
@@ -34,6 +37,7 @@ export interface DecorativeBackdropProps {
     alt?: string;
     width?: number;
     height?: number;
+    formats?: ImageFormats | null;
   };
   reachVh?: number;
   horizontalPosition?: "left" | "center" | "right";
@@ -75,13 +79,14 @@ export const DecorativeBackdrop = ({
       aria-hidden="true"
     >
       {hasImage && (
-        <img
-          src={image!.url}
+        <ThemeImage
+          url={image?.url}
           alt=""
-          width={image!.width}
-          height={image!.height}
-          loading="lazy"
-          decoding="async"
+          width={image?.width}
+          height={image?.height}
+          formats={image?.formats}
+          sizesHint={`${widthPx}px`}
+          positioning="custom"
           className="absolute top-0 object-contain"
           style={{
             width: `${widthPx}px`,

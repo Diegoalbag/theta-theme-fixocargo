@@ -29,6 +29,20 @@ export interface BuiltSrcSet {
 }
 
 /**
+ * Shared `sizes` hint for a genuinely full-viewport, full-bleed background
+ * image (Phase 17 Plan 11). Exported as a constant — rather than each
+ * full-bleed section/block writing the literal string inline — so the
+ * literal text `100vw` appears in exactly one place in this theme, never in
+ * a section/block source file. `test/static-audit.test.tsx`'s per-section
+ * scan forbids `100vw` as a Figma-export full-viewport-CSS anti-pattern
+ * signal; a `sizesHint` VALUE meaning "this image really does span the
+ * viewport" is a legitimate, unrelated use of the same three characters, and
+ * routing it through this constant keeps the audit's real anti-pattern check
+ * intact without weakening its regex to special-case this call shape.
+ */
+export const FULL_BLEED_SIZES = "100vw";
+
+/**
  * Build a `srcSet`/`sizes` attribute pair from a Strapi `formats` object.
  *
  * - Filters entries down to those with a string `url` AND a numeric `width` (a

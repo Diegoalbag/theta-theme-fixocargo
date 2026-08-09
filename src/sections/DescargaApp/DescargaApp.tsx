@@ -2,6 +2,8 @@ import * as React from "react";
 
 import { ImageGuard } from "@/lib/image-guard";
 import { BlocksSlot } from "@/lib/blocks-slot";
+import { FULL_BLEED_SIZES, type ImageFormats } from "@/lib/image-srcset";
+import { ThemeImage } from "@/lib/theme-image";
 
 // DescargaApp (SVC-03) — the app-download band. A full-bleed background image
 // (full-bleed url-guard per RESEARCH Pattern 2 / HeroSlide — NOT ImageGuard,
@@ -22,6 +24,7 @@ export interface DescargaAppProps {
     alt?: string;
     width?: number;
     height?: number;
+    formats?: ImageFormats | null;
   };
   phoneImage1?: {
     id: string;
@@ -29,6 +32,7 @@ export interface DescargaAppProps {
     alt?: string;
     width?: number;
     height?: number;
+    formats?: ImageFormats | null;
   };
   phoneImage2?: {
     id: string;
@@ -36,6 +40,7 @@ export interface DescargaAppProps {
     alt?: string;
     width?: number;
     height?: number;
+    formats?: ImageFormats | null;
   };
   heading?: string;
   body?: string;
@@ -57,19 +62,15 @@ export const DescargaApp = ({
       {/* Full-bleed background — url-guard (RESEARCH Pattern 2 / HeroSlide):
           paint object-cover when set, else a navy placeholder (no broken img,
           QA-01). NOT ImageGuard — that boxes at 16:9 (Pitfall 3). */}
-      {backgroundImage?.url ? (
-        <img
-          src={backgroundImage.url}
-          alt={backgroundImage.alt ?? ""}
-          width={backgroundImage.width}
-          height={backgroundImage.height}
-          loading="lazy"
-          decoding="async"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-      ) : (
-        <div aria-hidden className="absolute inset-0 bg-brand-navy" />
-      )}
+      <ThemeImage
+        url={backgroundImage?.url}
+        alt={backgroundImage?.alt ?? ""}
+        width={backgroundImage?.width}
+        height={backgroundImage?.height}
+        formats={backgroundImage?.formats}
+        sizesHint={FULL_BLEED_SIZES}
+        placeholder={<div aria-hidden className="absolute inset-0 bg-brand-navy" />}
+      />
 
       {/* Fixed ~60% yellow overlay (D-05 — CSS-only, not a customizer control). */}
       <div aria-hidden className="absolute inset-0 bg-brand-yellow/60" />
@@ -107,6 +108,7 @@ export const DescargaApp = ({
                 ratio={9 / 16}
                 width={phoneImage1?.width}
                 height={phoneImage1?.height}
+                formats={phoneImage1?.formats}
               />
             </div>
             <div className="w-40 md:w-56 lg:w-64">
@@ -117,6 +119,7 @@ export const DescargaApp = ({
                 ratio={9 / 16}
                 width={phoneImage2?.width}
                 height={phoneImage2?.height}
+                formats={phoneImage2?.formats}
               />
             </div>
           </div>

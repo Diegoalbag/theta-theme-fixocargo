@@ -3,6 +3,8 @@ import * as React from "react";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Button } from "@/components/ui/button";
 import { BlocksSlot } from "@/lib/blocks-slot";
+import { FULL_BLEED_SIZES, type ImageFormats } from "@/lib/image-srcset";
+import { ThemeImage } from "@/lib/theme-image";
 
 // EnviosNacionales (INF-02) — the navy dark "national shipping" band. Mirrors the
 // Beneficios precedent (D-06): a dark SectionHeading (white H2 + yellow eyebrow)
@@ -15,7 +17,7 @@ import { BlocksSlot } from "@/lib/blocks-slot";
 // Optional full-section background image (full-bleed url-guard, NOT ImageGuard —
 // Pitfall 3): when set it paints object-cover behind a fixed navy tint that keeps
 // the white heading + pills legible; with no image the base bg-brand-navy shows,
-// so the band is never a broken <img>.
+// so the band is never a broken image element.
 //
 // No state, no event handlers, no hex literals, @/ imports only.
 interface BackgroundImage {
@@ -24,6 +26,7 @@ interface BackgroundImage {
   alt?: string;
   width?: number;
   height?: number;
+  formats?: ImageFormats | null;
 }
 
 export interface EnviosNacionalesProps {
@@ -53,17 +56,14 @@ export const EnviosNacionales = ({
           Pitfall 3). Both absolutely positioned; the content container below is
           `relative` so it stacks above them. The base bg-brand-navy is the
           fallback when no image is set. */}
-      {backgroundImage?.url && (
-        <img
-          src={backgroundImage.url}
-          alt={backgroundImage.alt ?? ""}
-          width={backgroundImage.width}
-          height={backgroundImage.height}
-          loading="lazy"
-          decoding="async"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-      )}
+      <ThemeImage
+        url={backgroundImage?.url}
+        alt={backgroundImage?.alt ?? ""}
+        width={backgroundImage?.width}
+        height={backgroundImage?.height}
+        formats={backgroundImage?.formats}
+        sizesHint={FULL_BLEED_SIZES}
+      />
       {backgroundImage?.url && (
         <div aria-hidden className="absolute inset-0 bg-brand-navy/70" />
       )}

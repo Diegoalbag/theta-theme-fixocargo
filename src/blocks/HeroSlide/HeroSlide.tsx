@@ -1,7 +1,8 @@
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
-import { buildSrcSet, type ImageFormats } from "@/lib/image-srcset";
+import { FULL_BLEED_SIZES, type ImageFormats } from "@/lib/image-srcset";
+import { ThemeImage } from "@/lib/theme-image";
 
 // HeroSlide — section-local block for the Hero (ATF-01) Blaze Slider carousel.
 // Blaze sizes each slide to the full track width via `.blaze-track > *`, so the
@@ -38,28 +39,22 @@ export const HeroSlide = ({
   ctaLabel,
   ctaUrl,
 }: HeroSlideProps): React.ReactNode => {
-  const { srcSet, sizes } = buildSrcSet(backgroundImage?.formats, "100vw");
   return (
     <article className="relative flex items-center overflow-hidden min-h-[30vh] md:min-h-[560px]">
       {/* Full-bleed per-slide background — url-guard (RESEARCH Pattern 2, D-04).
           When the image is set, paint it object-cover; otherwise a navy
-          placeholder (no broken img, QA-01). */}
-      {backgroundImage?.url ? (
-        <img
-          src={backgroundImage.url}
-          alt={backgroundImage.alt ?? ""}
-          width={backgroundImage.width}
-          height={backgroundImage.height}
-          srcSet={srcSet}
-          sizes={sizes}
-          loading="eager"
-          fetchPriority="high"
-          decoding="async"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-      ) : (
-        <div aria-hidden className="absolute inset-0 bg-brand-navy" />
-      )}
+          placeholder (no broken img, QA-01). First-viewport hero: eager +
+          high fetch priority via ThemeImage's priority flag. */}
+      <ThemeImage
+        url={backgroundImage?.url}
+        alt={backgroundImage?.alt ?? ""}
+        width={backgroundImage?.width}
+        height={backgroundImage?.height}
+        formats={backgroundImage?.formats}
+        sizesHint={FULL_BLEED_SIZES}
+        priority
+        placeholder={<div aria-hidden className="absolute inset-0 bg-brand-navy" />}
+      />
 
       {/* Fixed ~50% dark overlay (matches design rgba(0,0,0,0.5); POL-02
           overlayOpacity is v2 — overlay stays fixed here). */}

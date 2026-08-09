@@ -2,6 +2,8 @@ import * as React from "react";
 import { Search } from "lucide-react";
 
 import { SectionHeading } from "@/components/ui/section-heading";
+import { FULL_BLEED_SIZES, type ImageFormats } from "@/lib/image-srcset";
+import { ThemeImage } from "@/lib/theme-image";
 
 // BlogHero (BLG-01, ART-04) — one reusable header that serves the Blog index
 // (search ON) and the Blog-article / Legal headers (search OFF → article-header
@@ -33,6 +35,7 @@ export interface BlogHeroProps {
     alt?: string;
     width?: number;
     height?: number;
+    formats?: ImageFormats | null;
   };
   eyebrow?: string;
   heading?: string;
@@ -115,14 +118,13 @@ export const BlogHero = ({
   if (hasImage) {
     return (
       <section className="relative flex items-center overflow-hidden min-h-[30vh] md:min-h-[560px]">
-        <img
-          src={backgroundImage!.url}
-          alt={backgroundImage!.alt ?? ""}
-          width={backgroundImage!.width}
-          height={backgroundImage!.height}
-          loading="lazy"
-          decoding="async"
-          className="absolute inset-0 h-full w-full object-cover"
+        <ThemeImage
+          url={backgroundImage?.url}
+          alt={backgroundImage?.alt ?? ""}
+          width={backgroundImage?.width}
+          height={backgroundImage?.height}
+          formats={backgroundImage?.formats}
+          sizesHint={FULL_BLEED_SIZES}
         />
         {/* Fixed ~50% dark overlay (matches HeroSlide rgba(0,0,0,0.5)). */}
         <div aria-hidden className="absolute inset-0 bg-black/50" />

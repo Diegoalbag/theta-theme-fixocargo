@@ -4,7 +4,8 @@ import { Menu, X, User } from "lucide-react";
 import { BlocksSlot } from "@/lib/blocks-slot";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { buildSrcSet, type ImageFormats } from "@/lib/image-srcset";
+import type { ImageFormats } from "@/lib/image-srcset";
+import { ThemeImage } from "@/lib/theme-image";
 
 // SiteHeader (CHR-02) — site-wide top navigation.
 // Mobile nav uses a CSS-only details/summary hamburger — no useState, no React
@@ -49,7 +50,6 @@ export const SiteHeader = ({
   accountUrl,
   renderBlocks,
 }: SiteHeaderProps): React.ReactNode => {
-  const { srcSet, sizes } = buildSrcSet(logo?.formats, "200px");
   // Rendered in both the desktop header bar and the mobile menu; `extra` makes
   // the mobile copy full-width. Pure render — no state, no handlers.
   const accountButton = (extra?: string) => (
@@ -76,15 +76,14 @@ export const SiteHeader = ({
         <div className="shrink-0">
           {logo?.url ? (
             <a href={logoUrl || "/"} className="inline-block">
-              <img
-                src={logo.url}
+              <ThemeImage
+                url={logo.url}
                 alt={logo.alt ?? ""}
                 width={logo.width ?? 200}
                 height={logo.height ?? 40}
-                srcSet={srcSet}
-                sizes={sizes}
-                loading="lazy"
-                decoding="async"
+                formats={logo.formats}
+                sizesHint="200px"
+                positioning="custom"
                 className="h-10 w-auto object-contain"
               />
             </a>

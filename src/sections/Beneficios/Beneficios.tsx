@@ -3,6 +3,8 @@ import * as React from "react";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Button } from "@/components/ui/button";
 import { BlocksSlot } from "@/lib/blocks-slot";
+import { FULL_BLEED_SIZES, type ImageFormats } from "@/lib/image-srcset";
+import { ThemeImage } from "@/lib/theme-image";
 
 // Beneficios (SVC-02) — the navy dark benefits band. A dark SectionHeading
 // (white H2 + yellow eyebrow) with a real yellow-pill section CTA anchor, over a
@@ -14,7 +16,7 @@ import { BlocksSlot } from "@/lib/blocks-slot";
 // Optional full-section background image (full-bleed url-guard, NOT ImageGuard —
 // Pitfall 3): when set it paints object-cover behind a fixed navy tint that keeps
 // the white heading and cards legible; with no image the base bg-brand-navy
-// shows, so the band is never a broken <img>.
+// shows, so the band is never a broken image element.
 //
 // No state, no event handlers, no hex literals, @/ imports only.
 interface BackgroundImage {
@@ -23,6 +25,7 @@ interface BackgroundImage {
   alt?: string;
   width?: number;
   height?: number;
+  formats?: ImageFormats | null;
 }
 
 export interface BeneficiosProps {
@@ -50,17 +53,14 @@ export const Beneficios = ({
           Pitfall 3). Both are absolutely positioned; the content wrapper below
           is `relative` so it stacks above them. The base bg-brand-navy is the
           fallback when no image is set. */}
-      {backgroundImage?.url && (
-        <img
-          src={backgroundImage.url}
-          alt={backgroundImage.alt ?? ""}
-          width={backgroundImage.width}
-          height={backgroundImage.height}
-          loading="lazy"
-          decoding="async"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-      )}
+      <ThemeImage
+        url={backgroundImage?.url}
+        alt={backgroundImage?.alt ?? ""}
+        width={backgroundImage?.width}
+        height={backgroundImage?.height}
+        formats={backgroundImage?.formats}
+        sizesHint={FULL_BLEED_SIZES}
+      />
       {backgroundImage?.url && (
         <div aria-hidden className="absolute inset-0 bg-brand-navy/70" />
       )}

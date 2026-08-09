@@ -2,6 +2,8 @@ import * as React from "react";
 
 import { Button } from "@/components/ui/button";
 import { ImageGuard } from "@/lib/image-guard";
+import { FULL_BLEED_SIZES, type ImageFormats } from "@/lib/image-srcset";
+import { ThemeImage } from "@/lib/theme-image";
 
 // NosotrosHero (NOS-01, D-03) — the About-page header: a two-column band with an
 // editable text column (brand-yellow eyebrow, display-italic heading, subtitle,
@@ -12,7 +14,7 @@ import { ImageGuard } from "@/lib/image-guard";
 // badge fields are empty.
 //
 // OPTIONAL full-bleed hero background (mirrors the ATF Hero slide treatment):
-// when `backgroundImage.url` is set, a full-bleed object-cover <img> plus a
+// when `backgroundImage.url` is set, a full-bleed object-cover image plus a
 // fixed bg-black/50 overlay paint BEHIND the two-column content (which stacks
 // above via a `relative` container), and the heading/subtitle flip to white for
 // legibility. When unset, the section keeps its transparent background
@@ -30,6 +32,7 @@ export interface TeamImage {
   alt?: string;
   width?: number;
   height?: number;
+  formats?: ImageFormats | null;
 }
 
 export interface NosotrosHeroProps {
@@ -39,6 +42,7 @@ export interface NosotrosHeroProps {
     alt?: string;
     width?: number;
     height?: number;
+    formats?: ImageFormats | null;
   };
   eyebrow?: string;
   heading?: string;
@@ -96,19 +100,18 @@ export const NosotrosHero = ({
 
   return (
     <section className={sectionClassName}>
-      {/* Full-bleed hero background (mirrors HeroSlide): object-cover <img> +
+      {/* Full-bleed hero background (mirrors HeroSlide): object-cover image +
           fixed ~50% dark overlay, both BEHIND the content. Rendered only when a
           background image url is set. */}
       {hasBg ? (
         <>
-          <img
-            src={backgroundImage!.url}
+          <ThemeImage
+            url={backgroundImage?.url}
             alt={backgroundImage?.alt ?? ""}
             width={backgroundImage?.width}
             height={backgroundImage?.height}
-            loading="lazy"
-            decoding="async"
-            className="absolute inset-0 h-full w-full object-cover"
+            formats={backgroundImage?.formats}
+            sizesHint={FULL_BLEED_SIZES}
           />
           <div aria-hidden className="absolute inset-0 bg-black/50" />
         </>
@@ -156,6 +159,7 @@ export const NosotrosHero = ({
                 ratio={760 / 900}
                 width={teamImage?.width}
                 height={teamImage?.height}
+                formats={teamImage?.formats}
               />
             </div>
 

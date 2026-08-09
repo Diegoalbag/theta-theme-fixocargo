@@ -1,6 +1,8 @@
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
+import { FULL_BLEED_SIZES, type ImageFormats } from "@/lib/image-srcset";
+import { ThemeImage } from "@/lib/theme-image";
 
 // PromoBanner (SVC-01) — section-local block for the Servicios band's right
 // rail. A full-bleed promotional card: it paints its OWN background image
@@ -18,6 +20,7 @@ export interface PromoBannerProps {
     alt?: string;
     width?: number;
     height?: number;
+    formats?: ImageFormats | null;
   };
   kicker?: string;
   headline?: string;
@@ -37,19 +40,15 @@ export const PromoBanner = ({
   return (
     <div className="relative overflow-hidden rounded-2xl min-h-[220px] lg:min-h-[346px] flex">
       {/* Full-bleed background — url-guard (Pitfall 3, NOT ImageGuard). */}
-      {backgroundImage?.url ? (
-        <img
-          src={backgroundImage.url}
-          alt={backgroundImage.alt ?? ""}
-          width={backgroundImage.width}
-          height={backgroundImage.height}
-          loading="lazy"
-          decoding="async"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-      ) : (
-        <div aria-hidden className="absolute inset-0 bg-brand-navy" />
-      )}
+      <ThemeImage
+        url={backgroundImage?.url}
+        alt={backgroundImage?.alt ?? ""}
+        width={backgroundImage?.width}
+        height={backgroundImage?.height}
+        formats={backgroundImage?.formats}
+        sizesHint={FULL_BLEED_SIZES}
+        placeholder={<div aria-hidden className="absolute inset-0 bg-brand-navy" />}
+      />
 
       {/* Fixed navy bottom-gradient overlay (CSS-only, D-05). */}
       <div
