@@ -12,6 +12,19 @@ import path from "node:path";
  * `templates/theme-repository/vercel.json` (per THEME_DEVELOPMENT.md
  * section 8), so a future edit to this file cannot silently widen the
  * `immutable` rule to cover an un-versioned request.
+ *
+ * FONT RULE (Phase 17-09, PERF-01): the seventh rule, `/fonts/(.*)`, is
+ * deliberately NOT query-gated like the three canonical bundle artifacts
+ * above. Those get a stable-alias URL that is byte-identical across every
+ * rebuild, so an un-versioned request must revalidate. Font filenames are
+ * content-stable brand assets (anton.woff2, inter.woff2, etc.) that are
+ * replaced BY NAME ONLY during a deliberate, infrequent, maintainer-driven
+ * licensed-font swap — there is no per-rebuild churn to protect against, so
+ * a year-long immutable lifetime with no version query is safe here. The
+ * rule also carries `Access-Control-Allow-Origin: *` because the font is
+ * fetched cross-origin: theme.bundle.css lives on the theme's own asset
+ * Vercel project, but the browser loading it is rendering the tenant
+ * document on a different origin.
  */
 
 const VERCEL_JSON_PATH = path.resolve(__dirname, "..", "vercel.json");
@@ -59,11 +72,13 @@ function hasQueryCondition(
   );
 }
 
+const FONT_RULE_SOURCE = "/fonts/(.*)";
+
 describe("vercel.json — theme asset cache headers (PERF-04, theta-theme-fixocargo)", () => {
-  it("is valid JSON with a headers array of exactly six rules", () => {
+  it("is valid JSON with a headers array of exactly seven rules (six bundle + one font)", () => {
     const config = loadConfig();
     expect(Array.isArray(config.headers)).toBe(true);
-    expect(config.headers).toHaveLength(6);
+    expect(config.headers).toHaveLength(7);
   });
 
   it("has exactly two rules per canonical artifact (versioned + un-versioned)", () => {
@@ -74,10 +89,10 @@ describe("vercel.json — theme asset cache headers (PERF-04, theta-theme-fixoca
     }
   });
 
-  it("targets no path other than the three canonical artifacts", () => {
+  it("targets no path other than the three canonical artifacts and the font rule", () => {
     const config = loadConfig();
     for (const rule of config.headers) {
-      expect(CANONICAL_SOURCES).toContain(rule.source);
+      expect([...CANONICAL_SOURCES, FONT_RULE_SOURCE]).toContain(rule.source);
     }
   });
 
@@ -88,9 +103,14 @@ describe("vercel.json — theme asset cache headers (PERF-04, theta-theme-fixoca
     }
   });
 
-  it("every rule whose Cache-Control contains immutable also carries a `has` condition on query key v", () => {
+  it("every QUERY-GATED rule whose Cache-Control contains immutable also carries a `has` condition on query key v", () => {
+    // The font rule is deliberately excluded — it is immutable WITHOUT a
+    // query gate (see header comment: content-stable filenames, no
+    // per-rebuild churn to protect against), unlike the three canonical
+    // bundle artifacts whose stable-alias URL is byte-identical every build.
     const config = loadConfig();
-    const immutableRules = config.headers.filter((r) =>
+    const bundleRules = config.headers.filter((r) => r.source !== FONT_RULE_SOURCE);
+    const immutableRules = bundleRules.filter((r) =>
       cacheControlValue(r)?.includes("immutable"),
     );
     expect(immutableRules.length).toBeGreaterThan(0);
@@ -98,6 +118,19 @@ describe("vercel.json — theme asset cache headers (PERF-04, theta-theme-fixoca
       expect(hasQueryCondition(rule.has, "v")).toBe(true);
       expect(cacheControlValue(rule)).toBe(IMMUTABLE_VALUE);
     }
+  });
+
+  it("the font rule carries both Access-Control-Allow-Origin and an immutable, un-gated Cache-Control", () => {
+    const config = loadConfig();
+    const fontRule = config.headers.find((r) => r.source === FONT_RULE_SOURCE);
+    expect(fontRule).toBeDefined();
+    expect(fontRule?.has).toBeUndefined();
+    expect(fontRule?.missing).toBeUndefined();
+    expect(
+      fontRule?.headers.find((h) => h.key === "Access-Control-Allow-Origin")
+        ?.value,
+    ).toBe("*");
+    expect(cacheControlValue(fontRule as HeaderRule)).toBe(IMMUTABLE_VALUE);
   });
 
   it("no rule pairs immutable with a `missing` condition (the inverse of the safety property)", () => {

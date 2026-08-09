@@ -6,9 +6,9 @@
  *
  * Family names are STABLE LOGICAL roles ("Display"/"Gill"/"Gotham"/"OpenSans")
  * that never change. Swapping in the eventual licensed faces (Aku Kamu / Gill
- * Sans / Gotham) later is a PURE ASSET SWAP — replace the woff2 files in
- * src/fonts/ and re-run the metric generator for the fallback overrides; no
- * token, component, or class edit is needed.
+ * Sans / Gotham) later is a PURE ASSET SWAP — replace the font files under
+ * the public directory's font folder and re-run the metric generator for the
+ * fallback overrides; no token, component, or class edit is needed.
  *
  * Substitutes now (Claude's discretion, closest free match, open-licensed):
  *   Display  -> Anton      (OFL)   — bold condensed display
@@ -20,10 +20,24 @@
  * @font-face (size-adjust + ascent/descent/line-gap-override) to minimize CLS
  * on the eventual font swap. Override values are hard-coded (generated once
  * from @capsizecss/metrics data) — no build dependency added (Don't Hand-Roll).
+ *
+ * PATHS ARE ROOT-ABSOLUTE, NOT RELATIVE (PERF-01, 17-09):
+ * this theme builds with `build.lib` set in vite.config.ts, and Vite
+ * documents that `build.assetsInlineLimit` is ignored in library mode —
+ * every asset Vite's pipeline sees is inlined as base64 regardless of size.
+ * A relative source path pointing back into src would be resolved by that
+ * pipeline and re-inlined into this stylesheet (which is exactly what made
+ * theme.bundle.css 394,462 B, 81.7% of it font payloads, before this fix). A
+ * root-absolute path served from the public directory is copied verbatim by
+ * Vite's `copyPublicDir` and never rewritten, so the byte stays out of this
+ * file. The URL resolves against THIS STYLESHEET'S OWN ORIGIN — the theme's
+ * asset Vercel project — not against the tenant document's origin, which is
+ * why the font responses need a permissive Access-Control-Allow-Origin
+ * header (see vercel.json).
  * ------------------------------------------------------------------------- */
 @font-face {
   font-family: "Display";
-  src: url("./fonts/anton.woff2") format("woff2");
+  src: url("/fonts/anton.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -39,7 +53,7 @@
 
 @font-face {
   font-family: "Gill";
-  src: url("./fonts/inter.woff2") format("woff2");
+  src: url("/fonts/inter.woff2") format("woff2");
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
@@ -55,21 +69,21 @@
 
 @font-face {
   font-family: "Gotham";
-  src: url("./fonts/Gotham-Light.ttf") format("truetype");
+  src: url("/fonts/Gotham-Light.ttf") format("truetype");
   font-weight: 300;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Gotham";
-  src: url("./fonts/Gotham-Regular.ttf") format("truetype");
+  src: url("/fonts/Gotham-Regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Gotham";
-  src: url("./fonts/Gotham-Bold.ttf") format("truetype");
+  src: url("/fonts/Gotham-Bold.ttf") format("truetype");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -85,7 +99,7 @@
 
 @font-face {
   font-family: "OpenSans";
-  src: url("./fonts/open-sans.woff2") format("woff2");
+  src: url("/fonts/open-sans.woff2") format("woff2");
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
@@ -93,7 +107,7 @@
 
 @font-face {
   font-family: "Aku";
-  src: url("./fonts/aku-kamu.otf") format("opentype");
+  src: url("/fonts/aku-kamu.otf") format("opentype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
