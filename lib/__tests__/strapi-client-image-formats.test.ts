@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // RED (Phase 11, Plan 02, Task 2): `collectImageIds`/`mergeImageFormats` are built
 // in this same task (D-01 frontend half — resolve real Strapi `formats` onto every
 // image field at READ time, never persisted at save time). This suite MUST fail
@@ -143,5 +143,71 @@ describe("mergeImageFormats — immutable formats merge into value.formats (D-01
       }
     ).sections[0].blocks[0].data.icon;
     expect(blockIcon.value.formats).toEqual({ thumbnail: { url: "/icon-t.jpg", width: 50 } });
+  });
+});
+
+// INCIDENT 2026-08-06 regression guard.
+//
+// The suite above only ever covered the two PURE functions. `resolveImageFormats`
+// — the function that actually talks to Strapi — had no test at all, which is why
+// a wholly invalid query (`uploadFiles(filters:{id:...}){ id formats }`, rejected
+// by Strapi 5 as "Cannot query field \"id\" on type \"UploadFile\"") sat in
+// production silently swallowed by its own fail-open catch, discarding every
+// WebP format the Phase-11 backfill generated.
+//
+// These pin the network contract: filter by NUMERIC id (what the customizer
+// persists into content), request the id+formats fields, and merge the result.
+describe("resolveImageFormats — Upload REST contract (incident 2026-08-06)", () => {
+  const realFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    // strapi-client reads STRAPI_BASE_URL/TOKEN at module load, so the env must
+    // be stubbed and the module re-imported for the request to be attempted at
+    // all (otherwise fetchUploadFileFormats short-circuits on an empty base URL).
+    vi.resetModules();
+    vi.stubEnv("NEXT_PUBLIC_STRAPI_URL", "strapi.test");
+    vi.stubEnv("NEXT_PUBLIC_STRAPI_TOKEN", "test-token");
+  });
+
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it("filters by numeric id and merges the returned formats", async () => {
+    const calls: string[] = [];
+    globalThis.fetch = vi.fn(async (url: unknown) => {
+      calls.push(String(url));
+      return {
+        ok: true,
+        json: async () => [{ id: 7, formats: { webp: { url: "/w.webp" } } }],
+      } as unknown as Response;
+    }) as unknown as typeof fetch;
+
+    const { resolveImageFormats } = await import("../strapi-client");
+    const out = await resolveImageFormats(pageWithHero({ id: 7, url: "/a.jpg" }));
+
+    expect(calls[0]).toContain("/api/upload/files");
+    // Must filter by numeric id — documentId is NOT what content stores.
+    expect(decodeURIComponent(calls[0])).toContain("filters[id][$in][0]=7");
+    const hero = (out.page_template as { sections: { data: Record<string, { value: { formats?: unknown } }> }[] })
+      .sections[0].data.hero;
+    expect(hero.value.formats).toEqual({ webp: { url: "/w.webp" } });
+  });
+
+  it("fails open and returns the page unchanged when the request errors", async () => {
+    globalThis.fetch = vi.fn(async () => ({ ok: false, status: 403, statusText: "Forbidden" }) as unknown as Response) as unknown as typeof fetch;
+    const page = pageWithHero({ id: 7, url: "/a.jpg" });
+    const { resolveImageFormats } = await import("../strapi-client");
+    await expect(resolveImageFormats(page)).resolves.toEqual(page);
+  });
+
+  it("makes no request at all when the page has no image fields", async () => {
+    const spy = vi.fn();
+    globalThis.fetch = spy as unknown as typeof fetch;
+    const { resolveImageFormats } = await import("../strapi-client");
+    await resolveImageFormats({ documentId: "p", title: "t", slug: "s", page_template: { documentId: "tm", sections: [] } });
+    expect(spy).not.toHaveBeenCalled();
   });
 });

@@ -32,11 +32,29 @@ import * as Sentry from "@sentry/nextjs";
  *   the template down (T-14-12); if that trap ever fires, the contract has
  *   been broken and it must be visible rather than inferred from a silently
  *   defaulted `<html lang>`.
+ * - `redirect-map-fetch-failed` (Phase 16) — `getRedirectMap()`'s fetch
+ *   rejected, resolved non-ok, returned a GraphQL `errors` array, or returned
+ *   a body with no `data.redirects` array. The middleware degrades to
+ *   no-redirects and serves the request normally (D-03/REDIR-03) — this
+ *   report is the only record of the degrade. Sentry is a no-op on the Edge
+ *   runtime in this template (`instrumentation.ts` returns early for any
+ *   non-nodejs runtime and there is no edge Sentry config here), so the
+ *   unconditional `console.error` below is the real record for this surface
+ *   — accepted, matching the status quo for every other degrade site in this
+ *   template, and not expanded in this phase.
  */
-export type SeoDegradeReason = "origin-unresolvable" | "site-read-threw";
+export type SeoDegradeReason =
+  | "origin-unresolvable"
+  | "site-read-threw"
+  | "redirect-map-fetch-failed";
 
-/** The four consumers of this channel (Plans 02-04). */
-export type SeoSurface = "page-metadata" | "root-layout" | "sitemap" | "robots";
+/** The consumers of this channel (Plans 02-04, Phase 16 Plan 01). */
+export type SeoSurface =
+  | "page-metadata"
+  | "root-layout"
+  | "sitemap"
+  | "robots"
+  | "middleware";
 
 /**
  * The one and only reporting seam in this module. `context` is constrained

@@ -104,6 +104,13 @@ const SITE_SCALAR_FIELDS = `
   verificationYandex
 `;
 
+// canonicalUrl (Phase 16 / SEOED-05): a top-level Page scalar, NOT inside
+// SEO_FIELDS/shared.seo — 15 D-01 keeps canonical off the site tier
+// structurally, and a site-level canonical would point every page at one
+// URL. Rides the same Strapi migration as the Redirect content type (15
+// D-03). Selected here so buildPageMetadataFrom (seo-resolve.ts) can
+// actually see it — see strapi-client-seo-selection.test.ts for the
+// selection-shape guard.
 const PAGE_SCALAR_AND_SEO_FIELDS = `
   documentId
   title
@@ -112,6 +119,7 @@ const PAGE_SCALAR_AND_SEO_FIELDS = `
   updatedAt
   isHomepage
   metafields
+  canonicalUrl
   seo {
     ${SEO_FIELDS}
   }
@@ -283,6 +291,9 @@ export interface StrapiPage {
   updatedAt?: string | null;
   isHomepage?: boolean;
   metafields?: Record<string, unknown> | null;
+  // Phase 16 / SEOED-05: top-level scalar, deliberately NOT on StrapiSeo — see
+  // PAGE_SCALAR_AND_SEO_FIELDS's comment above the query selection.
+  canonicalUrl?: string | null;
   seo?: StrapiSeo | null;
   // manyToMany (D-14): the raw fetch can surface an ARRAY of theme-scoped templates.
   // resolvePageForLiveTheme narrows this to the SINGLE liveTheme-bound template
@@ -465,22 +476,67 @@ function resolveRefsInData(
 // @strapi/plugin-graphql's naming builder — getFindQueryName = lowerFirst(pluralTypeName)
 // = `uploadFiles`). Collector logic (collectImageIds/mergeImageFormats) depends only
 // on the RESPONSE shape `{ id, formats }`, not this query name.
-const getUploadFilesFormatsQuery = gql`
-  query GetUploadFilesFormats($ids: [ID!]) {
-    uploadFiles(filters: { id: { in: $ids } }) {
-      id
-      formats
-    }
-  }
-`;
-
+// INCIDENT 2026-08-06 — this lookup was silently dead in production.
+//
+// It previously ran as GraphQL:
+//
+//     uploadFiles(filters: { id: { in: $ids } }) { id formats }
+//
+// Both halves are invalid against Strapi 5, verified against a live tenant:
+//     Field "id" is not defined by type "UploadFileFiltersInput"
+//     Cannot query field "id" on type "UploadFile"
+//
+// Strapi 5's GraphQL exposes ONLY `documentId` on UploadFile — `id` exists in
+// the `files` table but is not surfaced. So the query threw on every call, the
+// fail-open catch in resolveImageFormats swallowed it into a console.warn, and
+// every page silently rendered WITHOUT merged `formats`. Phase 11's WebP
+// conversion and the runImageFormatBackfill boot migration have been generating
+// formats.webp that this read path then discarded.
+//
+// It cannot simply switch to `documentId`: the ids threaded through here come
+// from collectImageIds, which reads the NUMERIC ids the customizer's
+// ImagePickerInput persists into section/block/metafield JSON. GraphQL cannot
+// filter by those at all. The Upload plugin's REST endpoint can — it exposes
+// numeric `id` and `formats` directly — so this uses REST instead, with no
+// content migration required.
 interface UploadFileFormatsEntry {
   id: string | number;
   formats?: unknown;
 }
 
-interface UploadFilesFormatsResponse {
-  uploadFiles: UploadFileFormatsEntry[];
+/**
+ * Fetch `{ id, formats }` for the given numeric upload ids via the Upload
+ * plugin's REST endpoint. Uses the same read-only NEXT_PUBLIC_STRAPI_TOKEN as
+ * the GraphQL client (V4). Throws on a non-OK response so the caller's
+ * fail-open catch keeps its existing behaviour.
+ */
+async function fetchUploadFileFormats(
+  ids: number[]
+): Promise<UploadFileFormatsEntry[]> {
+  if (!STRAPI_BASE_URL) return [];
+
+  const params = new URLSearchParams();
+  ids.forEach((id, i) => params.append(`filters[id][$in][${i}]`, String(id)));
+  params.append("fields[0]", "id");
+  params.append("fields[1]", "formats");
+  params.append("pagination[pageSize]", String(Math.max(ids.length, 1)));
+
+  const response = await fetch(
+    `${STRAPI_BASE_URL}/api/upload/files?${params.toString()}`,
+    { headers: { Authorization: `Bearer ${STRAPI_ACCESS_TOKEN}` } }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Upload files request failed: ${response.status} ${response.statusText}`
+    );
+  }
+
+  const body = await response.json();
+  // The Upload plugin returns a bare array; tolerate a `{ data: [...] }`
+  // envelope too so a future Strapi shape change degrades rather than throws.
+  const rows = Array.isArray(body) ? body : body?.data;
+  return Array.isArray(rows) ? (rows as UploadFileFormatsEntry[]) : [];
 }
 
 /**
@@ -714,12 +770,9 @@ export async function resolveImageFormats(page: StrapiPage): Promise<StrapiPage>
   if (ids.length === 0) return page;
 
   try {
-    const response = await strapiClient.request<UploadFilesFormatsResponse>(
-      getUploadFilesFormatsQuery,
-      { ids }
-    );
+    const files = await fetchUploadFileFormats(ids);
     const formatsById = new Map<number, unknown>();
-    for (const file of response.uploadFiles ?? []) {
+    for (const file of files) {
       if (file.formats == null) continue;
       const numericId = typeof file.id === "number" ? file.id : Number(file.id);
       if (Number.isNaN(numericId)) continue;

@@ -57,6 +57,40 @@ describe("strapi-client.ts — page queries carry the full seo selection (drift 
     expect(query).toContain("height");
   }
 
+  // Phase 16 / SEOED-05 drift guard (ffb5cde precedent — the pure emission
+  // logic can stay green whether or not the query ever asks Strapi for the
+  // field, so the selection itself needs its own assertion). canonicalUrl
+  // must sit on the PAGE selection at the top level, never inside the `seo {
+  // ... }` sub-selection (15 D-01: a site-level/component canonical is
+  // structurally disallowed).
+  // Extracts the full `seo { ... }` sub-selection, respecting the one level
+  // of nesting `shareImage { ... }` introduces — a naive non-nesting regex
+  // would stop at shareImage's closing brace and silently pass regardless of
+  // what's actually inside the seo block.
+  function extractSeoBlock(query: string): string {
+    const start = query.indexOf("seo {");
+    expect(start).toBeGreaterThan(-1);
+    let depth = 0;
+    let i = start;
+    for (; i < query.length; i++) {
+      if (query[i] === "{") depth++;
+      else if (query[i] === "}") {
+        depth--;
+        if (depth === 0) {
+          i++;
+          break;
+        }
+      }
+    }
+    return query.slice(start, i);
+  }
+
+  function assertCanonicalUrlOnPageNotOnSeo(query: string) {
+    expect(query).toContain("canonicalUrl");
+    const seoBlock = extractSeoBlock(query);
+    expect(seoBlock).not.toContain("canonicalUrl");
+  }
+
   it("getPagesQuery (fetchPages) carries the full seo selection", async () => {
     const mod = await import("../strapi-client");
     const requestSpy = vi
@@ -69,6 +103,7 @@ describe("strapi-client.ts — page queries carry the full seo selection (drift 
     const query = requestSpy.mock.calls[0][0] as string;
     expect(query).toContain("GetPages");
     assertCarriesFullSeoSelection(query);
+    assertCanonicalUrlOnPageNotOnSeo(query);
   });
 
   it("getPageBySlugQuery (fetchPageBySlug, liveTheme set) carries the full seo selection", async () => {
@@ -96,6 +131,7 @@ describe("strapi-client.ts — page queries carry the full seo selection (drift 
     );
     expect(bySlugCall).toBeDefined();
     assertCarriesFullSeoSelection(bySlugCall![0] as string);
+    assertCanonicalUrlOnPageNotOnSeo(bySlugCall![0] as string);
   });
 
   it("getPageBySlugUnfilteredQuery (fetchPageBySlug, no liveTheme) carries the full seo selection", async () => {
@@ -123,6 +159,7 @@ describe("strapi-client.ts — page queries carry the full seo selection (drift 
     );
     expect(unfilteredCall).toBeDefined();
     assertCarriesFullSeoSelection(unfilteredCall![0] as string);
+    assertCanonicalUrlOnPageNotOnSeo(unfilteredCall![0] as string);
   });
 });
 

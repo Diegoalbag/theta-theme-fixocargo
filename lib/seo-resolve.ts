@@ -500,6 +500,49 @@ export function absoluteUrl(origin: string, path: string): string {
 }
 
 /**
+ * SEOED-05 emission-side guard (Phase 16, D-16 absolute-https-only; Phase 15
+ * D-02's two-guard posture — reject on save AND independently ignore at
+ * emission). Returns the canonical string a page's `canonicalUrl` override
+ * should emit, or `null` to mean "no override, use the computed canonical."
+ *
+ * This is NOT redundant with Plan 05's save-time validation: a value written
+ * through Strapi's own admin UI never traverses the dashboard's validator,
+ * so save-time validation alone is structurally insufficient for this field.
+ * `resolveCanonicalOverride` is the second, independent guard that makes the
+ * field safe regardless of how the stored value got there. (Contrast with
+ * the slug-collision case, D-09, which deliberately gets a single guard —
+ * the two are not the same posture and must not be conflated.)
+ *
+ * Built on top of `parseHttpUrl`, with one deliberate addition: the ORIGINAL
+ * trimmed candidate must itself begin with `https://`. That clause is the
+ * one that matters and is easy to miss — `parseHttpUrl` calls `normalizeUrl`,
+ * which prepends a scheme onto a bare host, so `"acme.com/about"` and
+ * `"/about"` would otherwise both parse successfully into an https URL the
+ * client never authored. Guarding on the raw input's prefix (not only the
+ * parsed protocol) is what stops a typo or a relative path from silently
+ * becoming a live canonical pointing at a domain the client does not
+ * control.
+ *
+ * Never re-serializes through `URL.href` — re-serializing can add a trailing
+ * slash or re-encode characters, and the emitted canonical must be
+ * byte-identical to what the client authored (the same no-re-encoding
+ * discipline this module's header states for the sitemap/canonical
+ * agreement). Never throws for any input.
+ */
+export function resolveCanonicalOverride(
+  candidate: string | null | undefined
+): string | null {
+  if (candidate == null) return null;
+  const trimmed = candidate.trim();
+  if (!trimmed) return null;
+  // Guard on the RAW prefix before parsing — see doc comment above.
+  if (!trimmed.startsWith("https://")) return null;
+  const url = parseHttpUrl(trimmed);
+  if (!url || url.protocol !== "https:") return null;
+  return trimmed;
+}
+
+/**
  * The D-10 self-referential hreflang pair: exactly two entries, the resolved
  * locale and `x-default`, both valued with the canonical URL. `x-default` is
  * a plain string key in Next's typed `Languages<string>` map — no dedicated
@@ -670,8 +713,17 @@ export function buildPageMetadataFrom(
   // openGraph.url are all decided by this ONE conditional, never three
   // independent ones — the no-origin branch omits all three outright rather
   // than leave metadataBase undefined while still setting a relative path.
+  //
+  // SEOED-05 (Phase 16): a valid absolute-https `page.canonicalUrl` override
+  // takes precedence over the computed canonical here — even for the
+  // homepage collapse, an explicit override outranks it. `resolveCanonicalOverride`
+  // independently re-validates the stored value and falls back to the
+  // computed canonical for anything that doesn't qualify, so hreflang and
+  // og:url always agree with whichever canonical actually won.
   if (origin !== null) {
-    const canonical = absoluteUrl(origin, canonicalPath);
+    const computedCanonical = absoluteUrl(origin, canonicalPath);
+    const canonical =
+      resolveCanonicalOverride(page.canonicalUrl) ?? computedCanonical;
     metadata.metadataBase = new URL(origin);
     metadata.alternates = {
       canonical,

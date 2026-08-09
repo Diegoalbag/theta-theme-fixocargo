@@ -12,6 +12,7 @@ import {
   resolveHomepageSlugFrom,
   absoluteUrl,
   buildLanguageAlternates,
+  resolveCanonicalOverride,
   resolveShareImage,
   buildPageMetadataFrom,
   resolveSiteDefaults,
@@ -299,6 +300,61 @@ describe("buildLanguageAlternates — D-10 self-referential pair", () => {
   });
 });
 
+describe("resolveCanonicalOverride — SEOED-05 emission-side re-validation (D-16, 15 D-02)", () => {
+  it("returns an absolute https URL with a path exactly as authored", () => {
+    expect(resolveCanonicalOverride("https://acme.com/about")).toBe(
+      "https://acme.com/about"
+    );
+  });
+
+  it("returns a bare origin unchanged — a legitimate canonical value", () => {
+    expect(resolveCanonicalOverride("https://acme.com")).toBe(
+      "https://acme.com"
+    );
+  });
+
+  it("trims surrounding whitespace and returns the trimmed value", () => {
+    expect(resolveCanonicalOverride("  https://acme.com/about  ")).toBe(
+      "https://acme.com/about"
+    );
+  });
+
+  it("returns null for blank, whitespace-only, undefined or null candidates", () => {
+    expect(resolveCanonicalOverride("")).toBeNull();
+    expect(resolveCanonicalOverride("   ")).toBeNull();
+    expect(resolveCanonicalOverride(undefined)).toBeNull();
+    expect(resolveCanonicalOverride(null)).toBeNull();
+  });
+
+  it("does not upgrade http to https — D-16 is https-only", () => {
+    expect(resolveCanonicalOverride("http://acme.com/about")).toBeNull();
+  });
+
+  it("rejects a relative path — cannot express canonical's off-origin use case", () => {
+    expect(resolveCanonicalOverride("/about")).toBeNull();
+  });
+
+  it("rejects a protocol-relative //host value", () => {
+    expect(resolveCanonicalOverride("//acme.com/about")).toBeNull();
+  });
+
+  it("rejects non-http(s) schemes, including dangerous ones", () => {
+    expect(resolveCanonicalOverride("ftp://acme.com")).toBeNull();
+    expect(resolveCanonicalOverride("javascript:alert(1)")).toBeNull();
+    expect(resolveCanonicalOverride("data:text/html,x")).toBeNull();
+  });
+
+  it("does not auto-prefix a bare host — an unrecognized typo never becomes a live canonical", () => {
+    expect(resolveCanonicalOverride("not a url")).toBeNull();
+    expect(resolveCanonicalOverride("acme.com/about")).toBeNull();
+  });
+
+  it("never throws, even for a pathological input", () => {
+    const pathological = "https://" + "a".repeat(10000) + ".com/" + "x".repeat(10000);
+    expect(() => resolveCanonicalOverride(pathological)).not.toThrow();
+  });
+});
+
 describe("resolveShareImage — CMS host absolutization, real dimensions only", () => {
   it("returns null for a nullish shareImage", () => {
     expect(resolveShareImage(null, "https://cms.example.com")).toBeNull();
@@ -517,6 +573,147 @@ describe("buildPageMetadataFrom — the full assembled Metadata object", () => {
       alternates?: { canonical?: string };
     };
     expect(result.alternates?.canonical).toBe("https://acme.com/about");
+  });
+
+  // SEOED-05 (Phase 16): canonical override wins across canonical, hreflang
+  // and og:url when it is a valid absolute https URL; is ignored (falls back
+  // to the computed canonical) when it isn't; and is fully additive (no
+  // override changes nothing) when absent.
+  describe("canonical override (SEOED-05, D-16)", () => {
+    it("emits a valid override across alternates.canonical, openGraph.url and both hreflang entries", () => {
+      const page: StrapiPage = {
+        ...basePage,
+        canonicalUrl: "https://other-domain.com/syndicated",
+      };
+      const result = buildPageMetadataFrom(page, site, env) as {
+        alternates?: { canonical?: string; languages?: Record<string, string> };
+        openGraph?: { url?: string };
+      };
+      expect(result.alternates?.canonical).toBe(
+        "https://other-domain.com/syndicated"
+      );
+      expect(result.openGraph?.url).toBe(
+        "https://other-domain.com/syndicated"
+      );
+      expect(result.alternates?.languages).toEqual({
+        en: "https://other-domain.com/syndicated",
+        "x-default": "https://other-domain.com/syndicated",
+      });
+    });
+
+    it("is fully additive — removing the override reproduces the exact no-override result", () => {
+      const withOverride: StrapiPage = {
+        ...basePage,
+        canonicalUrl: "https://other-domain.com/syndicated",
+      };
+      const withoutOverride: StrapiPage = { ...basePage };
+      delete (withoutOverride as { canonicalUrl?: string | null }).canonicalUrl;
+
+      const noOverrideResult = buildPageMetadataFrom(
+        withoutOverride,
+        site,
+        env
+      );
+      expect(
+        (noOverrideResult as { alternates?: { canonical?: string } })
+          .alternates?.canonical
+      ).toBe("https://acme.com/about");
+
+      // Snapshot the no-override result, then prove the override changes
+      // ONLY the canonical/hreflang/og:url — nothing else about the object.
+      const withOverrideResult = buildPageMetadataFrom(
+        withOverride,
+        site,
+        env
+      ) as Record<string, unknown>;
+      const noOverrideCopy = JSON.parse(
+        JSON.stringify(noOverrideResult)
+      ) as Record<string, unknown>;
+      const withOverrideCopy = JSON.parse(
+        JSON.stringify(withOverrideResult)
+      ) as Record<string, unknown>;
+
+      // Strip the fields the override is EXPECTED to change before comparing.
+      delete (noOverrideCopy.alternates as Record<string, unknown>).canonical;
+      delete (noOverrideCopy.alternates as Record<string, unknown>).languages;
+      delete (noOverrideCopy.openGraph as Record<string, unknown>).url;
+      delete (withOverrideCopy.alternates as Record<string, unknown>)
+        .canonical;
+      delete (withOverrideCopy.alternates as Record<string, unknown>)
+        .languages;
+      delete (withOverrideCopy.openGraph as Record<string, unknown>).url;
+      expect(withOverrideCopy).toEqual(noOverrideCopy);
+    });
+
+    it.each([
+      ["http (not upgraded)", "http://other-domain.com/x"],
+      ["relative path", "/x"],
+      ["unparseable", "not a url"],
+    ])(
+      "ignores an invalid override (%s) and falls back to the computed canonical",
+      (_label, invalidOverride) => {
+        const page: StrapiPage = { ...basePage, canonicalUrl: invalidOverride };
+        const result = buildPageMetadataFrom(page, site, env) as {
+          alternates?: { canonical?: string };
+          openGraph?: { url?: string };
+        };
+        expect(result.alternates?.canonical).toBe("https://acme.com/about");
+        expect(result.openGraph?.url).toBe("https://acme.com/about");
+      }
+    );
+
+    it("still collapses the homepage to the bare origin when no override is set", () => {
+      const page: StrapiPage = { ...basePage, isHomepage: true, slug: "home" };
+      const result = buildPageMetadataFrom(page, site, env) as {
+        alternates?: { canonical?: string };
+      };
+      expect(result.alternates?.canonical).toBe("https://acme.com");
+    });
+
+    it("an explicit valid override on the homepage outranks the collapse", () => {
+      const page: StrapiPage = {
+        ...basePage,
+        isHomepage: true,
+        slug: "home",
+        canonicalUrl: "https://other-domain.com/home-override",
+      };
+      const result = buildPageMetadataFrom(page, site, env) as {
+        alternates?: { canonical?: string };
+        openGraph?: { url?: string };
+      };
+      expect(result.alternates?.canonical).toBe(
+        "https://other-domain.com/home-override"
+      );
+      expect(result.openGraph?.url).toBe(
+        "https://other-domain.com/home-override"
+      );
+    });
+
+    it("does not smuggle a URL past the origin gate — no origin means no metadataBase/alternates/openGraph.url even with a valid override", () => {
+      const page: StrapiPage = {
+        ...basePage,
+        canonicalUrl: "https://other-domain.com/x",
+      };
+      const result = buildPageMetadataFrom(page, {}, {}) as Record<
+        string,
+        unknown
+      >;
+      expect(result).not.toHaveProperty("metadataBase");
+      expect(result).not.toHaveProperty("alternates");
+      const openGraph = result.openGraph as Record<string, unknown> | undefined;
+      expect(openGraph).not.toHaveProperty("url");
+    });
+
+    it("an unpublished page still returns only the not-found title, override or not", () => {
+      const page: StrapiPage = {
+        ...basePage,
+        publishedAt: null,
+        canonicalUrl: "https://other-domain.com/x",
+      };
+      expect(buildPageMetadataFrom(page, site, env)).toEqual({
+        title: NOT_FOUND_TITLE,
+      });
+    });
   });
 
   it("omits metadataBase, alternates and openGraph.url when the origin does not resolve", () => {
