@@ -24,6 +24,7 @@ import {
   resolveHomepageSlugFrom,
   NOT_FOUND_TITLE,
 } from "@/lib/seo-resolve";
+import { buildJsonLdGraph, serializeJsonLd } from "@/lib/jsonld";
 import { reportSeoDegrade } from "@/lib/seo-report";
 import { extractFirstHeroImageUrl } from "@/lib/hero-preload";
 import { evaluateThemeServerSide } from "@/lib/theme-evaluator";
@@ -160,12 +161,33 @@ export async function RenderPage({ slug }: { slug: string | null }) {
   // sequential (`await` page, then `await` site) which serialized two Railway
   // round trips. Both are wrapped in React `cache()`, so the duplicate call from
   // generateMetadata still costs nothing.
-  const [page, site]: [StrapiPage | null, Awaited<ReturnType<typeof fetchSite>>] =
-    await Promise.all([fetchPageBySlug(slug), fetchSite()]);
+  // `fetchPages` joins this block for the JSON-LD graph's canonical `@id`,
+  // which needs the site's resolved homepage slug for the same D-08 reason
+  // buildPageMetadata reads it: without it the graph would name the homepage
+  // `{origin}/{slug}` while `<link rel="canonical">` names it `{origin}`, and
+  // Google discards a node whose URL contradicts the page's own head. It is
+  // `cache()`-deduped and already read by `buildPageMetadata` (and by the `/`
+  // route's own `resolveHomepageSlug()`), so this costs no extra round trip.
+  const [page, site, pages]: [
+    StrapiPage | null,
+    Awaited<ReturnType<typeof fetchSite>>,
+    StrapiPage[],
+  ] = await Promise.all([fetchPageBySlug(slug), fetchSite(), fetchPages()]);
 
   if (!page || !page.publishedAt) {
     notFound();
   }
+
+  // Phase 18 (SEO): structured data, previously absent from every served
+  // page. `null` whenever there is nothing honest to say (no origin, no
+  // name — see buildJsonLdGraph), in which case no script is emitted at all
+  // rather than an empty or partial graph.
+  const jsonLd = buildJsonLdGraph(
+    page,
+    site,
+    process.env,
+    resolveHomepageSlugFrom(pages)
+  );
 
   // Resolve the hero section's background image URL (D-04) so we can emit a
   // server-rendered high-priority preload hint BEFORE the theme bundle is even
@@ -240,6 +262,20 @@ export async function RenderPage({ slug }: { slug: string | null }) {
           as="image"
           href={heroImageUrl}
           fetchPriority="high"
+        />
+      )}
+      {/*
+        JSON-LD must go through dangerouslySetInnerHTML — React escapes a text
+        child, and an escaped `&quot;` inside a ld+json script is invalid JSON
+        that every consumer silently drops. `serializeJsonLd` is what makes
+        that safe: it escapes `<` so tenant-authored Strapi content cannot
+        close this script element and execute (see its doc comment). Never
+        interpolate a graph here with a bare JSON.stringify.
+      */}
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
         />
       )}
       <PageRenderer

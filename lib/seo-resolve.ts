@@ -543,6 +543,36 @@ export function resolveCanonicalOverride(
 }
 
 /**
+ * THE canonical URL for a page — the single seam every consumer that needs to
+ * name this page by URL derives it from.
+ *
+ * Extracted from `buildPageMetadataFrom`'s origin-gated block (where this
+ * logic previously lived inline) when `lib/jsonld.ts` became the second
+ * consumer. A JSON-LD `WebPage.url`/`@id` that disagrees with the rendered
+ * `<link rel="canonical">` is the structured-data equivalent of the split
+ * link authority D-08/D-15 exist to close: Google reconciles the two by
+ * discarding the mismatched node, so a second inline copy of "compute path,
+ * then let a valid override win" would fail silently. One function, two
+ * callers, no copies.
+ *
+ * `origin` is a RESOLVED, non-null origin from `resolveSiteOrigin` — the
+ * no-origin case is the caller's to handle (it omits the whole block for
+ * metadata, and emits no JSON-LD at all), because there is no honest
+ * canonical without one.
+ */
+export function resolvePageCanonical(
+  page: (CanonicalPage & { canonicalUrl?: string | null }) | null | undefined,
+  origin: string,
+  homepageSlug?: string | null
+): string {
+  const computed = absoluteUrl(
+    origin,
+    resolveCanonicalPath(page ?? {}, homepageSlug)
+  );
+  return resolveCanonicalOverride(page?.canonicalUrl) ?? computed;
+}
+
+/**
  * The D-10 self-referential hreflang pair: exactly two entries, the resolved
  * locale and `x-default`, both valued with the canonical URL. `x-default` is
  * a plain string key in Next's typed `Languages<string>` map — no dedicated
@@ -684,7 +714,6 @@ export function buildPageMetadataFrom(
 
   const origin = resolveSiteOrigin(site, env);
   const locale = resolveLocale(site);
-  const canonicalPath = resolveCanonicalPath(page, homepageSlug);
   const { siteName, description: siteDefaultDescription } =
     resolveSiteDefaults(site);
 
@@ -721,9 +750,7 @@ export function buildPageMetadataFrom(
   // computed canonical for anything that doesn't qualify, so hreflang and
   // og:url always agree with whichever canonical actually won.
   if (origin !== null) {
-    const computedCanonical = absoluteUrl(origin, canonicalPath);
-    const canonical =
-      resolveCanonicalOverride(page.canonicalUrl) ?? computedCanonical;
+    const canonical = resolvePageCanonical(page, origin, homepageSlug);
     metadata.metadataBase = new URL(origin);
     metadata.alternates = {
       canonical,
