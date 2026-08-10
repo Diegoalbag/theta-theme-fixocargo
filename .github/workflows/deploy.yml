@@ -1,4 +1,4 @@
-# theta-workflow-version: 1.7.0
+# theta-workflow-version: 1.7.1
 # Theme Site Deployment Workflow
 #
 # This workflow expects the theme repository (source branch checked out to theme-source/)
@@ -818,11 +818,21 @@ jobs:
           # platform project was targeted. NEVER echo the vercel_token.
           echo "Project ID: $VERCEL_PROJECT_ID"
 
-          # Capture the deployment URL that `vercel deploy` prints as its last stdout
-          # line. Run the prebuilt path first; on failure fall back to a plain deploy.
-          # Either branch's stdout is captured so we can post the real URL back in the
-          # callback. A parse failure leaves DEPLOY_URL empty (the callback degrades to
-          # omitting deploymentUrl rather than failing the deploy).
+          # Capture what `vercel deploy` prints. Run the prebuilt path first; on
+          # failure fall back to a plain deploy.
+          #
+          # BOTH invocations MUST redirect stderr (2>&1). The CLI splits its output:
+          # the bare deployment URL goes to STDOUT, but the decorated status lines —
+          # including `▲ Aliased  <stable domain>` — go to STDERR. The alias parse
+          # below reads a stderr line, so an invocation without 2>&1 silently yields
+          # an empty alias while still looking healthy (the deployment URL parses
+          # fine from stdout). That is exactly what happened on run 31386891802:
+          # `--prebuilt` fails on every run here ("no prebuilt output found in
+          # .vercel/output"), so the fallback IS the real path, and it was dropping
+          # stderr. Do not remove either redirect.
+          #
+          # A parse failure leaves the value empty and the callback degrades
+          # (omitting the field) rather than failing the deploy.
           DEPLOY_OUTPUT=""
           if DEPLOY_OUTPUT=$(vercel deploy --prod \
             --token=${{ github.event.inputs.vercel_token || secrets.VERCEL_TOKEN }} \
@@ -834,7 +844,7 @@ jobs:
             echo "Prebuilt deploy failed; retrying without --prebuilt..."
             DEPLOY_OUTPUT=$(vercel deploy --prod \
               --token=${{ github.event.inputs.vercel_token || secrets.VERCEL_TOKEN }} \
-              --yes)
+              --yes 2>&1)
             echo "$DEPLOY_OUTPUT"
           fi
 
