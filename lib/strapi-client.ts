@@ -851,6 +851,59 @@ export function mergeImageFormats(
  * image fields. Fails open on any network error (matches every other network call
  * in this file): logs via console.warn and returns the page UNCHANGED.
  */
+/**
+ * Rewrite every format variant's `url` to an ABSOLUTE CMS URL.
+ *
+ * Strapi's Upload plugin stores `formats[].url` relative to the CMS
+ * (`/uploads/large_x.jpg`), while the dashboard's adapter absolutizes only the
+ * TOP-LEVEL `url` it persists. A relative candidate inside a `srcset` resolves
+ * against the TENANT's origin, not the CMS — so every variant 404s, and
+ * because a browser selects from `srcset` and ignores `src` whenever `srcset`
+ * is present, the image fetches "fine" in DevTools and paints NOTHING.
+ *
+ * This is the same trap `resolveShareImage` documents for `og:image`
+ * (T-14-10): a Strapi media url composed against the tenant's own domain is a
+ * 404. It stayed invisible here only because `formats` never actually reached
+ * a component until the json-tagged-value fix landed — making the data flow
+ * exposed a latent bug rather than introducing one.
+ *
+ * Normalized HERE, at the single merge seam, rather than in `buildSrcSet`:
+ * every theme ships its own copy of that builder (they cannot import from this
+ * repo), so a fix there would have to land in N theme repos and would still
+ * leave any other `formats` consumer broken. One absolute-URL guarantee at the
+ * source covers all of them.
+ *
+ * An entry whose url is ALREADY absolute is left byte-identical (a cloud
+ * upload provider stores absolute urls, and re-prefixing would corrupt them).
+ * A non-object `formats`, a missing base, or an entry with no string url all
+ * degrade to passing the value through untouched — never throws.
+ */
+export function absolutizeFormatUrls(formats: unknown, baseUrl: string): unknown {
+  if (formats == null || typeof formats !== "object" || Array.isArray(formats)) {
+    return formats;
+  }
+  if (!baseUrl) return formats;
+
+  const base = baseUrl.replace(/\/+$/, "");
+  const result: Record<string, unknown> = {};
+
+  for (const [key, entry] of Object.entries(formats as Record<string, unknown>)) {
+    if (entry == null || typeof entry !== "object") {
+      result[key] = entry;
+      continue;
+    }
+    const record = entry as Record<string, unknown>;
+    const url = record.url;
+    if (typeof url !== "string" || url.trim() === "" || /^https?:\/\//.test(url)) {
+      result[key] = entry;
+      continue;
+    }
+    result[key] = { ...record, url: `${base}${url.startsWith("/") ? "" : "/"}${url}` };
+  }
+
+  return result;
+}
+
 export async function resolveImageFormats(page: StrapiPage): Promise<StrapiPage> {
   const ids = collectImageIds(page);
   if (ids.length === 0) return page;
@@ -867,7 +920,10 @@ export async function resolveImageFormats(page: StrapiPage): Promise<StrapiPage>
       const numericId = typeof file.id === "number" ? file.id : Number(file.id);
       if (Number.isNaN(numericId)) continue;
       const meta: UploadFileMeta = {};
-      if (file.formats != null) meta.formats = file.formats;
+      // Absolutized BEFORE it reaches any component — see absolutizeFormatUrls.
+      if (file.formats != null) {
+        meta.formats = absolutizeFormatUrls(file.formats, STRAPI_BASE_URL);
+      }
       if (typeof file.width === "number") meta.width = file.width;
       if (typeof file.height === "number") meta.height = file.height;
       if (Object.keys(meta).length === 0) continue;

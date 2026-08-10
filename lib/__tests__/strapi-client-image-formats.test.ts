@@ -11,7 +11,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 //   - mergeImageFormats(page, formatsById) immutably writes `formats` INTO the
 //     existing {type:'image', value:{id,url}} wrapper (value.formats) without
 //     touching id/url, leaves unmatched ids untouched, never throws.
-import { collectImageIds, mergeImageFormats, type StrapiPage } from "../strapi-client";
+import {
+  absolutizeFormatUrls,
+  collectImageIds,
+  mergeImageFormats,
+  type StrapiPage,
+} from "../strapi-client";
 
 function pageWithHero(heroValue: unknown): StrapiPage {
   return {
@@ -231,6 +236,67 @@ describe("json-tagged image values — the shape real content actually has", () 
   });
 });
 
+// LIVE REGRESSION 2026-08-10: making `formats` flow exposed that Strapi stores
+// variant urls CMS-relative. A relative `srcset` candidate resolves against the
+// TENANT origin, so all 7 variants 404 — and since a browser selects from
+// `srcset` and ignores `src` whenever srcset is present, every image fetched
+// 200 on its `src` and painted nothing. Same trap resolveShareImage documents
+// as T-14-10.
+describe("absolutizeFormatUrls — a relative srcset candidate 404s on the tenant origin", () => {
+  const BASE = "https://cms.example.com";
+
+  it("absolutizes each variant url against the CMS base", () => {
+    const out = absolutizeFormatUrls(
+      {
+        thumbnail: { url: "/uploads/thumbnail_x.png", width: 156 },
+        large: { url: "/uploads/large_x.png", width: 1000 },
+      },
+      BASE
+    ) as Record<string, { url: string; width: number }>;
+
+    expect(out.thumbnail.url).toBe("https://cms.example.com/uploads/thumbnail_x.png");
+    expect(out.large.url).toBe("https://cms.example.com/uploads/large_x.png");
+    // Every other key is carried through untouched.
+    expect(out.large.width).toBe(1000);
+  });
+
+  it("leaves an already-absolute url byte-identical — a cloud provider stores those", () => {
+    const formats = { large: { url: "https://cdn.example.com/large_x.png" } };
+    const out = absolutizeFormatUrls(formats, BASE) as Record<string, { url: string }>;
+    expect(out.large.url).toBe("https://cdn.example.com/large_x.png");
+  });
+
+  it("joins correctly whether or not the base has a trailing slash or the url a leading one", () => {
+    const one = absolutizeFormatUrls({ a: { url: "uploads/x.png" } }, "https://cms.example.com/") as Record<string, { url: string }>;
+    expect(one.a.url).toBe("https://cms.example.com/uploads/x.png");
+    const two = absolutizeFormatUrls({ a: { url: "/uploads/x.png" } }, "https://cms.example.com/") as Record<string, { url: string }>;
+    expect(two.a.url).toBe("https://cms.example.com/uploads/x.png");
+  });
+
+  it("preserves a subpath-hosted CMS base", () => {
+    const out = absolutizeFormatUrls({ a: { url: "/uploads/x.png" } }, "https://example.com/cms") as Record<string, { url: string }>;
+    expect(out.a.url).toBe("https://example.com/cms/uploads/x.png");
+  });
+
+  it("degrades to the input untouched for a missing base or malformed formats", () => {
+    const formats = { a: { url: "/uploads/x.png" } };
+    expect(absolutizeFormatUrls(formats, "")).toBe(formats);
+    expect(absolutizeFormatUrls(null, BASE)).toBeNull();
+    expect(absolutizeFormatUrls("nope", BASE)).toBe("nope");
+  });
+
+  it("passes through entries with no usable url rather than inventing one", () => {
+    const out = absolutizeFormatUrls(
+      { a: { width: 100 }, b: null, c: { url: "   " } },
+      BASE
+    ) as Record<string, unknown>;
+
+    expect(out.a).toEqual({ width: 100 });
+    expect(out.b).toBeNull();
+    expect(out.c).toEqual({ url: "   " });
+  });
+});
+
 describe("mergeImageFormats — intrinsic width/height (Phase 18, item 12)", () => {
   function heroValueOf(page: StrapiPage) {
     return (
@@ -342,7 +408,12 @@ describe("resolveImageFormats — Upload REST contract (incident 2026-08-06)", (
     expect(decodeURIComponent(calls[0])).toContain("fields[3]=height");
     const hero = (out.page_template as { sections: { data: Record<string, { value: { formats?: unknown } }> }[] })
       .sections[0].data.hero;
-    expect(hero.value.formats).toEqual({ webp: { url: "/w.webp" } });
+    // Absolutized against the CMS base (env-stubbed to `strapi.test`) on the way
+    // through — a relative variant url would 404 against the tenant origin and
+    // blank the image. See absolutizeFormatUrls.
+    expect(hero.value.formats).toEqual({
+      webp: { url: "https://strapi.test/w.webp" },
+    });
   });
 
   it("fails open and returns the page unchanged when the request errors", async () => {
