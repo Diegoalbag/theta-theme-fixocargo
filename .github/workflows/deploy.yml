@@ -1,4 +1,4 @@
-# theta-workflow-version: 1.7.1
+# theta-workflow-version: 1.7.2
 # Theme Site Deployment Workflow
 #
 # This workflow expects the theme repository (source branch checked out to theme-source/)
@@ -867,7 +867,24 @@ jobs:
           # control sequences, so a naive grep matches the escape noise too.
           CLEAN_OUTPUT=$(printf '%s' "$DEPLOY_OUTPUT" | sed -E 's/\x1b\[[0-9;]*[A-Za-z]//g')
 
-          DEPLOY_URL=$(printf '%s' "$CLEAN_OUTPUT" | grep -Eo 'https://[a-zA-Z0-9._/-]+' | tail -n 1 || true)
+          # Anchor to the `Production` label rather than taking the last URL in the
+          # output. Once stderr is captured (2>&1, required for the alias parse
+          # below), the final URL printed is the `▲ Aliased` one — so a bare
+          # `tail -n 1` silently returns the ALIAS here and collapses deploymentUrl
+          # and aliasUrl into the same value, costing the deployment record its
+          # per-deploy identity. The CLI redraws progress, so `Production` can
+          # appear more than once; take the last.
+          DEPLOY_URL=$(printf '%s' "$CLEAN_OUTPUT" \
+            | grep -Eo 'Production[[:space:]]+https://[a-zA-Z0-9._-]+' \
+            | grep -Eo 'https://[a-zA-Z0-9._-]+' \
+            | tail -n 1 || true)
+          if [ -z "$DEPLOY_URL" ]; then
+            # No Production label (older CLI, or an output shape we do not know).
+            # Fall back to the last URL rather than reporting nothing — a slightly
+            # wrong deploymentUrl still beats an unreported deploy.
+            DEPLOY_URL=$(printf '%s' "$CLEAN_OUTPUT" | grep -Eo 'https://[a-zA-Z0-9._/-]+' | tail -n 1 || true)
+            echo "Note: no 'Production' line found; fell back to last-URL extraction."
+          fi
           if [ -n "$DEPLOY_URL" ]; then
             echo "Captured deployment URL: $DEPLOY_URL"
             echo "deployment_url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
