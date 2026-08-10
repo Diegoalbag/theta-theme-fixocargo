@@ -21,9 +21,13 @@ interface PageRendererProps {
   themeBundleUrl: string;
   themeName: string;
   /**
-   * Optional URL for the theme's CSS. If not set, derived from themeBundleUrl
-   * (.js → .css). Kept optional so this component stays compatible with both the
-   * server-stylesheet path in app/[slug]/page.tsx and older callers that pass it.
+   * URL for the theme's critical (render-blocking) stylesheet. ALWAYS
+   * supplied by `resolveLiveBundle` (17-05, PERF-04) — deriving it locally
+   * from `themeBundleUrl` here is incorrect, because the resolved bundle URL
+   * may carry a `?v=<lastDeployedAt>` version token, on which a `.js` ->
+   * `.css` suffix swap silently fails. Kept optional only because
+   * `resolveLiveBundle` itself returns `undefined` when no bundle URL could
+   * be resolved at all.
    */
   themeCssUrl?: string;
   /**
@@ -118,12 +122,10 @@ export function PageRenderer({
   // `precedence` prop is what makes React treat it as a hoistable stylesheet; it is
   // emitted in every render branch and deduped by href, so it stays in <head>
   // across the loading → loaded transition.
-  const effectiveCssUrl =
-    themeCssUrl ?? (themeBundleUrl ? themeBundleUrl.replace(/\.js$/i, ".css") : undefined);
-  const themeStylesheet = effectiveCssUrl ? (
+  const themeStylesheet = themeCssUrl ? (
     <link
       rel="stylesheet"
-      href={effectiveCssUrl}
+      href={themeCssUrl}
       precedence="theme"
       data-theme-stylesheet={themeName}
     />

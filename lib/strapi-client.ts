@@ -237,6 +237,16 @@ const getSiteLiveThemeQuery = gql`
         documentId
         name
         builtAssetUrl
+        # Theme.lastDeployedAt (datetime, written by the platform's deploy
+        # status callback at the moment a rebuild lands) is the D-06
+        # cache-bust token consumed by resolveLiveBundle (17-05, PERF-04).
+        # LIVE-SCHEMA RISK (documented, not mitigated): a field the tenant
+        # schema does not expose fails the WHOLE query, so a tenant on an
+        # older Strapi schema loses the live-theme read entirely.
+        # lastDeployedAt has existed on the Theme content type since before
+        # this milestone, so the risk is accepted rather than guarded with a
+        # second query.
+        lastDeployedAt
       }
     }
   }
@@ -331,6 +341,8 @@ export interface StrapiSite {
     documentId: string;
     name?: string | null;
     builtAssetUrl?: string | null;
+    /** D-06 cache-bust token; see the comment above the query selection. */
+    lastDeployedAt?: string | null;
   } | null;
 }
 

@@ -205,4 +205,25 @@ describe("strapi-client.ts — getSiteLiveThemeQuery carries the widened Site sc
     // GetSiteLiveTheme, not a new operation.
     expect(query).not.toContain("GetSite ");
   });
+
+  // Phase 17 (17-05, PERF-04): lastDeployedAt is the D-06 cache-bust token
+  // resolveLiveBundle applies. A future edit that drops this selection would
+  // silently un-version every asset with no test failing elsewhere — pin it
+  // directly against the liveTheme sub-selection.
+  it("getSiteLiveThemeQuery selects lastDeployedAt inside the liveTheme block", async () => {
+    const mod = await import("../strapi-client");
+    const requestSpy = vi
+      .spyOn(mod.strapiClient, "request")
+      .mockImplementation(async () => ({ site: null }));
+
+    await mod.fetchSite();
+
+    expect(requestSpy).toHaveBeenCalledTimes(1);
+    const query = requestSpy.mock.calls[0][0] as string;
+    const liveThemeStart = query.indexOf("liveTheme {");
+    expect(liveThemeStart).toBeGreaterThan(-1);
+    const liveThemeEnd = query.indexOf("}", liveThemeStart);
+    const liveThemeBlock = query.slice(liveThemeStart, liveThemeEnd);
+    expect(liveThemeBlock).toContain("lastDeployedAt");
+  });
 });

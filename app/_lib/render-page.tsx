@@ -184,13 +184,15 @@ export async function RenderPage({ slug }: { slug: string | null }) {
   // NOTE: this route is now ISR-cached rather than force-dynamic, so a
   // liveTheme switch takes effect on the next revalidation — the platform
   // should call /api/revalidate after changing it (see app/api/revalidate).
-  const { themeBundleUrl, themeName, themeCssDeferredUrl } = resolveLiveBundle(
-    site,
-    process.env
-  );
-  const themeCssUrl =
-    process.env.NEXT_PUBLIC_THEME_CSS_URL ||
-    (themeBundleUrl ? themeBundleUrl.replace(/\.js$/i, ".css") : undefined);
+  // themeCssUrl (the critical stylesheet URL) is resolved HERE, inside
+  // resolveLiveBundle, and nowhere else (17-05, PERF-04). It must not be
+  // re-derived from themeBundleUrl downstream: once themeBundleUrl carries a
+  // `?v=` version token, a `.js` -> `.css` suffix swap on it silently fails
+  // and would point the critical `<link rel="stylesheet">` at the JS bundle.
+  // The `NEXT_PUBLIC_THEME_CSS_URL` operator override is also handled inside
+  // the resolver (it already receives `process.env` as its second argument).
+  const { themeBundleUrl, themeName, themeCssUrl, themeCssDeferredUrl } =
+    resolveLiveBundle(site, process.env);
 
   if (!themeBundleUrl || themeBundleUrl.trim() === "") {
     return (
@@ -244,7 +246,7 @@ export async function RenderPage({ slug }: { slug: string | null }) {
         page={page}
         themeBundleUrl={themeBundleUrl}
         themeName={themeName}
-        themeCssUrl={themeCssUrl || undefined}
+        themeCssUrl={themeCssUrl}
         themeCssDeferredUrl={themeCssDeferredUrl}
         shellHtml={shellHtml}
       />

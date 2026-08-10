@@ -1,4 +1,4 @@
-# theta-workflow-version: 1.5.0
+# theta-workflow-version: 1.7.0
 # Theme Site Deployment Workflow
 #
 # This workflow expects the theme repository (source branch checked out to theme-source/)
@@ -6,6 +6,16 @@
 #   - A package.json with at least one build script: build:theme, build:bundle, or build
 #   - The build must output the bundle to dist/theme.bundle.js
 # See THEME_DEVELOPMENT.md for theme repository requirements and example package.json scripts.
+#
+# 1.6.0 (17-09, PERF-01): a theme may serve its font faces as separate files from a
+# `dist/fonts` directory rather than embedding them in its stylesheet — embedding is
+# Vite's documented library-mode behaviour (build.assetsInlineLimit is ignored when
+# build.lib is set, so assets are always inlined regardless of size), not a choice
+# every theme author makes. A stylesheet that references external font files the
+# pipeline does not carry to the deployed root would 404 every face, so this version
+# carries an optional `dist/fonts` -> `public/fonts` copy at each of the three
+# artifact-copy sites below, guarded on the directory existing so a theme that still
+# embeds its fonts is byte-unaffected.
 
 name: Deploy Theme Site
 
@@ -320,6 +330,20 @@ jobs:
             ls -lh dist/theme.bundle.deferred.css public/theme.bundle.deferred.css
             GIT_ADD="$GIT_ADD dist/theme.bundle.deferred.css public/theme.bundle.deferred.css"
           fi
+          # PERF-01 (17-09): optional font directory, present only when the theme
+          # serves its faces as separate files rather than embedding them. Guarded
+          # on the directory existing so a theme with no such directory is unaffected.
+          if [ -d "theme-source/dist/fonts" ]; then
+            mkdir -p dist/fonts public/fonts
+            cp -R theme-source/dist/fonts/. dist/fonts/
+            cp -R theme-source/dist/fonts/. public/fonts/
+            FONT_COUNT=$(find dist/fonts -type f | wc -l | tr -d ' ')
+            echo "✓ Font directory copied to dist/fonts and public/fonts ($FONT_COUNT files)"
+            ls -lh dist/fonts public/fonts
+            GIT_ADD="$GIT_ADD dist/fonts public/fonts"
+          else
+            echo "No theme-source/dist/fonts directory (theme embeds fonts in its stylesheet; optional)"
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f dist/theme.bundle.js public/theme.bundle.js
@@ -328,6 +352,9 @@ jobs:
           fi
           if [ "${{ steps.build-theme.outputs.deferred_css_found }}" = "true" ]; then
             git add -f dist/theme.bundle.deferred.css public/theme.bundle.deferred.css
+          fi
+          if [ -d "dist/fonts" ]; then
+            git add -f dist/fonts public/fonts
           fi
           git status --short
           if ! git diff --staged --quiet; then
@@ -387,6 +414,20 @@ jobs:
             ls -lh dist/theme.bundle.deferred.css public/theme.bundle.deferred.css
             GIT_ADD="$GIT_ADD dist/theme.bundle.deferred.css public/theme.bundle.deferred.css"
           fi
+          # PERF-01 (17-09): optional font directory, present only when the theme
+          # serves its faces as separate files rather than embedding them. Guarded
+          # on the directory existing so a theme with no such directory is unaffected.
+          if [ -d "theme-source/dist/fonts" ]; then
+            mkdir -p dist/fonts public/fonts
+            cp -R theme-source/dist/fonts/. dist/fonts/
+            cp -R theme-source/dist/fonts/. public/fonts/
+            FONT_COUNT=$(find dist/fonts -type f | wc -l | tr -d ' ')
+            echo "✓ Font directory copied to dist/fonts and public/fonts ($FONT_COUNT files)"
+            ls -lh dist/fonts public/fonts
+            GIT_ADD="$GIT_ADD dist/fonts public/fonts"
+          else
+            echo "No theme-source/dist/fonts directory (theme embeds fonts in its stylesheet; optional)"
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f dist/theme.bundle.js public/theme.bundle.js
@@ -395,6 +436,9 @@ jobs:
           fi
           if [ "${{ steps.build-theme.outputs.deferred_css_found }}" = "true" ]; then
             git add -f dist/theme.bundle.deferred.css public/theme.bundle.deferred.css
+          fi
+          if [ -d "dist/fonts" ]; then
+            git add -f dist/fonts public/fonts
           fi
           git status --short
           if ! git diff --staged --quiet; then
@@ -472,6 +516,19 @@ jobs:
             ls -lh public/theme.bundle.deferred.css
           else
             echo "No dist/theme.bundle.deferred.css (theme not css-split; optional)"
+          fi
+          # PERF-01 (17-09): this region runs after the build-branch checkout, so
+          # it is what guarantees the font directory is present in the directory
+          # the deploy step actually uploads, even when the copy regions above ran
+          # on an earlier commit or were skipped entirely.
+          if [ -d "dist/fonts" ]; then
+            mkdir -p public/fonts
+            cp -R dist/fonts/. public/fonts/
+            FONT_COUNT=$(find dist/fonts -type f | wc -l | tr -d ' ')
+            echo "✓ public/fonts ready (copied from dist/fonts, $FONT_COUNT files)"
+            ls -lh public/fonts
+          else
+            echo "No dist/fonts (theme embeds fonts in its stylesheet; optional)"
           fi
           echo "================================"
 
@@ -781,14 +838,46 @@ jobs:
             echo "$DEPLOY_OUTPUT"
           fi
 
-          # Extract the last https://...vercel.app URL printed by the CLI.
-          DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | grep -Eo 'https://[a-zA-Z0-9._/-]+' | tail -n 1 || true)
+          # The CLI prints TWO different URLs and the distinction matters:
+          #
+          #   Production   https://<project>-<hash>.vercel.app   <- unique to THIS deploy
+          #   ▲ Aliased    https://<project>-<alias>.vercel.app  <- STABLE production domain
+          #
+          # `deployment_url` (the per-deploy URL) is the honest identity of this
+          # deployment and stays the deployment record's value. But the platform
+          # also stamps Strapi's `theme.builtAssetUrl` from the callback, and that
+          # value is baked into the NEXT deploy as NEXT_PUBLIC_THEME_BUNDLE_URL.
+          # Pinning it to a per-deploy host makes every deploy serve the PREVIOUS
+          # deploy's theme assets — one cycle behind, forever, never self-correcting.
+          # So capture the alias separately and let the receiver pin assets to it.
+          # (Phase 17 / plan 17-10: this is why a verified 394KB->63KB CSS
+          # reduction reached zero real visitors.)
+          #
+          # Strip ANSI escapes first — the CLI decorates these lines with cursor
+          # control sequences, so a naive grep matches the escape noise too.
+          CLEAN_OUTPUT=$(printf '%s' "$DEPLOY_OUTPUT" | sed -E 's/\x1b\[[0-9;]*[A-Za-z]//g')
+
+          DEPLOY_URL=$(printf '%s' "$CLEAN_OUTPUT" | grep -Eo 'https://[a-zA-Z0-9._/-]+' | tail -n 1 || true)
           if [ -n "$DEPLOY_URL" ]; then
             echo "Captured deployment URL: $DEPLOY_URL"
             echo "deployment_url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
           else
             echo "No deployment URL parsed from CLI output (callback will omit deploymentUrl)."
             echo "deployment_url=" >> "$GITHUB_OUTPUT"
+          fi
+
+          ALIAS_URL=$(printf '%s' "$CLEAN_OUTPUT" \
+            | grep -Eo 'Aliased[[:space:]]+https://[a-zA-Z0-9._-]+' \
+            | grep -Eo 'https://[a-zA-Z0-9._-]+' \
+            | tail -n 1 || true)
+          if [ -n "$ALIAS_URL" ]; then
+            echo "Captured stable alias URL: $ALIAS_URL"
+            echo "alias_url=$ALIAS_URL" >> "$GITHUB_OUTPUT"
+          else
+            # Not fatal: the receiver falls back to deploymentUrl, preserving the
+            # old (lagging) behaviour rather than breaking the deploy.
+            echo "No alias URL parsed from CLI output (receiver will fall back to deploymentUrl)."
+            echo "alias_url=" >> "$GITHUB_OUTPUT"
           fi
         env:
           VERCEL_ORG_ID: ${{ github.event.inputs.vercel_team_id || secrets.VERCEL_TEAM_ID }}
@@ -822,9 +911,18 @@ jobs:
           # ready AND the captured URL begins with https:// — otherwise preserve the
           # status-only body (today's behavior) so error/empty-URL cases still report.
           DEPLOY_URL="${{ steps.deploy-vercel.outputs.deployment_url }}"
+          ALIAS_URL="${{ steps.deploy-vercel.outputs.alias_url }}"
           if [ "$STATUS" = "ready" ] && [ "${DEPLOY_URL#https://}" != "$DEPLOY_URL" ]; then
-            PAYLOAD="{\"status\": \"$STATUS\", \"deploymentUrl\": \"$DEPLOY_URL\"}"
-            echo "Reporting deploy status '$STATUS' with deploymentUrl to $CALLBACK_URL"
+            # aliasUrl is additive and independently guarded — include it only when
+            # it too is an absolute https URL, so a parse miss degrades to the old
+            # deploymentUrl-only body rather than failing schema validation.
+            if [ "${ALIAS_URL#https://}" != "$ALIAS_URL" ]; then
+              PAYLOAD="{\"status\": \"$STATUS\", \"deploymentUrl\": \"$DEPLOY_URL\", \"aliasUrl\": \"$ALIAS_URL\"}"
+              echo "Reporting deploy status '$STATUS' with deploymentUrl + aliasUrl to $CALLBACK_URL"
+            else
+              PAYLOAD="{\"status\": \"$STATUS\", \"deploymentUrl\": \"$DEPLOY_URL\"}"
+              echo "Reporting deploy status '$STATUS' with deploymentUrl to $CALLBACK_URL"
+            fi
           else
             PAYLOAD="{\"status\": \"$STATUS\"}"
             echo "Reporting deploy status '$STATUS' to $CALLBACK_URL"
