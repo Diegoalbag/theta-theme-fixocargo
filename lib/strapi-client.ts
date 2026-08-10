@@ -102,6 +102,7 @@ const SITE_SCALAR_FIELDS = `
   verificationGoogle
   verificationBing
   verificationYandex
+  verificationAhrefs
 `;
 
 // canonicalUrl (Phase 16 / SEOED-05): a top-level Page scalar, NOT inside
