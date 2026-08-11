@@ -103,6 +103,9 @@ const SITE_SCALAR_FIELDS = `
   verificationBing
   verificationYandex
   verificationAhrefs
+  googleAnalyticsId
+  googleAdsId
+  metaPixelId
 `;
 
 // canonicalUrl (Phase 16 / SEOED-05): a top-level Page scalar, NOT inside
@@ -337,6 +340,11 @@ export interface StrapiSite {
   verificationGoogle?: string | null;
   verificationBing?: string | null;
   verificationYandex?: string | null;
+  /** REQ-7/8/9. Raw as stored — every consumer re-normalizes at emission
+   * (lib/analytics-resolve.ts), because these become inline script text. */
+  googleAnalyticsId?: string | null;
+  googleAdsId?: string | null;
+  metaPixelId?: string | null;
   seo?: StrapiSeo | null;
   liveTheme?: {
     documentId: string;
