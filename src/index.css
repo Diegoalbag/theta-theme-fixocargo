@@ -522,25 +522,47 @@
  * merchant can fix it — instead of the default-hidden form, which would silently
  * blank the whole section.
  *
- * The third selector in each group collapses the customizer's per-block
- * `<div style="position:relative">` wrapper, which the published site does not
- * emit; without it a hidden row would leave a phantom wrapper in the customizer.
+ * SELECTOR 2 IS WHAT PARTITIONS THE ROWS. `[data-courier-row]:not([…="KEY"])`
+ * hides every non-matching row directly, in BOTH render contexts, with no
+ * dependency on what wraps the rows. Partitioning never relies on selector 3.
  *
- * A3 CAVEAT — VERIFIED AT UAT ONLY, NOT REACHABLE BY ANY UNIT TEST: that third
- * selector relies on `.courier-rates *` using a DESCENDANT combinator, which by
- * specification excludes `.courier-rates` itself. That exclusion is the single
- * reason the rule cannot hide the entire published rates list (where the rows
- * ARE direct children of `.courier-rates`). If a published preview shows an
- * empty rates list, this assumption is wrong and the third selector must be
- * re-scoped. Belt and braces: the rates container is zero-gap block flow, so a
- * stray wrapper contributes zero height either way.
+ * SELECTOR 3 ONLY COLLAPSES A WRAPPER. Its sole job is the customizer's
+ * per-block `<div style="position:relative">` wrapper, which the published site
+ * does not emit; without it a hidden row would leave a phantom wrapper in the
+ * customizer.
+ *
+ * SELECTOR 3 IS WRITTEN IN THE CONTAINS-NO-MATCH FORM ON PURPOSE (CR-01). Read
+ * it as: "has a row child, and has no row child belonging to the selected tab."
+ * The earlier form pushed the `:not()` INSIDE the `:has()`, which read as "has a
+ * row child that is not the selected tab" — that fires as soon as an element has
+ * AT LEAST ONE non-matching row as a direct child, so any element holding more
+ * than one row (the host's `display: contents` slot wrapper, or any future
+ * grouping element) would be hidden along with EVERY row inside it, including
+ * the selected tab's. `display: contents` does not protect a subtree from an
+ * ancestor's `display: none`. Hoisting the `:not()` outside the `:has()` fires
+ * only when an element holds rows and NONE of them belong to the selected tab:
+ *   - one row per wrapper (customizer)  -> identical behavior to the old form;
+ *   - many rows under one parent        -> the parent stays visible whenever it
+ *     holds a selected-tab row, and selector 2 still hides the rest.
+ * There is no DOM shape in which this rule can blank a visible row. The literal
+ * guard is pinned as a string in test/sections-courier-tabs.test.tsx, which also
+ * asserts the inside-out form never returns — do not paste that form back into
+ * this comment, it would trip the guard.
+ *
+ * A3 — STILL UAT-ONLY, NOT REACHABLE BY ANY UNIT TEST: no test in this repo
+ * evaluates CSS, so the shipped behavior of these rules is only observable in a
+ * browser. What UAT now checks is that the rows partition correctly, NOT whether
+ * the list survives at all — the contains-no-match form removes that failure
+ * mode by construction. Belt and braces: the rates container is zero-gap block
+ * flow, so a stray wrapper contributes zero height either way.
  * ------------------------------------------------------------------------- */
 .courier-tabs:has([data-courier-input="estados-unidos"]:checked)
   [data-courier-panel]:not([data-courier-panel="estados-unidos"]),
 .courier-tabs:has([data-courier-input="estados-unidos"]:checked)
   [data-courier-row]:not([data-courier-row="estados-unidos"]),
 .courier-tabs:has([data-courier-input="estados-unidos"]:checked)
-  .courier-rates *:has(> [data-courier-row]:not([data-courier-row="estados-unidos"])) {
+  .courier-rates
+  *:has(> [data-courier-row]):not(:has(> [data-courier-row="estados-unidos"])) {
   display: none;
 }
 
@@ -549,7 +571,8 @@
 .courier-tabs:has([data-courier-input="europa"]:checked)
   [data-courier-row]:not([data-courier-row="europa"]),
 .courier-tabs:has([data-courier-input="europa"]:checked)
-  .courier-rates *:has(> [data-courier-row]:not([data-courier-row="europa"])) {
+  .courier-rates
+  *:has(> [data-courier-row]):not(:has(> [data-courier-row="europa"])) {
   display: none;
 }
 
@@ -558,7 +581,8 @@
 .courier-tabs:has([data-courier-input="china"]:checked)
   [data-courier-row]:not([data-courier-row="china"]),
 .courier-tabs:has([data-courier-input="china"]:checked)
-  .courier-rates *:has(> [data-courier-row]:not([data-courier-row="china"])) {
+  .courier-rates
+  *:has(> [data-courier-row]):not(:has(> [data-courier-row="china"])) {
   display: none;
 }
 
@@ -567,7 +591,8 @@
 .courier-tabs:has([data-courier-input="exportacion"]:checked)
   [data-courier-row]:not([data-courier-row="exportacion"]),
 .courier-tabs:has([data-courier-input="exportacion"]:checked)
-  .courier-rates *:has(> [data-courier-row]:not([data-courier-row="exportacion"])) {
+  .courier-rates
+  *:has(> [data-courier-row]):not(:has(> [data-courier-row="exportacion"])) {
   display: none;
 }
 

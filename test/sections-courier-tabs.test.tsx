@@ -256,9 +256,26 @@ describe("courier-tabs scoped CSS (src/index.css)", () => {
   });
 
   it("collapses the customizer per-block wrapper once per tab", () => {
-    expect(countMatches(css, ".courier-rates *:has(> [data-courier-row]")).toBe(
-      4,
-    );
+    expect(countMatches(css, "*:has(> [data-courier-row])")).toBe(4);
+  });
+
+  // CR-01 safety property. The wrapper-collapse selector MUST be written in the
+  // contains-NO-match form. The earlier contains-A-non-match form
+  // (`*:has(> [data-courier-row]:not([data-courier-row="KEY"]))`) fires on any
+  // element holding at least one non-matching row, so a container holding rows
+  // for several tabs — the host's `display: contents` slot wrapper, or any
+  // future grouping element — would be hidden together with the selected tab's
+  // rows inside it. Pin the guard itself, not just the selector's shape: no unit
+  // test in this repo evaluates CSS, so this string is the only automated sensor
+  // standing between that regression and a published preview.
+  it("guards the wrapper-collapse rule so it can never hide a container holding the selected tab's rows", () => {
+    COURIER_TABS.forEach((key) => {
+      expect(css).toContain(
+        `*:has(> [data-courier-row]):not(:has(> [data-courier-row="${key}"]))`,
+      );
+    });
+    // The unbounded form must never come back.
+    expect(css).not.toContain("*:has(> [data-courier-row]:not(");
   });
 
   it("drives the visible label from the sr-only radio via the sibling combinator", () => {
