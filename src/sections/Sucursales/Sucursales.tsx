@@ -325,7 +325,14 @@ export const Sucursales = ({
                 imperatively. BlogHero's search input stays deliberately inert —
                 it has no results surface to filter, so that is an intentional
                 divergence, not an oversight. The magnifier ICON below stays
-                decorative and keeps aria-hidden. */}
+                decorative and keeps aria-hidden.
+
+                WR-03: because it is now TABBABLE it must show focus (WCAG
+                2.4.7). Its old `outline-none` is gone rather than paired with a
+                focus variant: Tailwind v4's outline-none sets
+                --tw-outline-style: none at the base, which would silently
+                neuter any focus-visible outline width. The replacement is the
+                same brand focus ring NavLink and the Footer links use. */}
             <div className="flex items-center gap-2 rounded-lg bg-card border border-border px-5 h-[60px]">
               <Search
                 aria-hidden="true"
@@ -337,7 +344,7 @@ export const Sucursales = ({
                 aria-label="Buscar sucursal por nombre o dirección"
                 autoComplete="off"
                 placeholder="Ingresa la ubicación"
-                className="flex-1 bg-transparent outline-none text-brand-navy placeholder:text-muted-foreground"
+                className="flex-1 bg-transparent text-brand-navy placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-brand-yellow focus-visible:outline-offset-2"
               />
             </div>
 

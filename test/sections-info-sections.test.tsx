@@ -63,6 +63,21 @@ describe("Sucursales", () => {
     expect(html).toContain("Ingresa la ubicación");
   });
 
+  it("gives the now-tabbable search input a visible focus indicator (WCAG 2.4.7)", () => {
+    // WR-03: the control was inert (readOnly / aria-hidden / tabIndex=-1) when
+    // `outline-none` was added, so it cost nothing. Now that it is a real
+    // tabbable form control, focus MUST be visible. `outline-none` may not
+    // simply coexist with the focus variant either — Tailwind v4's outline-none
+    // sets --tw-outline-style: none at the base, neutering focus-visible
+    // outline widths — so assert it is gone, not merely overridden.
+    const html = renderToStaticMarkup(<Sucursales />);
+    const input = html.match(/<input[^>]*>/)?.[0] ?? "";
+    expect(input).not.toBe("");
+    expect(input).not.toMatch(/\boutline-none\b/);
+    expect(input).toContain("focus-visible:outline-2");
+    expect(input).toContain("focus-visible:outline-brand-yellow");
+  });
+
   it("marks the branch list container with the class the filter scopes to", () => {
     const html = renderToStaticMarkup(
       <Sucursales renderBlocks={() => [<span key="a">child</span>]} />,
