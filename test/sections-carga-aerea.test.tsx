@@ -84,6 +84,37 @@ describe("RateCard", () => {
     expect(html).not.toContain("<span");
   });
 
+  // WR-04. Guarding only the fields still left the ROOT painting an empty
+  // p-8 rounded-2xl bg-card shadow panel for a freshly added card. The root
+  // element must stay (the empty-state matrix requires non-empty markup with
+  // blank props, and the customizer anchors its per-block wrapper to it); only
+  // its chrome may go.
+  it("drops its own chrome when every field is blank (WR-04)", () => {
+    const html = renderToStaticMarkup(<RateCard />);
+    expect(html.length).toBeGreaterThan(0);
+    expect(html).not.toContain("p-8");
+    expect(html).not.toContain("rounded-2xl");
+    expect(html).not.toContain("shadow");
+    expect(html).not.toContain("bg-card");
+  });
+
+  it("keeps its chrome as soon as any single field is filled (WR-04)", () => {
+    (
+      [
+        { route: "Ruta" },
+        { perKg: "US$ 2.50 / kg" },
+        { perKgNote: "mín. 100 kg" },
+        { localCharges: "US$ 75" },
+        { breakdown: "AWB US$ 45" },
+      ] as const
+    ).forEach((props) => {
+      const html = renderToStaticMarkup(<RateCard {...props} />);
+      expect(html).toContain("p-8");
+      expect(html).toContain("rounded-2xl");
+      expect(html).toContain("shadow");
+    });
+  });
+
   it("stretches to full grid-item height (customizer wrapper safety)", () => {
     const html = renderToStaticMarkup(<RateCard route="Ruta" />);
     expect(html).toContain("h-full");

@@ -103,6 +103,31 @@ describe("RateRow", () => {
     expect(html).not.toContain("<span");
   });
 
+  // WR-04. Guarding only the fields still left the ROOT painting a ~25px blank
+  // strip with a full-width border-b under it — with maxBlocks: 12 that stacks
+  // into a run of stray separators on any partially filled table. The root
+  // element must stay (it carries the routing tag, and the empty-state matrix
+  // requires non-empty markup with blank props); only its chrome may go.
+  it("drops its own chrome when it has neither a weight nor a rate (WR-04)", () => {
+    const html = renderToStaticMarkup(<RateRow tab="europa" />);
+    // Still routable, still non-empty markup.
+    expect(html).toContain('data-courier-row="europa"');
+    expect(html.length).toBeGreaterThan(0);
+    // But it draws nothing: no separator, no vertical padding.
+    expect(html).not.toContain("border-b");
+    expect(html).not.toContain("py-3");
+  });
+
+  it("keeps its chrome as soon as either field is filled (WR-04)", () => {
+    const weightOnly = renderToStaticMarkup(<RateRow weight="1 lb" />);
+    expect(weightOnly).toContain("border-b");
+    expect(weightOnly).toContain("py-3");
+
+    const rateOnly = renderToStaticMarkup(<RateRow rate="US$ 5" />);
+    expect(rateOnly).toContain("border-b");
+    expect(rateOnly).toContain("py-3");
+  });
+
   it("exposes exactly 3 editable fields with the expected ids", () => {
     expect(rateRowSettingsSchema.length).toBe(3);
     expect(rateRowSettingsSchema.map((s) => s.id)).toEqual([

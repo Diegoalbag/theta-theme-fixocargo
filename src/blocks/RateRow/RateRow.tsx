@@ -27,6 +27,10 @@ import { COURIER_TAB_OPTIONS, resolveCourierTab } from "@/lib/courier-tabs";
 // on the published site the last VISIBLE row is not the last DOM row once CSS
 // partitioning hides some. A trailing hairline is the accepted outcome.
 //
+// The row's own chrome is guarded on having content (WR-04): a row with neither
+// a weight nor a rate drops its border and padding instead of drawing a blank
+// strip with a hairline under it. See the guard at the render site.
+//
 // No state, no event handlers, no hex literals, @/ imports only.
 export interface RateRowProps {
   tab?: string;
@@ -46,10 +50,25 @@ export const RateRow = ({
   // attribute value.
   const safeTab = resolveCourierTab(tab);
 
+  // WR-04: the ROOT carries chrome too — a border-b hairline and py-3 — so
+  // guarding only the fields left a freshly added (or partially filled) row
+  // rendering a ~25px blank strip with a full-width rule under it. With
+  // maxBlocks: 12 that stacks into a run of stray separators. The root element
+  // itself is KEPT (never `return null`): it carries the `data-courier-row`
+  // routing tag the scoped CSS matches on, and the empty-state matrix requires
+  // every block to emit non-empty markup with blank props. Only the visual
+  // chrome is dropped, so a contentless row contributes exactly zero height and
+  // draws nothing — the same outcome as the field guards, applied to the root.
+  const hasContent = !!(weight || rate);
+
   return (
     <div
       data-courier-row={safeTab}
-      className="flex items-center justify-between gap-4 border-b border-border py-3"
+      className={
+        hasContent
+          ? "flex items-center justify-between gap-4 border-b border-border py-3"
+          : ""
+      }
     >
       {weight && <span className="font-opensans text-brand-navy">{weight}</span>}
 

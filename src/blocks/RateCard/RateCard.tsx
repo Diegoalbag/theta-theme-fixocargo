@@ -22,7 +22,11 @@ import * as React from "react";
 // they look correct on the published site.
 //
 // Every field is guarded with `{field && …}` so a blank field renders nothing at
-// all — never an empty element, an orphaned label or a stray separator. All five
+// all — never an empty element, an orphaned label or a stray separator. THE ROOT
+// IS GUARDED TOO (WR-04): with every field blank the card drops its own chrome
+// (padding, radius, background, shadow) rather than painting an empty panel, so
+// the "renders nothing at all" invariant holds for the whole block and not just
+// its fields. All five
 // content defaults are empty: Carga Aérea route names and rate values are
 // merchant-entered customizer content tracked in .planning/CONTENT-CHECKLIST.md,
 // and hard-coding them would recreate exactly the stale-default problem CLN-02
@@ -46,8 +50,29 @@ export const RateCard = ({
   localCharges = "",
   breakdown = "",
 }: RateCardProps): React.ReactNode => {
+  // WR-04: the card ROOT carries the visible chrome (p-8, rounded-2xl, bg-card,
+  // shadow), so guarding only the fields still left a freshly added card
+  // painting an empty padded panel. The root element is KEPT (never
+  // `return null`): the empty-state matrix requires every block to emit
+  // non-empty markup with blank props, and the customizer needs a node to
+  // anchor its per-block wrapper to. Only the chrome is dropped, so a
+  // contentless card draws nothing and occupies no grid space of its own.
+  const hasContent = !!(
+    route ||
+    perKg ||
+    perKgNote ||
+    localCharges ||
+    breakdown
+  );
+
   return (
-    <div className="flex h-full flex-col items-start rounded-2xl bg-card p-8 shadow">
+    <div
+      className={
+        hasContent
+          ? "flex h-full flex-col items-start rounded-2xl bg-card p-8 shadow"
+          : ""
+      }
+    >
       {route && (
         <h3 className="uppercase font-gotham font-bold text-xl text-brand-navy mb-3">
           {route}
