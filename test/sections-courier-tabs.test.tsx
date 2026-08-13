@@ -140,6 +140,28 @@ describe("CourierTabs", () => {
     expect(html).toContain("Exportación a EE.UU.");
   });
 
+  // WR-01. A cleared panel title is the only text field in this section that
+  // may NOT render empty: it is the accessible name of both the sr-only radio
+  // (<label htmlFor>) and the role="region" panel (aria-label). Empty means an
+  // unnamed control and an unnamed landmark, plus a visibly blank pill.
+  it("falls back to the canonical panel name when a tab title is cleared (WR-01)", () => {
+    const html = renderToStaticMarkup(
+      <CourierTabs tab1Label="" tab2Label="" tab3Label="" tab4Label="" />,
+    );
+    COURIER_TAB_OPTIONS.forEach((option) => {
+      expect(html).toContain(`aria-label="${option.label}"`);
+    });
+    // No empty accessible name anywhere in the strip or the panels.
+    expect(html).not.toContain('aria-label=""');
+    expect(html).not.toMatch(/<label[^>]*><\/label>/);
+  });
+
+  it("still prefers a merchant-supplied tab title over the fallback", () => {
+    const html = renderToStaticMarkup(<CourierTabs tab3Label="Asia" />);
+    expect(html).toContain('aria-label="Asia"');
+    expect(html).not.toContain('aria-label="China"');
+  });
+
   it("emits exactly 4 tab inputs and 4 panels keyed by COURIER_TABS", () => {
     const html = renderToStaticMarkup(<CourierTabs />);
     expect(countMatches(html, "data-courier-input=")).toBe(4);

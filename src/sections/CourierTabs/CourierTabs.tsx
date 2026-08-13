@@ -2,7 +2,7 @@ import * as React from "react";
 
 import { BlocksSlot } from "@/lib/blocks-slot";
 import { RichText } from "@/lib/rich-text";
-import { COURIER_TABS } from "@/lib/courier-tabs";
+import { COURIER_TABS, COURIER_TAB_OPTIONS } from "@/lib/courier-tabs";
 
 // CourierTabs (CUR-01/02/03, D-11-02, D-11-04, D-11-05) — the FixoCargo courier
 // band: four fixed destination panels over one flat list of `rate-row` blocks.
@@ -65,11 +65,18 @@ export const CourierTabs = ({
   // radio group, so clicking a tab in one would blank the other.
   const uid = React.useId();
 
+  // A panel title is NEVER allowed to render empty (WR-01). Unlike eyebrow and
+  // heading — which are decorative and simply omitted when blank — this string
+  // is the accessible name of BOTH the sr-only radio (via <label htmlFor>) and
+  // the role="region" panel (via aria-label). A cleared title would leave an
+  // unnamed control (WCAG 4.1.2) and an unnamed landmark, plus a visibly empty
+  // pill. It falls back to the canonical panel name instead of being dropped,
+  // because the four tabs are FIXED — there is no valid "no tab here" state.
   const panels = [
-    { key: COURIER_TABS[0], label: tab1Label, body: tab1Body },
-    { key: COURIER_TABS[1], label: tab2Label, body: tab2Body },
-    { key: COURIER_TABS[2], label: tab3Label, body: tab3Body },
-    { key: COURIER_TABS[3], label: tab4Label, body: tab4Body },
+    { key: COURIER_TABS[0], label: tab1Label || COURIER_TAB_OPTIONS[0].label, body: tab1Body },
+    { key: COURIER_TABS[1], label: tab2Label || COURIER_TAB_OPTIONS[1].label, body: tab2Body },
+    { key: COURIER_TABS[2], label: tab3Label || COURIER_TAB_OPTIONS[2].label, body: tab3Body },
+    { key: COURIER_TABS[3], label: tab4Label || COURIER_TAB_OPTIONS[3].label, body: tab4Body },
   ];
 
   return (
