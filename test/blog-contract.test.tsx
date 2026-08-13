@@ -176,6 +176,71 @@ describe("ArchiveList — one section, three surfaces", () => {
     expect(() => renderToStaticMarkup(<ArchiveList />)).not.toThrow();
   });
 
+  // Tag pills (blue category / yellow tags on the card). The nested-anchor
+  // assertion is the load-bearing one: PostCard wraps each card in an <a> to
+  // the post, so a tag rendered as a link would be invalid HTML the browser
+  // silently un-nests -- breaking the card link itself, not just the tag.
+  it("renders each tag as a yellow pill on the card", () => {
+    const html = renderToStaticMarkup(
+      <ArchiveList
+        archive={archive({
+          posts: [
+            post({
+              tags: [
+                { name: "Aduanas", slug: "aduanas" },
+                { name: "Envíos", slug: "envios" },
+              ],
+            }),
+          ],
+        })}
+      />
+    );
+    expect(html).toContain("Aduanas");
+    expect(html).toContain("Envíos");
+    expect(html).toContain("bg-brand-yellow");
+  });
+
+  it("never nests an anchor inside the card link", () => {
+    const html = renderToStaticMarkup(
+      <ArchiveList
+        archive={archive({
+          posts: [
+            post({
+              category: { name: "Guías", slug: "guias" },
+              tags: [{ name: "Aduanas", slug: "aduanas" }],
+            }),
+          ],
+        })}
+      />
+    );
+    // Exactly one anchor per card: the card link itself.
+    expect(html.match(/<a\s/g) ?? []).toHaveLength(1);
+  });
+
+  it("renders the category pill in brand navy, distinct from the tag yellow", () => {
+    const html = renderToStaticMarkup(
+      <ArchiveList
+        archive={archive({
+          posts: [
+            post({
+              category: { name: "Guías", slug: "guias" },
+              tags: [{ name: "Aduanas", slug: "aduanas" }],
+            }),
+          ],
+        })}
+      />
+    );
+    expect(html).toContain("bg-brand-navy");
+    expect(html).toContain("bg-brand-yellow");
+  });
+
+  it("renders no tag list at all when a post carries no tags", () => {
+    const html = renderToStaticMarkup(
+      <ArchiveList archive={archive({ posts: [post({ tags: [] })] })} />
+    );
+    expect(html).not.toContain("bg-brand-yellow");
+  });
+
   it("renders a post missing image, category and author without broken chrome", () => {
     expect(() =>
       renderToStaticMarkup(

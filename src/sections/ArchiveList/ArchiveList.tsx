@@ -89,6 +89,28 @@ const PostCard = ({ post }: { post: ArticleProp }): React.ReactNode => {
             {post.excerpt}
           </p>
         ) : null}
+
+        {/* Tags close the card, below the excerpt — the category already
+            claims the image overlay, and stacking both taxonomies there
+            buries the photograph under chrome.
+
+            Spans, never anchors: PostCard wraps this whole subtree in an
+            <a> to the post, and a nested <a> is invalid HTML the browser
+            silently un-nests, which is exactly why the category overlay
+            above is not a link either. `mt-auto` pins the row to the
+            bottom so cards in a row align on it regardless of how many
+            lines each excerpt runs to. */}
+        {post.tags.length > 0 ? (
+          <ul className="mt-auto flex list-none flex-wrap gap-2 p-0 pt-2">
+            {post.tags.map((tag) => (
+              <li key={tag.slug}>
+                <span className="inline-flex items-center rounded-full bg-brand-yellow px-3 py-1 font-gotham text-xs font-bold text-brand-navy">
+                  {tag.name}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
     </Card>
   );
