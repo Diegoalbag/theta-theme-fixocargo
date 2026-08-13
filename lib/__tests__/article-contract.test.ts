@@ -152,3 +152,82 @@ describe("buildArchiveProp — DIS-6 shape", () => {
     expect(archive.page).toEqual({ current: 1, pageSize: 10, pageCount: 1, total: 1 });
   });
 });
+
+/**
+ * Regression coverage for the blank-featured-image bug: Strapi's DEFAULT
+ * local-disk upload provider stores media urls relative to the CMS
+ * (`/uploads/cover.jpg`). Handed to a theme unchanged, `<img src>` resolves
+ * that against the TENANT's origin and 404s, so every card painted an empty
+ * box. `buildArticleProp` is the only builder permitted to produce a
+ * theme-facing article value, so absolutization is asserted HERE.
+ */
+describe("buildArticleProp — CMS media absolutization", () => {
+  const BASE = "https://cms.example.com";
+
+  it("absolutizes a CMS-relative featuredImage url against the CMS origin", () => {
+    const prop = buildArticleProp(
+      baseFixture({ featuredImage: { url: "/uploads/cover.jpg", width: 4, height: 2 } }),
+      BASE
+    );
+    expect(prop.featuredImage).toEqual({
+      url: "https://cms.example.com/uploads/cover.jpg",
+      width: 4,
+      height: 2,
+    });
+  });
+
+  it("absolutizes a relative author avatar url through the same seam", () => {
+    const prop = buildArticleProp(
+      baseFixture({ author: { name: "Jane", avatar: { url: "/uploads/jane.png" } } }),
+      BASE
+    );
+    expect(prop.author).toEqual({
+      name: "Jane",
+      avatarUrl: "https://cms.example.com/uploads/jane.png",
+    });
+  });
+
+  it("leaves an already-absolute url byte-identical (cloud upload providers)", () => {
+    const prop = buildArticleProp(
+      baseFixture({ featuredImage: { url: "https://cdn.example.net/x.jpg" } }),
+      BASE
+    );
+    expect(prop.featuredImage?.url).toBe("https://cdn.example.net/x.jpg");
+  });
+
+  it("tolerates a base url with a trailing slash without doubling the separator", () => {
+    const prop = buildArticleProp(
+      baseFixture({ featuredImage: { url: "/uploads/cover.jpg" } }),
+      "https://cms.example.com/"
+    );
+    expect(prop.featuredImage?.url).toBe("https://cms.example.com/uploads/cover.jpg");
+  });
+
+  it("joins a base and a url that carries no leading slash", () => {
+    const prop = buildArticleProp(
+      baseFixture({ featuredImage: { url: "uploads/cover.jpg" } }),
+      BASE
+    );
+    expect(prop.featuredImage?.url).toBe("https://cms.example.com/uploads/cover.jpg");
+  });
+
+  it("degrades to the unchanged url when no CMS base is configured", () => {
+    const prop = buildArticleProp(
+      baseFixture({ featuredImage: { url: "/uploads/cover.jpg" } }),
+      ""
+    );
+    expect(prop.featuredImage?.url).toBe("/uploads/cover.jpg");
+  });
+
+  it("threads the base through buildArchiveProp to every post", () => {
+    const archive = buildArchiveProp(
+      {
+        posts: [baseFixture({ featuredImage: { url: "/uploads/a.jpg" } })],
+        term: { kind: "all", name: "", description: null },
+        page: { current: 1, pageSize: 10, pageCount: 1, total: 1 },
+      },
+      BASE
+    );
+    expect(archive.posts[0].featuredImage?.url).toBe("https://cms.example.com/uploads/a.jpg");
+  });
+});

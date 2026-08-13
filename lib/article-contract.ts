@@ -27,6 +27,55 @@
 
 import { deriveExcerpt } from "./derive-excerpt";
 
+/**
+ * The CMS origin a relative Strapi media path is resolved against.
+ *
+ * Read at module scope from the SAME env var `strapi-client.ts` derives its
+ * GraphQL endpoint from, so a tenant whose CMS is reachable has reachable
+ * media by construction — never a second, independently-configured base.
+ */
+const MEDIA_BASE_URL = (process.env.NEXT_PUBLIC_STRAPI_URL ?? "").trim().replace(/\/+$/, "");
+
+/**
+ * Resolve a Strapi media url to an ABSOLUTE CMS url.
+ *
+ * Strapi's DEFAULT local-disk upload provider stores media urls relative to
+ * the CMS (`/uploads/cover.jpg`), and no tenant currently runs an S3/R2
+ * bucket (`project-theta-strapi/src/utils/upload-provider.ts` engages the S3
+ * provider only when `S3_BUCKET` is set). A relative url handed to a theme is
+ * rendered as `<img src="/uploads/cover.jpg">` and resolves against the
+ * TENANT's origin, not the CMS — so every featured image 404s and the card
+ * paints an empty box.
+ *
+ * This is the SAME trap `resolveShareImage` documents for `og:image`
+ * (`seo-resolve.ts`, T-14-10) and `absolutizeFormatUrls` documents for
+ * `srcset` variants (`strapi-client.ts`). Both of those seams already
+ * absolutize; the theme-facing `article` prop was the one path that did not,
+ * which is why a post's JSON-LD image was absolute while the image a visitor
+ * actually saw was relative.
+ *
+ * Normalized HERE, inside `buildArticleProp`, because this function is the
+ * ONLY builder permitted to produce a theme-facing article value — one seam
+ * covers the post, archive and related-posts paths at once. Fixing it in the
+ * theme instead would have to land in every theme repo (they cannot import
+ * from this one) and no theme can know the CMS origin anyway.
+ *
+ * An ALREADY-absolute url is returned byte-identical: a cloud upload provider
+ * stores absolute urls, and re-prefixing would corrupt them. An unset base
+ * degrades to the url unchanged rather than emitting a malformed absolute
+ * url — the same fail-open posture every other read in this app takes.
+ */
+export function absolutizeMediaUrl(url: string, baseUrl: string = MEDIA_BASE_URL): string {
+  if (typeof url !== "string" || url.trim() === "") return url;
+  if (/^https?:\/\//i.test(url) || url.startsWith("data:")) return url;
+  // Trimmed HERE, not only on the module-scope default: a caller-injected
+  // base is just as likely to carry a trailing slash, and joining it to a
+  // leading-slash url would emit `https://cms//uploads/x.jpg`.
+  const base = baseUrl.trim().replace(/\/+$/, "");
+  if (!base) return url;
+  return `${base}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
 // ---- Reserved keys (DIS-1) ----
 
 /** The manifest `templates[]` key for a single-post template. */
@@ -343,8 +392,17 @@ export interface ArticleSourceRecord {
  * trimmed when non-empty; else `deriveExcerpt(body)` when the body is
  * non-empty; else `""`. Every theme therefore receives the same excerpt —
  * no theme reimplements the derivation.
+ *
+ * Media resolution: `featuredImage.url` and `author.avatarUrl` are resolved
+ * to ABSOLUTE CMS urls (see `absolutizeMediaUrl`). `baseUrl` defaults to the
+ * module-scope CMS origin so no call site can forget to pass it — the
+ * omission that made every featured image 404 in the first place — and is
+ * injectable only so tests can pin a base without touching `process.env`.
  */
-export function buildArticleProp(article: ArticleSourceRecord): ArticleProp {
+export function buildArticleProp(
+  article: ArticleSourceRecord,
+  baseUrl: string = MEDIA_BASE_URL
+): ArticleProp {
   const body = typeof article.body === "string" ? article.body : "";
   const storedExcerpt = typeof article.excerpt === "string" ? article.excerpt.trim() : "";
   const excerpt = storedExcerpt !== "" ? storedExcerpt : body !== "" ? deriveExcerpt(body) : "";
@@ -355,9 +413,10 @@ export function buildArticleProp(article: ArticleSourceRecord): ArticleProp {
     slug: article.slug ?? "",
     body,
     excerpt,
+    // Absolutized BEFORE it reaches any theme — see absolutizeMediaUrl.
     featuredImage: article.featuredImage
       ? {
-          url: article.featuredImage.url,
+          url: absolutizeMediaUrl(article.featuredImage.url, baseUrl),
           width: article.featuredImage.width ?? null,
           height: article.featuredImage.height ?? null,
         }
@@ -374,10 +433,14 @@ export function buildArticleProp(article: ArticleSourceRecord): ArticleProp {
       slug: tag.slug,
       description: tag.description ?? null,
     })),
+    // `avatarUrl` carries the identical relative-path defect and is
+    // absolutized through the identical seam — never one without the other.
     author: article.author
       ? {
           name: article.author.name,
-          avatarUrl: article.author.avatar?.url ?? null,
+          avatarUrl: article.author.avatar?.url
+            ? absolutizeMediaUrl(article.author.avatar.url, baseUrl)
+            : null,
         }
       : null,
     publishedAt: article.publishedAt ?? null,
@@ -390,13 +453,16 @@ export function buildArticleProp(article: ArticleSourceRecord): ArticleProp {
  * state (Phase 22 populates the real connection query; this phase defines,
  * injects and unit-tests the shape only, per `<planner_decisions>` DIS-6).
  */
-export function buildArchiveProp(args: {
-  posts: ArticleSourceRecord[];
-  term: { kind: "all" | "category" | "tag"; name: string; description: string | null };
-  page: { current: number; pageSize: number; pageCount: number; total: number };
-}): ArchiveProp {
+export function buildArchiveProp(
+  args: {
+    posts: ArticleSourceRecord[];
+    term: { kind: "all" | "category" | "tag"; name: string; description: string | null };
+    page: { current: number; pageSize: number; pageCount: number; total: number };
+  },
+  baseUrl: string = MEDIA_BASE_URL
+): ArchiveProp {
   return {
-    posts: args.posts.map((post) => buildArticleProp(post)),
+    posts: args.posts.map((post) => buildArticleProp(post, baseUrl)),
     term: args.term,
     page: args.page,
   };
