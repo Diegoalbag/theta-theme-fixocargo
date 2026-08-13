@@ -292,6 +292,29 @@ describe("NavLink — CSS-only submenu (NAV-01)", () => {
     expect(html).toContain('href="/tres"');
   });
 
+  // WR-05. SiteHeader's slot applies `[&_a]:py-1 lg:[&_a]:py-0` to every
+  // descendant anchor, so without an explicit floor these panel links collapse
+  // to a ~20px text-sm hit target at lg: — under the 24x24 CSS-px minimum of
+  // WCAG 2.5.8, which `lg:gap-2` (8px) does not close.
+  it("gives every submenu anchor its own 24px target-size floor (WR-05)", () => {
+    const html = renderToStaticMarkup(
+      <NavLink
+        label="Servicios"
+        url="/servicios"
+        child1Label="Uno"
+        child1Url="/uno"
+        child2Label="Dos"
+        child2Url="/dos"
+      />,
+    );
+    const anchors = html.match(/<a\s[^>]*>/g) ?? [];
+    expect(anchors).toHaveLength(3);
+    anchors.forEach((anchor) => {
+      expect(anchor).toContain("min-h-6");
+      expect(anchor).toContain("items-center");
+    });
+  });
+
   it("falls back to href=# for a child link with a label but no url", () => {
     const html = renderToStaticMarkup(
       <NavLink label="Servicios" child1Label="Sin URL" />,

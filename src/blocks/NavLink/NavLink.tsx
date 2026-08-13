@@ -38,6 +38,14 @@ import { ChevronDown } from "lucide-react";
 // the caveat: a constant group attribute makes every instance on the page
 // mutually exclusive, which is deliberately not wanted here.
 //
+// TARGET SIZE (WR-05): SiteHeader's block slot applies `[&_a]:py-1
+// lg:[&_a]:py-0` to every descendant anchor, so at lg: these panel links would
+// inherit py-0 and collapse to a ~20px text-sm hit target, under the 24x24 CSS-px
+// floor of WCAG 2.5.8 — `lg:gap-2` (8px) does not close that. Each panel anchor
+// therefore carries `flex min-h-6 items-center`, which sets its own floor
+// regardless of the inherited padding override. Same bar the project already
+// applied to the Blaze pagination dots in src/index.css.
+//
 // ACCEPTED CSS-ONLY LIMITS: no Escape-to-dismiss and no click-outside-to-close;
 // the panel stays open until re-clicked. These are not WCAG 1.4.13 failures —
 // that criterion governs HOVER-triggered content, and a click/Enter disclosure
@@ -152,7 +160,7 @@ export const NavLink = ({
         {parentUrl && (
           <a
             href={parentUrl}
-            className="font-opensans text-sm font-bold text-white whitespace-nowrap hover:text-brand-yellow focus-visible:outline-2 focus-visible:outline-brand-yellow focus-visible:outline-offset-2"
+            className="flex min-h-6 items-center font-opensans text-sm font-bold text-white whitespace-nowrap hover:text-brand-yellow focus-visible:outline-2 focus-visible:outline-brand-yellow focus-visible:outline-offset-2"
           >
             {label ?? "Enlace"}
           </a>
@@ -161,7 +169,7 @@ export const NavLink = ({
           <a
             key={idx}
             href={entry.url || "#"}
-            className="font-opensans text-sm text-white whitespace-nowrap hover:text-brand-yellow focus-visible:outline-2 focus-visible:outline-brand-yellow focus-visible:outline-offset-2"
+            className="flex min-h-6 items-center font-opensans text-sm text-white whitespace-nowrap hover:text-brand-yellow focus-visible:outline-2 focus-visible:outline-brand-yellow focus-visible:outline-offset-2"
           >
             {entry.label}
           </a>
