@@ -20,6 +20,7 @@ import {
   ServiciosCta,
   serviciosCtaSettingsSchema,
 } from "@/sections/ServiciosCta";
+import { Servicios } from "@/sections/Servicios";
 import { sectionBlocksConfig, blocksComponents } from "@/registry";
 
 // Behavioral smoke tests for the quick-task FixoCargo "Servicios" page bundle
@@ -298,7 +299,7 @@ describe("ProcessStep", () => {
 });
 
 describe("ServiciosCta", () => {
-  it("renders the default eyebrow/heading and BOTH banners' default kickers/headlines as PromoBanner anchor CTAs", () => {
+  it("renders the default eyebrow/heading, banner 1's kicker and BOTH headlines as PromoBanner anchor CTAs — but ships NO banner-2 kicker (CLN-02)", () => {
     const html = renderToStaticMarkup(<ServiciosCta />);
     expect(html).toContain("Crece con nosotros");
     expect(html).toContain("Más que un courier");
@@ -306,12 +307,21 @@ describe("ServiciosCta", () => {
     expect(html).toContain(
       "Si te interesa ser parte de nuestra red de franquicias",
     );
-    expect(html).toContain("FX Logistics");
+    // CLN-02: the stale customer-specific brand name is gone from every code
+    // site under src/. Banner 2 now ships no default kicker at all, and the
+    // empty string must NOT fall through to PromoBanner's own unrelated
+    // destructured default — this assertion is what pins the removal.
+    expect(html).not.toContain("FX Logistics");
     expect(html).toContain(
       "¿Estás considerando reservar un espacio de almacenamiento?",
     );
     expect(html).toContain("<a");
     expect(html).toContain('href="#"');
+  });
+
+  it("still renders a merchant-supplied banner-2 kicker (the setting stays live after CLN-02)", () => {
+    const html = renderToStaticMarkup(<ServiciosCta banner2Kicker="Almacenaje" />);
+    expect(html).toContain("Almacenaje");
   });
 
   it("has no renderBlocks prop and never renders the EmptyState marker", () => {
@@ -340,6 +350,38 @@ describe("ServiciosCta", () => {
       "banner2CtaLabel",
       "banner2CtaUrl",
     ]);
+  });
+});
+
+// Servicios is covered broadly in test/sections-services-app.test.tsx; this
+// describe exists to pin the CLN-02 removal on the second of the two sections
+// that carried the stale brand-name kicker default.
+describe("Servicios (CLN-02 banner-2 kicker)", () => {
+  // The kicker <span> is the only element PromoBanner guards on truthiness, so
+  // counting its class string counts rendered kickers exactly.
+  const KICKER_CLASS = "font-gotham text-base font-light tracking-wide";
+  const countKickers = (html: string) =>
+    html.split(KICKER_CLASS).length - 1;
+
+  it("renders without the removed brand name anywhere in its output (CLN-02)", () => {
+    const html = renderToStaticMarkup(<Servicios />);
+    expect(html).not.toContain("FX Logistics");
+  });
+
+  it("renders NO banner-2 kicker element when banner 2 is on and no value is set — it must not inherit PromoBanner's own default", () => {
+    // showSecondBanner undefined => banner 2 shows (the `!== false` legacy
+    // guard). With no banner2Kicker, the explicit "" fallback reaches
+    // PromoBanner, whose {kicker && ...} guard drops the element entirely.
+    const html = renderToStaticMarkup(<Servicios />);
+    expect(countKickers(html)).toBe(1);
+    // Banner 1's own default kicker is untouched by CLN-02.
+    expect(html).toContain("Se parte de Fixocargo");
+  });
+
+  it("still renders a merchant-supplied banner-2 kicker (the setting stays live after CLN-02)", () => {
+    const html = renderToStaticMarkup(<Servicios banner2Kicker="Almacenaje" />);
+    expect(html).toContain("Almacenaje");
+    expect(countKickers(html)).toBe(2);
   });
 });
 
