@@ -281,13 +281,31 @@ export const Sucursales = ({
   React.useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    const branches = root.querySelectorAll<HTMLElement>("[data-branch-query]");
-    if (branches.length === 0) return;
-    const sel = selectedElRef.current;
-    if (!sel || !root.contains(sel)) applyBranch(branches[0]);
-    // Re-apply the active query to cards added, removed, or reordered in the
-    // customizer while the search box holds text (recenter=false — see above).
+
+    // WR-02: FILTER FIRST, then choose. Re-applying the active query to cards
+    // added, removed, or reordered in the customizer used to run AFTER the
+    // default selection, so the selection landed on the first branch in DOM
+    // order regardless of the query — and the filter then hid that very card on
+    // the next line, with recenter=false so nothing corrected it. The map ended
+    // up showing a branch absent from the visible list, with the "selected"
+    // outline painted on a hidden card.
     applyFilter(false);
+
+    const sel = selectedElRef.current;
+    if (sel && root.contains(sel)) return;
+
+    const list = root.querySelector<HTMLElement>(`.${BRANCH_LIST_CLASS}`);
+    const firstVisible = Array.from(
+      root.querySelectorAll<HTMLElement>("[data-branch-query]"),
+    ).find(
+      (b) =>
+        !list ||
+        !list.contains(b) ||
+        !isFilteredOut(resolveHideTarget(b, list)),
+    );
+    // When the query matches nothing there is deliberately NO fallback: leaving
+    // the previous selection in place beats outlining a card nobody can see.
+    if (firstVisible) applyBranch(firstVisible);
   });
 
   return (
