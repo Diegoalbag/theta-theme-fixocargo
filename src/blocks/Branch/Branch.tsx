@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Phone, Mail, ArrowRight } from "lucide-react";
+import { Phone, Mail, Clock, ArrowRight } from "lucide-react";
 
 // Branch (INF-01) — section-local block for the Sucursales section. The design
 // card: a white rounded panel (name in Gotham bold, guarded phone/email rows in
@@ -24,6 +24,10 @@ export interface BranchProps {
   name?: string;
   phone?: string;
   email?: string;
+  /** Opening hours. Optional and intentionally WITHOUT a fallback default —
+   *  branches saved before this field existed have no key and must render
+   *  exactly as they did before (no schedule row at all). */
+  horario?: string;
   address?: string;
   mapUrl?: string;
   mapQuery?: string;
@@ -35,6 +39,7 @@ export const Branch = ({
   name = "SD | Av. Independencia",
   phone,
   email,
+  horario,
   address,
   mapUrl,
   mapQuery,
@@ -80,6 +85,20 @@ export const Branch = ({
             )}
           </div>
         )}
+
+        {/* Opening hours. Guarded exactly like the contact rows above: an unset
+            or empty value emits NOTHING (no empty row, no stray icon, no gap),
+            which is what keeps pre-horario saved branches byte-identical.
+            `data-branch-horario` is a test/consumer marker on this INNER node —
+            distinct from the card-root data-branch-* attributes the section's
+            click/filter listeners read. It is deliberately NOT part of the
+            search haystack (search matches name + address only). */}
+        {horario && (
+          <div className="flex items-center gap-2.5 font-gill text-sm text-brand-navy/80">
+            <Clock aria-hidden="true" className="size-4 shrink-0" />
+            <p data-branch-horario={horario}>{horario}</p>
+          </div>
+        )}
       </div>
 
       {/* Navy circular "show on map" trigger (yellow arrow). A real <button> so
@@ -96,8 +115,10 @@ export const Branch = ({
   );
 };
 
-// Six editable fields, ids → camelCase props. `address` feeds the Sucursales map
-// overlay; `mapQuery` is where the map centers on selection.
+// Seven editable fields, ids → camelCase props. `address` feeds the Sucursales
+// map overlay; `mapQuery` is where the map centers on selection. `horario`
+// defaults to the EMPTY string on purpose — that empty default is the
+// backward-compat contract for branches saved before the field existed.
 export const branchSettingsSchema = [
   {
     id: "name",
@@ -116,6 +137,14 @@ export const branchSettingsSchema = [
     label: "Correo",
     type: "text",
     default: "info@fixocargo.com",
+  },
+  {
+    id: "horario",
+    label: "Horario",
+    type: "text",
+    default: "",
+    placeholder: "Lun-Vie 9:00am-6:00pm, Sáb 9:00am-1:00pm",
+    info: "Horario de atención. Déjalo vacío para no mostrar esta línea en la tarjeta.",
   },
   {
     id: "address",

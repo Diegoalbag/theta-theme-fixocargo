@@ -110,19 +110,65 @@ describe("Branch", () => {
     expect(html).toContain('data-branch-mapurl="/m"');
   });
 
-  it("branchSettingsSchema has 6 entries incl. address + mapQuery; mapUrl is url", () => {
-    expect(branchSettingsSchema).toHaveLength(6);
+  it("renders the horario schedule text when set", () => {
+    const html = renderToStaticMarkup(
+      <Branch horario="Lun-Vie 9:00am-6:00pm, Sáb 9:00am-1:00pm" />,
+    );
+    expect(html).toContain("Lun-Vie 9:00am-6:00pm, Sáb 9:00am-1:00pm");
+  });
+
+  it("marks the schedule row with data-branch-horario when set", () => {
+    const html = renderToStaticMarkup(
+      <Branch horario="Lun-Vie 9:00am-6:00pm, Sáb 9:00am-1:00pm" />,
+    );
+    expect(html).toContain(
+      'data-branch-horario="Lun-Vie 9:00am-6:00pm, Sáb 9:00am-1:00pm"',
+    );
+  });
+
+  it("omits the schedule row entirely when horario is absent (backward compat)", () => {
+    // Branch instances saved before the horario field existed have NO horario
+    // key at all — they must render byte-identically to before: no empty row,
+    // no stray icon, no marker attribute.
+    const html = renderToStaticMarkup(<Branch />);
+    expect(html).not.toContain("data-branch-horario");
+  });
+
+  it("omits the schedule row entirely when horario is the empty string", () => {
+    const html = renderToStaticMarkup(<Branch horario="" />);
+    expect(html).not.toContain("data-branch-horario");
+  });
+
+  it("emits the name + address attributes the Sucursales search filter reads", () => {
+    // Input contract for the section's live filter: the haystack is built from
+    // these two card-root attributes. Pinning them here so the filter cannot be
+    // silently broken by a Branch markup change.
+    const html = renderToStaticMarkup(
+      <Branch name="SD | Av. Independencia" address="Santiago" />,
+    );
+    expect(html).toContain('data-branch-name="SD | Av. Independencia"');
+    expect(html).toContain('data-branch-address="Santiago"');
+  });
+
+  it("branchSettingsSchema has 7 entries incl. horario + address + mapQuery; mapUrl is url", () => {
+    expect(branchSettingsSchema).toHaveLength(7);
     const ids = branchSettingsSchema.map((s) => s.id);
     expect(ids).toEqual([
       "name",
       "phone",
       "email",
+      "horario",
       "address",
       "mapUrl",
       "mapQuery",
     ]);
     const mapUrlSetting = branchSettingsSchema.find((s) => s.id === "mapUrl");
     expect(mapUrlSetting?.type).toBe("url");
+    const horarioSetting = branchSettingsSchema.find((s) => s.id === "horario");
+    expect(horarioSetting?.type).toBe("text");
+    // Empty default IS the backward-compat contract: saved branches without the
+    // key render exactly as before.
+    expect(horarioSetting?.default).toBe("");
   });
 });
 
