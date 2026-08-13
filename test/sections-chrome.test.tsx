@@ -5,6 +5,7 @@ import { describe, it, expect } from "vitest";
 import { AnnouncementBar, announcementBarSettingsSchema } from "@/sections/AnnouncementBar";
 import { SiteHeader, siteHeaderSettingsSchema } from "@/sections/SiteHeader";
 import { Footer, footerSettingsSchema } from "@/sections/Footer";
+import { NavLink, navLinkSettingsSchema } from "@/blocks/NavLink";
 
 // Render-smoke tests for the Phase 2 chrome sections.
 // The vitest environment is `node` (no global document), so we render DOM-free
@@ -161,6 +162,135 @@ describe("SiteHeader", () => {
       <SiteHeader logo={{ id: "1", url: "/logo.png" }} />,
     );
     expect(html).not.toMatch(/srcset=/i);
+  });
+});
+
+// NAV-01 (phase 11, D-11-01 / D-11-06): `nav-link` grows a CSS-only submenu so
+// the seven-service menu fits under ONE nav item without breaching
+// site-header's maxBlocks: 8. The load-bearing assertions here are the
+// BARE-ANCHOR ones — this block already carries saved merchant content, so the
+// zero-child branch must stay byte-compatible with its pre-phase output.
+describe("NavLink — CSS-only submenu (NAV-01)", () => {
+  it("renders a bare anchor (no disclosure) when no child label is filled", () => {
+    const html = renderToStaticMarkup(<NavLink label="Inicio" url="/" />);
+    expect(html).toContain("<a");
+    expect(html).toContain('href="/"');
+    expect(html).toContain("Inicio");
+    // Branch A byte-compatibility sensor: no disclosure chrome may appear.
+    expect(html).not.toContain("<details");
+    expect(html).not.toContain("<summary");
+  });
+
+  it("still renders a bare anchor plus a decorative caret with hasCaret and no children", () => {
+    const html = renderToStaticMarkup(
+      <NavLink label="Inicio" url="/" hasCaret />,
+    );
+    expect(html).not.toContain("<details");
+    expect(html).not.toContain("<summary");
+    // The ChevronDown lucide glyph still renders (today's behavior preserved).
+    expect(html).toContain("<svg");
+  });
+
+  it("renders a native disclosure when at least one child label is filled", () => {
+    const html = renderToStaticMarkup(
+      <NavLink
+        label="Servicios"
+        url="/servicios"
+        child1Label="Carga Aérea"
+        child1Url="/carga-aerea"
+      />,
+    );
+    expect(html).toContain("<details");
+    expect(html).toContain("<summary");
+    expect(html).toContain("Servicios");
+    expect(html).toContain('href="/carga-aerea"');
+    expect(html).toContain("Carga Aérea");
+  });
+
+  it("renders the caret in the submenu branch even when hasCaret is false", () => {
+    const html = renderToStaticMarkup(
+      <NavLink label="Servicios" child1Label="Carga Aérea" child1Url="/x" />,
+    );
+    // The caret now reflects real submenu state, not the decorative toggle.
+    expect(html).toContain("group-open:rotate-180");
+  });
+
+  it("renders only the filled child slots — an empty slot contributes nothing", () => {
+    const html = renderToStaticMarkup(
+      <NavLink
+        label="Servicios"
+        child1Label="Uno"
+        child1Url="/uno"
+        child3Label="Tres"
+        child3Url="/tres"
+      />,
+    );
+    // Count anchors rather than asserting a single substring: the summary
+    // holds no anchor, so every <a in this branch is a child link.
+    const anchors = html.match(/<a\s/g) ?? [];
+    expect(anchors).toHaveLength(2);
+    expect(html).toContain('href="/uno"');
+    expect(html).toContain('href="/tres"');
+  });
+
+  it("falls back to href=# for a child link with a label but no url", () => {
+    const html = renderToStaticMarkup(
+      <NavLink label="Servicios" child1Label="Sin URL" />,
+    );
+    expect(html).toContain('href="#"');
+    expect(html).toContain("Sin URL");
+  });
+
+  it("renders no link-target attribute in either branch (T-11-08)", () => {
+    const bare = renderToStaticMarkup(<NavLink label="Inicio" url="/" />);
+    const submenu = renderToStaticMarkup(
+      <NavLink
+        label="Servicios"
+        child1Label="Carga Aérea"
+        child1Url="https://example.com/carga"
+      />,
+    );
+    // No submenu link may open a new browsing context, so reverse tabnabbing
+    // has no surface here.
+    expect(bare).not.toMatch(/target=/i);
+    expect(submenu).not.toMatch(/target=/i);
+  });
+
+  it("navLinkSettingsSchema has exactly 19 entries", () => {
+    expect(navLinkSettingsSchema).toHaveLength(19);
+  });
+
+  it("navLinkSettingsSchema ids are label, url, hasCaret, then 8 child pairs", () => {
+    const ids = navLinkSettingsSchema.map((s) => s.id);
+    expect(ids).toEqual([
+      "label",
+      "url",
+      "hasCaret",
+      "child1Label",
+      "child1Url",
+      "child2Label",
+      "child2Url",
+      "child3Label",
+      "child3Url",
+      "child4Label",
+      "child4Url",
+      "child5Label",
+      "child5Url",
+      "child6Label",
+      "child6Url",
+      "child7Label",
+      "child7Url",
+      "child8Label",
+      "child8Url",
+    ]);
+  });
+
+  it("defaults every child label to the empty string so saved instances stay bare anchors", () => {
+    const labelDefaults = navLinkSettingsSchema
+      .filter((s) => /^child\d+Label$/.test(s.id))
+      .map((s) => s.default);
+    expect(labelDefaults).toHaveLength(8);
+    expect(labelDefaults.every((d) => d === "")).toBe(true);
   });
 });
 
