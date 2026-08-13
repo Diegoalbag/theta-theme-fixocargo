@@ -11,9 +11,10 @@ import { ThemeImage } from "@/lib/theme-image";
 // src/sections/PlanReferimiento/PlanReferimiento.tsx.
 //
 // LEFT column: editable kicker/headline/body + two real anchor CTAs. RIGHT
-// column: 4 FIXED icon tiles (Carga Aérea, Carga Marítima, Delivery, Aduanas)
-// — a locked decision, never props-driven and never a block slot. Passing
-// arbitrary/unrelated props never changes or removes them.
+// column: 4 icon tiles in a FIXED 2x2 arrangement — never a block slot, so
+// the count, order, icons and tones are locked. Their LABELS are merchant
+// settings (CLN-01: tile1Label…tile4Label), each defaulting to the literal it
+// rendered before that change so every already-saved section is unaffected.
 //
 // OPTIONAL full-bleed background (quick task 260707-kpz, mirrors the
 // NosotrosHero pattern): when `backgroundImage.url` is set, a full-bleed
@@ -41,6 +42,11 @@ export interface ServiciosHeroProps {
   primaryCtaUrl?: string;
   secondaryCtaLabel?: string;
   secondaryCtaUrl?: string;
+  // The 4 right-column tile labels, in visual order (CLN-01).
+  tile1Label?: string;
+  tile2Label?: string;
+  tile3Label?: string;
+  tile4Label?: string;
   sectionId?: string;
   sectionName?: string;
 }
@@ -83,6 +89,10 @@ export const ServiciosHero = ({
   primaryCtaUrl = "#",
   secondaryCtaLabel = "Cotiza tu envío",
   secondaryCtaUrl = "#",
+  tile1Label = "Carga Aérea",
+  tile2Label = "Carga Marítima",
+  tile3Label = "Delivery",
+  tile4Label = "Aduanas",
 }: ServiciosHeroProps): React.ReactNode => {
   // Full-bleed background mode (image-conditional). Truthy url → image +
   // overlay behind content; falsy → the original solid bg-brand-navy design.
@@ -145,14 +155,14 @@ export const ServiciosHero = ({
 
           <div className="grid grid-cols-2 gap-4 sm:gap-5 lg:mx-auto lg:max-w-md">
             <div className="flex flex-col gap-4 sm:gap-5">
-              <HeroServiceTile icon={Plane} label="Carga Aérea" tone="outline" />
-              <HeroServiceTile icon={Ship} label="Carga Marítima" tone="solid" />
+              <HeroServiceTile icon={Plane} label={tile1Label} tone="outline" />
+              <HeroServiceTile icon={Ship} label={tile2Label} tone="solid" />
             </div>
             <div className="flex flex-col gap-4 pt-8 sm:gap-5 lg:pt-16">
-              <HeroServiceTile icon={Truck} label="Delivery" tone="solid" />
+              <HeroServiceTile icon={Truck} label={tile3Label} tone="solid" />
               <HeroServiceTile
                 icon={ClipboardCheck}
-                label="Aduanas"
+                label={tile4Label}
                 tone="outline"
               />
             </div>
@@ -163,10 +173,13 @@ export const ServiciosHero = ({
   );
 };
 
-// Exactly 8 editable fields, ids → camelCase props. `backgroundImage` (first,
+// Exactly 12 editable fields, ids → camelCase props. `backgroundImage` (first,
 // image_picker, optional) toggles the full-bleed background; when unset the
-// section keeps its original solid bg-brand-navy design untouched. The 4
-// icon tiles above are literal JSX — never props-driven, never listed here.
+// section keeps its original solid bg-brand-navy design untouched. The four
+// tile LABELS (last four entries) are merchant-editable settings (CLN-01);
+// each default is the literal that tile rendered before CLN-01, so a section
+// saved earlier — which stores no tile-label value — renders unchanged. The
+// tiles' icons and tones stay literal JSX and are deliberately NOT settings.
 export const serviciosHeroSettingsSchema = [
   {
     id: "backgroundImage",
@@ -216,5 +229,29 @@ export const serviciosHeroSettingsSchema = [
     label: "Botón secundario · Enlace",
     type: "url",
     default: "#",
+  },
+  {
+    id: "tile1Label",
+    label: "Tarjeta 1 · Texto",
+    type: "text",
+    default: "Carga Aérea",
+  },
+  {
+    id: "tile2Label",
+    label: "Tarjeta 2 · Texto",
+    type: "text",
+    default: "Carga Marítima",
+  },
+  {
+    id: "tile3Label",
+    label: "Tarjeta 3 · Texto",
+    type: "text",
+    default: "Delivery",
+  },
+  {
+    id: "tile4Label",
+    label: "Tarjeta 4 · Texto",
+    type: "text",
+    default: "Aduanas",
   },
 ];
