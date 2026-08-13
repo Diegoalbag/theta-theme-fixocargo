@@ -109,6 +109,23 @@ describe("Sucursales", () => {
     expect(listRegion).not.toMatch(/display:\s*none/i);
   });
 
+  it("ships an empty live region and a HIDDEN zero-results message (WR-04)", () => {
+    // The filter announces its result count and explains an empty column, but
+    // both nodes must be inert in static markup: the live region starts empty
+    // (nothing to announce before a query) and the message is hidden via the
+    // `hidden` ATTRIBUTE — not an inline display:none, which would trip the
+    // no-JS fallback assertion above and is the wrong tool besides.
+    const html = renderToStaticMarkup(
+      <Sucursales renderBlocks={() => [<span key="a">branch-uno</span>]} />,
+    );
+    expect(html).toMatch(/<p[^>]*role="status"[^>]*><\/p>/);
+    expect(html).toContain('aria-live="polite"');
+    const message = html.match(/<p[^>]*>No encontramos[^<]*<\/p>/)?.[0] ?? "";
+    expect(message).not.toBe("");
+    expect(message).toMatch(/\shidden(=""|\s|>)/);
+    expect(message).not.toMatch(/display:\s*none/i);
+  });
+
   it("renders the default EmptyState when zero blocks (D-08)", () => {
     const html = renderToStaticMarkup(<Sucursales />);
     expect(html).toContain("Sin elementos");

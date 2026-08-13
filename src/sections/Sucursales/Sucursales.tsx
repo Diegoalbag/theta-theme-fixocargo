@@ -144,6 +144,8 @@ export const Sucursales = ({
   const addressRef = React.useRef<HTMLParagraphElement>(null);
   const selectedElRef = React.useRef<HTMLElement | null>(null);
   const lastSrcRef = React.useRef<string>("");
+  const statusRef = React.useRef<HTMLParagraphElement>(null);
+  const noResultsRef = React.useRef<HTMLParagraphElement>(null);
 
   // Point the map + overlay at one branch. Reads only refs + the passed element,
   // so it is a stable closure that is safe to reuse across renders.
@@ -210,6 +212,7 @@ export const Sucursales = ({
 
       const q = fold(input.value.trim());
       let first: HTMLElement | null = null;
+      let matched: number = 0;
       list
         .querySelectorAll<HTMLElement>("[data-branch-query]")
         .forEach((card) => {
@@ -221,8 +224,29 @@ export const Sucursales = ({
           );
           const match = q === "" || haystack.includes(q);
           setHidden(resolveHideTarget(card, list), !match);
-          if (match && !first) first = card;
+          if (match) {
+            matched += 1;
+            if (!first) first = card;
+          }
         });
+
+      // WR-04: hiding cards with display:none correctly removes them from the
+      // a11y tree, but nothing told a screen-reader user the result set had
+      // changed, and a query matching NOTHING left an empty column with no
+      // explanation while the map kept showing a branch that was no longer
+      // listed. Both nodes are section-owned and updated imperatively — same
+      // no-React-state pattern as the overlay's name/address.
+      if (statusRef.current) {
+        statusRef.current.textContent =
+          q === ""
+            ? ""
+            : `${matched} ${
+                matched === 1 ? "sucursal encontrada" : "sucursales encontradas"
+              }`;
+      }
+      if (noResultsRef.current) {
+        noResultsRef.current.hidden = q === "" || matched > 0;
+      }
 
       // Re-center on the first surviving match only while a query is active:
       // clearing the box restores every card WITHOUT moving the map.
@@ -355,6 +379,23 @@ export const Sucursales = ({
               renderBlocks={renderBlocks}
               className={`flex flex-col gap-4 ${BRANCH_LIST_CLASS}`}
             />
+
+            {/* FILTER STATUS (WR-04). Two section-owned nodes that are ALWAYS
+                in the DOM and written imperatively by applyFilter (no React
+                state): an sr-only live region announcing the new result count,
+                and a visible zero-results message. Both are inert in static
+                markup — the live region is empty and the message ships the
+                `hidden` ATTRIBUTE (never an inline display:none, which would
+                trip the no-JS fallback assertion) — so with JS off the section
+                renders exactly as before: every card, no stray message. */}
+            <p ref={statusRef} role="status" aria-live="polite" className="sr-only" />
+            <p
+              ref={noResultsRef}
+              hidden
+              className="font-gill text-base text-brand-navy/80"
+            >
+              No encontramos sucursales que coincidan con tu búsqueda.
+            </p>
           </div>
 
           {/* RIGHT — real interactive map + contact/directions overlay. */}
