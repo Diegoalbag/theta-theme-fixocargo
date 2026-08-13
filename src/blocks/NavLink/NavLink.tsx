@@ -1,6 +1,8 @@
 import * as React from "react";
 import { ChevronDown } from "lucide-react";
 
+import { safeHref } from "@/lib/safe-href";
+
 // NavLink — section-local block for SiteHeader navigation items.
 //
 // TWO BRANCHES, ONE STATELESS COMPONENT:
@@ -54,6 +56,12 @@ import { ChevronDown } from "lucide-react";
 // All content arrives as props from the platform. Anchors render href only —
 // no link-target attribute anywhere, so no submenu link ever opens a new
 // browsing context and reverse tabnabbing has no surface (T-11-08).
+//
+// EVERY href here routes through `safeHref` (WR-06 / T-11-09). This block owns
+// up to 9 merchant-controlled link sinks per nav item (parent + 8 children), and
+// site-header allows 8 nav items — 72 sinks. `safeHref` denies javascript: /
+// vbscript: / data: schemes and degrades them to `#`; everything else passes
+// through byte-for-byte, so Branch A output is unchanged for every safe value.
 export interface NavLinkProps {
   label?: string;
   url?: string;
@@ -126,7 +134,7 @@ export const NavLink = ({
   if (activeChildren.length === 0) {
     return (
       <a
-        href={url || "#"}
+        href={safeHref(url)}
         className="inline-flex items-center gap-1 font-opensans text-sm text-white whitespace-nowrap hover:text-brand-yellow focus-visible:outline-2 focus-visible:outline-brand-yellow focus-visible:outline-offset-2"
       >
         {label ?? "Enlace"}
@@ -159,7 +167,7 @@ export const NavLink = ({
             when `url` is a real destination — never for the `#` default. */}
         {parentUrl && (
           <a
-            href={parentUrl}
+            href={safeHref(parentUrl)}
             className="flex min-h-6 items-center font-opensans text-sm font-bold text-white whitespace-nowrap hover:text-brand-yellow focus-visible:outline-2 focus-visible:outline-brand-yellow focus-visible:outline-offset-2"
           >
             {label ?? "Enlace"}
@@ -168,7 +176,7 @@ export const NavLink = ({
         {activeChildren.map((entry, idx) => (
           <a
             key={idx}
-            href={entry.url || "#"}
+            href={safeHref(entry.url)}
             className="flex min-h-6 items-center font-opensans text-sm text-white whitespace-nowrap hover:text-brand-yellow focus-visible:outline-2 focus-visible:outline-brand-yellow focus-visible:outline-offset-2"
           >
             {entry.label}

@@ -323,6 +323,53 @@ describe("NavLink — CSS-only submenu (NAV-01)", () => {
     expect(html).toContain("Sin URL");
   });
 
+  // WR-06 / T-11-09. This block owns up to 9 merchant-controlled href sinks per
+  // nav item (parent + 8 children) and site-header allows 8 nav items, so every
+  // one of them routes through safeHref. Both branches must be covered — a
+  // guard applied only to the submenu would leave the pre-existing bare-anchor
+  // sink open.
+  it("neutralizes a javascript: href in BOTH branches (WR-06)", () => {
+    const bare = renderToStaticMarkup(
+      <NavLink label="Inicio" url="javascript:alert(1)" />,
+    );
+    expect(bare).not.toContain("javascript:");
+    expect(bare).toContain('href="#"');
+
+    const submenu = renderToStaticMarkup(
+      <NavLink
+        label="Servicios"
+        url="/servicios"
+        child1Label="Malo"
+        child1Url="javascript:alert(1)"
+        child2Label="Peor"
+        child2Url="  vbscript:msgbox(1)"
+        child3Label="Aún peor"
+        child3Url="data:text/html;base64,PHNjcmlwdD4="
+      />,
+    );
+    expect(submenu).not.toContain("javascript:");
+    expect(submenu).not.toContain("vbscript:");
+    expect(submenu).not.toContain("data:text/html");
+    // The safe parent destination is untouched.
+    expect(submenu).toContain('href="/servicios"');
+  });
+
+  it("leaves every safe href byte-identical (WR-06)", () => {
+    const html = renderToStaticMarkup(
+      <NavLink
+        label="Servicios"
+        url="https://fixocargo.com/servicios?a=1"
+        child1Label="Correo"
+        child1Url="mailto:hola@fixocargo.com"
+        child2Label="Ancla"
+        child2Url="#contacto"
+      />,
+    );
+    expect(html).toContain('href="https://fixocargo.com/servicios?a=1"');
+    expect(html).toContain('href="mailto:hola@fixocargo.com"');
+    expect(html).toContain('href="#contacto"');
+  });
+
   it("renders no link-target attribute in either branch (T-11-08)", () => {
     const bare = renderToStaticMarkup(<NavLink label="Inicio" url="/" />);
     const submenu = renderToStaticMarkup(
