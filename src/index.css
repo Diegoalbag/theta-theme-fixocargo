@@ -502,3 +502,83 @@
   border-top: 1px solid var(--brand-navy);
   margin: 1.5rem 0;
 }
+
+/* ---------------------------------------------------------------------------
+ * CSS-only courier tab partitioning (.courier-tabs) — CUR-01/02, D-11-02.
+ *
+ * Scoped under the `.courier-tabs` section root so it can never leak into any
+ * other section. The section is stateless by project constraint (no useState),
+ * so the selected tab is native DOM state: four sr-only radios, read here with
+ * `:has([data-courier-input="KEY"]:checked)`. A section can never inspect its
+ * child blocks' props in either render context, so each `rate-row` block tags
+ * ITSELF with `data-courier-row` and these rules do the routing.
+ *
+ * Kept UNLAYERED (raw selectors, NOT inside @layer base), mirroring
+ * .blaze-slider and .article-body, so it wins over Tailwind v4 preflight.
+ * Brand tokens only — NO hex literals (D-09).
+ *
+ * The `:not()` form is INVERTED on purpose (fail-open). Hiding non-matches means
+ * an absent or unrecognized checked state shows TOO MANY rows — visible, and a
+ * merchant can fix it — instead of the default-hidden form, which would silently
+ * blank the whole section.
+ *
+ * The third selector in each group collapses the customizer's per-block
+ * `<div style="position:relative">` wrapper, which the published site does not
+ * emit; without it a hidden row would leave a phantom wrapper in the customizer.
+ *
+ * A3 CAVEAT — VERIFIED AT UAT ONLY, NOT REACHABLE BY ANY UNIT TEST: that third
+ * selector relies on `.courier-rates *` using a DESCENDANT combinator, which by
+ * specification excludes `.courier-rates` itself. That exclusion is the single
+ * reason the rule cannot hide the entire published rates list (where the rows
+ * ARE direct children of `.courier-rates`). If a published preview shows an
+ * empty rates list, this assumption is wrong and the third selector must be
+ * re-scoped. Belt and braces: the rates container is zero-gap block flow, so a
+ * stray wrapper contributes zero height either way.
+ * ------------------------------------------------------------------------- */
+.courier-tabs:has([data-courier-input="estados-unidos"]:checked)
+  [data-courier-panel]:not([data-courier-panel="estados-unidos"]),
+.courier-tabs:has([data-courier-input="estados-unidos"]:checked)
+  [data-courier-row]:not([data-courier-row="estados-unidos"]),
+.courier-tabs:has([data-courier-input="estados-unidos"]:checked)
+  .courier-rates *:has(> [data-courier-row]:not([data-courier-row="estados-unidos"])) {
+  display: none;
+}
+
+.courier-tabs:has([data-courier-input="europa"]:checked)
+  [data-courier-panel]:not([data-courier-panel="europa"]),
+.courier-tabs:has([data-courier-input="europa"]:checked)
+  [data-courier-row]:not([data-courier-row="europa"]),
+.courier-tabs:has([data-courier-input="europa"]:checked)
+  .courier-rates *:has(> [data-courier-row]:not([data-courier-row="europa"])) {
+  display: none;
+}
+
+.courier-tabs:has([data-courier-input="china"]:checked)
+  [data-courier-panel]:not([data-courier-panel="china"]),
+.courier-tabs:has([data-courier-input="china"]:checked)
+  [data-courier-row]:not([data-courier-row="china"]),
+.courier-tabs:has([data-courier-input="china"]:checked)
+  .courier-rates *:has(> [data-courier-row]:not([data-courier-row="china"])) {
+  display: none;
+}
+
+.courier-tabs:has([data-courier-input="exportacion"]:checked)
+  [data-courier-panel]:not([data-courier-panel="exportacion"]),
+.courier-tabs:has([data-courier-input="exportacion"]:checked)
+  [data-courier-row]:not([data-courier-row="exportacion"]),
+.courier-tabs:has([data-courier-input="exportacion"]:checked)
+  .courier-rates *:has(> [data-courier-row]:not([data-courier-row="exportacion"])) {
+  display: none;
+}
+
+/* The radio is sr-only, so its visible state and focus ring are both drawn on
+ * the adjacent label. */
+.courier-tabs [data-courier-input]:checked + label {
+  background-color: var(--brand-yellow);
+  border-color: var(--brand-yellow);
+  color: var(--brand-navy);
+}
+.courier-tabs [data-courier-input]:focus-visible + label {
+  outline: 2px solid var(--brand-yellow);
+  outline-offset: 2px;
+}
