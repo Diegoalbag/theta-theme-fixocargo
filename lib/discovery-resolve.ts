@@ -177,16 +177,14 @@ export function buildSitemapEntries(
  */
 export function isPostSitemapEligible(
   post:
-    | Pick<SitemapArticleRecord, "publishedAt" | "seo" | "canonicalUrl">
-    | { slug?: string | null }
+    | Pick<SitemapArticleRecord, "publishedAt" | "seo" | "canonicalUrl" | "slug">
     | null
     | undefined
 ): boolean {
   if (!post?.publishedAt) return false;
   if (post?.seo?.noindex === true) return false;
   if (resolveCanonicalOverride(post?.canonicalUrl) !== null) return false;
-  const slug = (post as { slug?: string | null })?.slug;
-  if (typeof slug !== "string" || slug.trim() === "") return false;
+  if (typeof post?.slug !== "string" || post.slug.trim() === "") return false;
   return true;
 }
 
