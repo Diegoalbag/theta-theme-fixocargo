@@ -1,8 +1,14 @@
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, it, expect } from "vitest";
+import { JSDOM } from "jsdom";
 
-import { Sucursales, sucursalesSettingsSchema } from "@/sections/Sucursales";
+import {
+  Sucursales,
+  sucursalesSettingsSchema,
+  resolveHideTarget,
+  setHidden,
+} from "@/sections/Sucursales";
 import { Branch, branchSettingsSchema } from "@/blocks/Branch";
 import {
   EnviosNacionales,
@@ -515,5 +521,111 @@ describe("BlogList registry", () => {
   it("registers blog-list across the section maps", () => {
     expect(typeof sectionsComponents["blog-list"]).toBe("function");
     expect(sectionSettingsSchemas["blog-list"]).toBeDefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Sucursales live filter — jsdom regression coverage (CR-01).
+//
+// The section's effects never run under renderToStaticMarkup (vitest env is
+// `node`), so the filter's END-TO-END behavior stays UAT-only. What IS testable,
+// and is where the CR-01 defect lived, are the two pure DOM helpers the filter
+// delegates to. These build the exact customizer tree src/lib/blocks-slot.tsx
+// documents — list > slot[style="display: contents"] > per-block wrapper > card
+// — and drive the REAL exported functions against it (same JSDOM-by-hand idiom
+// as test/registration-contract.test.ts; the suite has no global DOM).
+// ---------------------------------------------------------------------------
+
+// n cards, each in its own host wrapper, inside a display:contents host slot.
+const customizerList = (cards: number) => {
+  const wrappers = Array.from(
+    { length: cards },
+    (_, i) =>
+      `<div data-host-wrapper="${i}"><div data-branch-query="q${i}" data-branch-name="n${i}"></div></div>`,
+  ).join("");
+  const dom = new JSDOM(
+    `<!doctype html><html><body><div class="fx-branch-list">` +
+      `<div data-host-slot style="display: contents">${wrappers}</div>` +
+      `</div></body></html>`,
+  );
+  const doc = dom.window.document;
+  const q = (sel: string) =>
+    doc.querySelector(sel) as unknown as HTMLElement | null;
+  return {
+    list: q(".fx-branch-list") as HTMLElement,
+    slot: q("[data-host-slot]") as HTMLElement,
+    wrapper: (i: number) => q(`[data-host-wrapper="${i}"]`) as HTMLElement,
+    card: (i: number) => q(`[data-branch-query="q${i}"]`) as HTMLElement,
+  };
+};
+
+describe("Sucursales filter helpers (jsdom)", () => {
+  it("never climbs onto the host's display:contents slot, even with ONE card", () => {
+    // The single-card case is what defeated the old "exactly one branch card"
+    // stop condition: the slot also contains exactly one card.
+    const { list, slot, wrapper, card } = customizerList(1);
+    const target = resolveHideTarget(card(0), list);
+    expect(target).toBe(wrapper(0));
+    expect(target).not.toBe(slot);
+  });
+
+  it("stops at the per-block wrapper with several cards", () => {
+    const { list, wrapper, card } = customizerList(3);
+    expect(resolveHideTarget(card(1), list)).toBe(wrapper(1));
+  });
+
+  it("resolves to the card itself when published (no host wrappers)", () => {
+    const dom = new JSDOM(
+      `<!doctype html><html><body><div class="fx-branch-list">` +
+        `<div data-branch-query="a"></div><div data-branch-query="b"></div>` +
+        `</div></body></html>`,
+    );
+    const doc = dom.window.document;
+    const list = doc.querySelector(".fx-branch-list") as unknown as HTMLElement;
+    const card = doc.querySelector(
+      '[data-branch-query="a"]',
+    ) as unknown as HTMLElement;
+    expect(resolveHideTarget(card, list)).toBe(card);
+  });
+
+  it("setHidden(el, false) writes NOTHING to an element it never hid", () => {
+    // THE CR-01 INVARIANT. The empty-query pass runs on mount and calls this
+    // for every card; a blanket `style.display = ""` would erase the host's
+    // inline display: contents and permanently break the list layout.
+    const { slot, wrapper } = customizerList(1);
+    setHidden(slot, false);
+    expect(slot.style.display).toBe("contents");
+    expect(slot.getAttribute("style")).toContain("display: contents");
+    setHidden(wrapper(0), false);
+    expect(wrapper(0).getAttribute("style") ?? "").not.toContain("display");
+  });
+
+  it("restores the ORIGINAL inline display, not a blank one", () => {
+    const { slot } = customizerList(1);
+    setHidden(slot, true);
+    expect(slot.style.display).toBe("none");
+    setHidden(slot, false);
+    expect(slot.style.display).toBe("contents");
+  });
+
+  it("survives repeated hide passes without poisoning the recorded value", () => {
+    const { slot } = customizerList(1);
+    setHidden(slot, true);
+    setHidden(slot, true);
+    setHidden(slot, true);
+    setHidden(slot, false);
+    expect(slot.style.display).toBe("contents");
+    // …and a fresh cycle still restores correctly after the record was cleared.
+    setHidden(slot, true);
+    setHidden(slot, false);
+    expect(slot.style.display).toBe("contents");
+  });
+
+  it("round-trips an element that had no inline display at all", () => {
+    const { wrapper } = customizerList(2);
+    setHidden(wrapper(0), true);
+    expect(wrapper(0).style.display).toBe("none");
+    setHidden(wrapper(0), false);
+    expect(wrapper(0).style.display).toBe("");
   });
 });

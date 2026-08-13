@@ -52,10 +52,19 @@ const fold = (s: string) =>
 // own wrapper element (and wraps the whole slot in a display:contents element),
 // so hiding only the inner card would leave a phantom gap where the wrapper
 // still sits. Climb outward while the parent is still inside the list, is not
-// the list itself, and contains exactly ONE branch card — that stops at the
-// host's per-block wrapper, and for a single block degrades to the slot wrapper
-// (where hiding it is still the correct target).
-const resolveHideTarget = (
+// the list itself, and contains exactly ONE branch card.
+//
+// The `display: contents` stop (CR-01) is LOAD-BEARING, not defensive dressing.
+// With a SINGLE branch the "exactly one card" test is also true of the host's
+// slot wrapper, so without this guard the walk climbs past the per-block wrapper
+// and returns the slot itself — an element the theme does not own and whose
+// inline `display: contents` is the only thing keeping the blocks in OUR flex
+// layout (see src/lib/blocks-slot.tsx). Never claim it as a hide target.
+// Exported ONLY so the jsdom regression test can drive the real function
+// against the real customizer tree shape (the section's effects themselves are
+// unreachable under renderToStaticMarkup). Not part of the theme's registry
+// surface — the platform never reads it.
+export const resolveHideTarget = (
   card: HTMLElement,
   list: HTMLElement,
 ): HTMLElement => {
@@ -65,12 +74,40 @@ const resolveHideTarget = (
     parent &&
     parent !== list &&
     list.contains(parent) &&
+    parent.style.display !== "contents" &&
     parent.querySelectorAll("[data-branch-query]").length === 1
   ) {
     el = parent;
     parent = el.parentElement;
   }
   return el;
+};
+
+// Hide/show WITHOUT ever clobbering inline `display` the theme does not own
+// (CR-01). `el.style.display = ""` is not "leave it alone" — it DELETES the
+// declaration, so a blanket restore erases the host's `display: contents` (and
+// any inline display the customizer sets on its per-block wrapper mid-drag).
+// React never rewrites that value afterwards (it diffs prev === next and writes
+// nothing), so the damage is permanent for the life of the page.
+//
+// Instead: record the element's ORIGINAL inline display the first time we hide
+// it, restore exactly that value when it matches again, and — crucially — write
+// NOTHING AT ALL for an element we never hid. That makes the matching path a
+// true no-op, including the empty-query pass that runs on mount.
+const priorDisplay = new WeakMap<HTMLElement, string>();
+
+export const setHidden = (el: HTMLElement, hidden: boolean): void => {
+  if (hidden) {
+    // First touch only: a second hide pass must not record "none" as the
+    // "original" value and thereby make the element permanently hidden.
+    if (!priorDisplay.has(el)) priorDisplay.set(el, el.style.display);
+    el.style.display = "none";
+    return;
+  }
+  if (!priorDisplay.has(el)) return; // we never hid it → don't touch it.
+  // Restore what was there before ("contents", "", …) — never a blind "".
+  el.style.display = priorDisplay.get(el) as string;
+  priorDisplay.delete(el);
 };
 
 const MAPS_EMBED = (q: string) =>
@@ -169,7 +206,7 @@ export const Sucursales = ({
             }`,
           );
           const match = q === "" || haystack.includes(q);
-          resolveHideTarget(card, list).style.display = match ? "" : "none";
+          setHidden(resolveHideTarget(card, list), !match);
           if (match && !first) first = card;
         });
 
