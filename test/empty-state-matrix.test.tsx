@@ -200,15 +200,24 @@ const sectionEntries = Object.entries(sectionsComponents);
 // global maps, exactly like faq-item / service-card / process-step /
 // partner-card) → net local 19+1=20, plus the 4 global = 24 total blocks.
 //
-// If the live registry ever diverges from 34/24, reconcile these guards to the
+// Phase 11 rates, plan 11-03 (+1 section / +1 block): adds carga-aerea-rates,
+// a normal content section WITH a real rate-card blocks slot, and its
+// section-local rate-card block → 35 sections, 25 blocks. carga-aerea-rates is
+// NEITHER chrome NOR no-block: it stays OUT of both CHROME_NULL_EMPTY and
+// NO_BLOCK_SECTIONS and MUST fall through to the "Sin elementos" assertion in
+// the zero-block loop. rate-card is section-local only (never promoted to the
+// global maps, exactly like rate-row / faq-item / service-card / process-step /
+// partner-card) → net local 20+1=21, plus the 4 global = 25 total blocks.
+//
+// If the live registry ever diverges from 35/25, reconcile these guards to the
 // TRUE count with a comment — never delete a guard, never weaken a loop.
 describe("empty-state matrix — drift guards (census)", () => {
-  it("collects exactly 34 sections", () => {
-    expect(sectionEntries.length).toBe(34);
+  it("collects exactly 35 sections", () => {
+    expect(sectionEntries.length).toBe(35);
   });
 
-  it("collects exactly 24 block components (4 global + 20 section-local)", () => {
-    expect(allBlocks.length).toBe(24);
+  it("collects exactly 25 block components (4 global + 21 section-local)", () => {
+    expect(allBlocks.length).toBe(25);
   });
 });
 

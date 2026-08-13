@@ -37,7 +37,8 @@
     { "key": "fixolidario", "name": "Fixolidario" },
     { "key": "franquicias-internacionales", "name": "Franquicias internacionales" },
     { "key": "decorative-backdrop", "name": "Fondo decorativo" },
-    { "key": "courier-tabs", "name": "Courier — Tarifas por destino" }
+    { "key": "courier-tabs", "name": "Courier — Tarifas por destino" },
+    { "key": "carga-aerea-rates", "name": "Carga Aérea — Tarifas por ruta" }
   ],
   "templates": [
     {

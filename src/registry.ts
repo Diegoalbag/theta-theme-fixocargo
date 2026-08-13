@@ -62,6 +62,11 @@ import {
 } from "./sections/DecorativeBackdrop";
 import { CourierTabs, courierTabsSettingsSchema } from "./sections/CourierTabs";
 import { RateRow, rateRowSettingsSchema } from "./blocks/RateRow";
+import {
+  CargaAereaRates,
+  cargaAereaRatesSettingsSchema,
+} from "./sections/CargaAereaRates";
+import { RateCard, rateCardSettingsSchema } from "./blocks/RateCard";
 
 // ---------------------------------------------------------------------------
 // The registry is the heart of a theme. Five maps, all keyed by the same
@@ -108,6 +113,7 @@ export const sectionsComponents: Record<
   "franquicias-internacionales": FranquiciasInternacionales as React.ComponentType<Record<string, unknown>>,
   "decorative-backdrop": DecorativeBackdrop as React.ComponentType<Record<string, unknown>>,
   "courier-tabs": CourierTabs as React.ComponentType<Record<string, unknown>>,
+  "carga-aerea-rates": CargaAereaRates as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
@@ -146,6 +152,7 @@ export const sectionSettingsSchemas = {
   "franquicias-internacionales": franquiciasInternacionalesSettingsSchema,
   "decorative-backdrop": decorativeBackdropSettingsSchema,
   "courier-tabs": courierTabsSettingsSchema,
+  "carga-aerea-rates": cargaAereaRatesSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).
@@ -546,6 +553,24 @@ export const sectionBlocksConfig: Record<
         name: "Fila de tarifa",
         component: RateRow as React.ComponentType<Record<string, unknown>>,
         settings: rateRowSettingsSchema,
+      },
+    ],
+  },
+  "carga-aerea-rates": {
+    // ONE ordered slot, ONE section-local block type (D-07): rate-card is
+    // exclusive to CargaAereaRates and is NOT registered in the global block
+    // maps, so it is never reachable via the `@theme` wildcard. Cap 6 because
+    // the source document defines exactly FIVE Carga Aérea routes, leaving one
+    // slot of headroom — the same calibration nosotros-stats and servicios-list
+    // use for a short, fixed-length card grid.
+    blocks: [{ type: "rate-card" }],
+    maxBlocks: 6,
+    localBlocks: [
+      {
+        type: "rate-card",
+        name: "Tarifa de ruta",
+        component: RateCard as React.ComponentType<Record<string, unknown>>,
+        settings: rateCardSettingsSchema,
       },
     ],
   },
