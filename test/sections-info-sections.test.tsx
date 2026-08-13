@@ -38,9 +38,52 @@ describe("Sucursales", () => {
     expect(html).toContain("Nuestras Sucursales");
   });
 
-  it("renders the decorative search placeholder", () => {
+  it("renders a REAL, labelled search input with its placeholder", () => {
+    // D-03 is REVERSED for this one element: the Sucursales search drives a
+    // live branch filter, so it must be a genuine focusable form control.
+    // Scope every assertion to the <input> tag itself — the decorative Search
+    // ICON next to it legitimately keeps aria-hidden, so asserting over the
+    // whole html string would false-fail.
     const html = renderToStaticMarkup(<Sucursales />);
+    const input = html.match(/<input[^>]*>/)?.[0] ?? "";
+    expect(input).not.toBe("");
+    expect(input).not.toMatch(/readonly/i);
+    expect(input).not.toMatch(/aria-hidden/);
+    expect(input).not.toContain('tabindex="-1"');
+    expect(input).toMatch(/aria-label="[^"]+"/);
+    expect(input).toContain('type="search"');
     expect(html).toContain("Ingresa la ubicación");
+  });
+
+  it("marks the branch list container with the class the filter scopes to", () => {
+    const html = renderToStaticMarkup(
+      <Sucursales renderBlocks={() => [<span key="a">child</span>]} />,
+    );
+    expect(html).toContain("fx-branch-list");
+  });
+
+  it("renders every branch card visible in static markup (no-JS fallback)", () => {
+    // Filtering is an effect-only enhancement and effects never run under
+    // renderToStaticMarkup. Static markup must therefore contain ALL cards with
+    // no JSX-emitted display:none. Scope to the branch-list region: the map
+    // overlay's contact anchor ships style="display:none" by design, so a
+    // whole-document assertion would false-fail.
+    const html = renderToStaticMarkup(
+      <Sucursales
+        renderBlocks={() => [
+          <span key="a">branch-uno</span>,
+          <span key="b">branch-dos</span>,
+        ]}
+      />,
+    );
+    const listStart = html.indexOf("fx-branch-list");
+    const listEnd = html.indexOf("<iframe");
+    expect(listStart).toBeGreaterThan(-1);
+    expect(listEnd).toBeGreaterThan(listStart);
+    const listRegion = html.slice(listStart, listEnd);
+    expect(listRegion).toContain("branch-uno");
+    expect(listRegion).toContain("branch-dos");
+    expect(listRegion).not.toMatch(/display:\s*none/i);
   });
 
   it("renders the default EmptyState when zero blocks (D-08)", () => {

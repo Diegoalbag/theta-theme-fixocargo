@@ -5,25 +5,74 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { BlocksSlot } from "@/lib/blocks-slot";
 
 // Sucursales (INF-01) — the light "find a branch" section. A light SectionHeading
-// over a two-column row (stacked on mobile): LEFT = a decorative search input +
-// a vertical LIST BlocksSlot of section-local `branch` cards; RIGHT = a REAL,
-// interactive Google Maps embed that re-centers on the branch you click, with a
-// contact / directions overlay.
+// over a two-column row (stacked on mobile): LEFT = a REAL search input that
+// filters the branch list + a vertical LIST BlocksSlot of section-local `branch`
+// cards; RIGHT = a REAL, interactive Google Maps embed that re-centers on the
+// branch you click, with a contact / directions overlay.
 //
 // Interactivity follows the Hero precedent (the ONE sanctioned exception): this
-// uses `useRef` + `useEffect` and NO `useState`. Render stays a pure function of
-// props — the effect only enhances after mount:
+// uses `useRef` + `useEffect` + `useCallback` and NO `useState`. Render stays a
+// pure function of props — the effects only enhance after mount:
 //   • a single DELEGATED click listener on the stable section root reads the
 //     clicked branch's `data-branch-*` attributes (emitted by the Branch block)
 //     and imperatively swaps the iframe `src` + the overlay's contact/directions
 //     hrefs. Delegation survives the customizer remounting the branch list.
 //   • a per-render effect applies a default selection (first branch) whenever
 //     nothing valid is selected (initial load + after add/remove edits).
+//   • a LIVE FILTER: the search input's `input`/`search` events fold the typed
+//     query (accent- + case-insensitive) and toggle each card's `style.display`
+//     against the card's name + address attributes, then re-center the map on
+//     the first still-matching branch. The input is UNCONTROLLED, so the DOM —
+//     not React — holds the query, which is what keeps this state-free.
 // jsdom/SSR never runs effects, so renderToStaticMarkup stays safe (matches Hero).
-// The branch cards keep their own tel:/maps anchors as the no-JS fallback.
+// The branch cards keep their own tel:/maps anchors as the no-JS fallback, and
+// with JS off every card stays visible: nothing is hidden from JSX.
 //
 // No React state. Brand tokens only — no hex literals (the selected-card outline
 // uses the --brand-yellow CSS var). @/ imports only.
+
+// Stable, non-Tailwind marker on the branch-list layout div. The filter resolves
+// the list at runtime with a querySelector off the section root (Hero does the
+// same with its `.blaze-track` marker).
+const BRANCH_LIST_CLASS = "fx-branch-list";
+
+// Accent + case folding, module scope, pure, zero dependencies: NFD splits an
+// accented character into base letter + combining mark, the combining-marks
+// range is then stripped, so "independencia" matches "Av. Independéncia" in
+// both directions.
+const fold = (s: string) =>
+  s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+// Resolve the element that actually consumes the list's flex gap, which differs
+// per context. Published: the card is a direct child of our layout div, so the
+// card IS the hide target. In the customizer the host wraps EVERY block in its
+// own wrapper element (and wraps the whole slot in a display:contents element),
+// so hiding only the inner card would leave a phantom gap where the wrapper
+// still sits. Climb outward while the parent is still inside the list, is not
+// the list itself, and contains exactly ONE branch card — that stops at the
+// host's per-block wrapper, and for a single block degrades to the slot wrapper
+// (where hiding it is still the correct target).
+const resolveHideTarget = (
+  card: HTMLElement,
+  list: HTMLElement,
+): HTMLElement => {
+  let el: HTMLElement = card;
+  let parent = el.parentElement;
+  while (
+    parent &&
+    parent !== list &&
+    list.contains(parent) &&
+    parent.querySelectorAll("[data-branch-query]").length === 1
+  ) {
+    el = parent;
+    parent = el.parentElement;
+  }
+  return el;
+};
+
 const MAPS_EMBED = (q: string) =>
   `https://maps.google.com/maps?q=${encodeURIComponent(q)}&output=embed`;
 const MAPS_DIRECTIONS = (q: string) =>
@@ -45,6 +94,7 @@ export const Sucursales = ({
   renderBlocks,
 }: SucursalesProps): React.ReactNode => {
   const rootRef = React.useRef<HTMLDivElement>(null);
+  const searchRef = React.useRef<HTMLInputElement>(null);
   const mapRef = React.useRef<HTMLIFrameElement>(null);
   const contactRef = React.useRef<HTMLAnchorElement>(null);
   const directionsRef = React.useRef<HTMLAnchorElement>(null);
@@ -94,6 +144,59 @@ export const Sucursales = ({
     selectedElRef.current = el;
   }, []);
 
+  // Live filter over the branch cards. Reads the UNCONTROLLED input's value and
+  // the cards' own data attributes straight from the DOM — no React state, so
+  // this stays a post-mount enhancement over unchanged render output. `recenter`
+  // is false for re-render-driven passes so a customizer edit can never yank the
+  // map off the branch the visitor deliberately clicked.
+  const applyFilter = React.useCallback(
+    (recenter: boolean) => {
+      const root = rootRef.current;
+      const input = searchRef.current;
+      if (!root || !input) return;
+      const list = root.querySelector<HTMLElement>(`.${BRANCH_LIST_CLASS}`);
+      if (!list) return;
+
+      const q = fold(input.value.trim());
+      let first: HTMLElement | null = null;
+      list
+        .querySelectorAll<HTMLElement>("[data-branch-query]")
+        .forEach((card) => {
+          // Haystack = name + address only (horario is deliberately excluded).
+          const haystack = fold(
+            `${card.getAttribute("data-branch-name") ?? ""} ${
+              card.getAttribute("data-branch-address") ?? ""
+            }`,
+          );
+          const match = q === "" || haystack.includes(q);
+          resolveHideTarget(card, list).style.display = match ? "" : "none";
+          if (match && !first) first = card;
+        });
+
+      // Re-center on the first surviving match only while a query is active:
+      // clearing the box restores every card WITHOUT moving the map.
+      if (recenter && q !== "" && first) applyBranch(first);
+    },
+    [applyBranch],
+  );
+
+  // The search input is the section's OWN stable node — it never lives inside
+  // the remounting blocks slot — so a direct listener is enough here; the
+  // delegation the click effect below needs would buy nothing. `input` covers
+  // every keystroke (no Enter required); `search` covers the native type=search
+  // clear button.
+  React.useEffect(() => {
+    const input = searchRef.current;
+    if (!input) return;
+    const onInput = () => applyFilter(true);
+    input.addEventListener("input", onInput);
+    input.addEventListener("search", onInput);
+    return () => {
+      input.removeEventListener("input", onInput);
+      input.removeEventListener("search", onInput);
+    };
+  }, [applyFilter]);
+
   // Delegated click listener on the stable section root (survives the customizer
   // remounting the branch list). Attached once.
   React.useEffect(() => {
@@ -119,6 +222,9 @@ export const Sucursales = ({
     if (branches.length === 0) return;
     const sel = selectedElRef.current;
     if (!sel || !root.contains(sel)) applyBranch(branches[0]);
+    // Re-apply the active query to cards added, removed, or reordered in the
+    // customizer while the search box holds text (recenter=false — see above).
+    applyFilter(false);
   });
 
   return (
@@ -127,28 +233,39 @@ export const Sucursales = ({
         <SectionHeading variant="light" title={heading} subtitle={subtitle} />
 
         <div className="mt-8 flex flex-col-reverse gap-8 lg:flex-row">
-          {/* LEFT — decorative search + branch LIST slot. */}
+          {/* LEFT — functional search + branch LIST slot. */}
           <div className="flex flex-col gap-4 lg:flex-1">
-            {/* Decorative search (D-03): inert, no state, no handlers. */}
+            {/* D-03 IS REVERSED FOR THIS ONE ELEMENT. This search used to be
+                inert (readOnly / aria-hidden / tabIndex=-1, "decorative"); it is
+                now a REAL, labelled, focusable control that drives the live
+                branch filter (see applyFilter above). There is still NO React
+                state: the input is UNCONTROLLED (no value/defaultValue), so the
+                DOM holds the query across re-renders and the effect reads it
+                imperatively. BlogHero's search input stays deliberately inert —
+                it has no results surface to filter, so that is an intentional
+                divergence, not an oversight. The magnifier ICON below stays
+                decorative and keeps aria-hidden. */}
             <div className="flex items-center gap-2 rounded-lg bg-card border border-border px-5 h-[60px]">
               <Search
                 aria-hidden="true"
                 className="size-4 text-muted-foreground"
               />
               <input
-                type="text"
-                readOnly
-                aria-hidden="true"
-                tabIndex={-1}
+                ref={searchRef}
+                type="search"
+                aria-label="Buscar sucursal por nombre o dirección"
+                autoComplete="off"
                 placeholder="Ingresa la ubicación"
-                className="flex-1 bg-transparent outline-none text-muted-foreground"
+                className="flex-1 bg-transparent outline-none text-brand-navy placeholder:text-muted-foreground"
               />
             </div>
 
-            {/* LIST (not grid): one branch card per row. */}
+            {/* LIST (not grid): one branch card per row. The marker class is the
+                stable hook the filter's DOM walk scopes to (see
+                BRANCH_LIST_CLASS) — layout classes stay Tailwind. */}
             <BlocksSlot
               renderBlocks={renderBlocks}
-              className="flex flex-col gap-4"
+              className={`flex flex-col gap-4 ${BRANCH_LIST_CLASS}`}
             />
           </div>
 
