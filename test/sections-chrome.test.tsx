@@ -220,6 +220,52 @@ describe("NavLink — CSS-only submenu (NAV-01)", () => {
     expect(html).toContain("Carga Aérea");
   });
 
+  // CR-02 regression guard. A <summary> only toggles the disclosure — it never
+  // navigates — so before this guard a nav item with children silently dropped
+  // its own destination: the merchant kept editing "Enlace URL" in the sidebar
+  // while the rendered nav item stopped linking anywhere, on desktop AND mobile.
+  // This is the exact D-11-01 use case (seven services under one "Servicios"
+  // item that must still reach /servicios).
+  it("keeps the parent url reachable in the submenu branch (CR-02)", () => {
+    const html = renderToStaticMarkup(
+      <NavLink
+        label="Servicios"
+        url="/servicios"
+        child1Label="Carga Aérea"
+        child1Url="/carga-aerea"
+      />,
+    );
+    expect(html).toContain("<details");
+    // The parent destination is rendered, and it is rendered as an anchor —
+    // not merely present as a discarded prop.
+    expect(html).toContain('href="/servicios"');
+    const anchors = html.match(/<a\s/g) ?? [];
+    expect(anchors).toHaveLength(2);
+    // It leads the panel, ahead of the child links.
+    expect(html.indexOf('href="/servicios"')).toBeLessThan(
+      html.indexOf('href="/carga-aerea"'),
+    );
+  });
+
+  it("adds no parent entry when url is the `#` schema default or blank (CR-02)", () => {
+    const defaulted = renderToStaticMarkup(
+      <NavLink label="Servicios" url="#" child1Label="Uno" child1Url="/uno" />,
+    );
+    // `#` means "no destination" — it must not become a duplicate dead entry.
+    expect((defaulted.match(/<a\s/g) ?? []).length).toBe(1);
+    expect(defaulted).toContain('href="/uno"');
+
+    const blank = renderToStaticMarkup(
+      <NavLink label="Servicios" url="" child1Label="Uno" child1Url="/uno" />,
+    );
+    expect((blank.match(/<a\s/g) ?? []).length).toBe(1);
+
+    const whitespace = renderToStaticMarkup(
+      <NavLink label="Servicios" url="   " child1Label="Uno" child1Url="/uno" />,
+    );
+    expect((whitespace.match(/<a\s/g) ?? []).length).toBe(1);
+  });
+
   it("renders the caret in the submenu branch even when hasCaret is false", () => {
     const html = renderToStaticMarkup(
       <NavLink label="Servicios" child1Label="Carga Aérea" child1Url="/x" />,

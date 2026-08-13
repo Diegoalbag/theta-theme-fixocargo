@@ -7,7 +7,14 @@ import { ChevronDown } from "lucide-react";
 //   * no child label filled  -> a bare anchor, exactly as this block has always
 //     rendered. Every already-saved nav-link keeps this output byte for byte.
 //   * at least one child label filled -> a native details/summary disclosure
-//     holding only the filled child links.
+//     holding the parent's own destination (when `url` is set to something
+//     other than the `#` default) followed by the filled child links.
+//
+// THE PARENT `url` IS NEVER DISCARDED (CR-02). A <summary> only toggles the
+// disclosure — it does not navigate — so the disclosure branch renders the
+// parent destination as the FIRST entry of the panel. Without it the saved
+// "Enlace URL" value would be orphaned and a nav item that used to navigate
+// would silently stop, with no other route to it on desktop or mobile.
 //
 // The disclosure is CSS-only: no React state, no event handlers. The native
 // element owns the open state, and summary is natively focusable, toggles on
@@ -98,6 +105,15 @@ export const NavLink = ({
 
   const activeChildren = allChildren.filter((entry) => !!entry.label);
 
+  // The parent's own destination stays reachable in the disclosure branch
+  // (CR-02). A <summary> only toggles the disclosure, so without this the saved
+  // `url` would be silently orphaned: the merchant edits "Enlace URL" in the
+  // sidebar, and the nav item that used to navigate simply stops navigating,
+  // with no other route to it on desktop OR mobile. `#` is the schema default
+  // and means "no destination", so it is excluded — a merchant who never set a
+  // real URL gets no duplicate dead entry.
+  const parentUrl = url && url.trim() && url.trim() !== "#" ? url : undefined;
+
   // Branch A — no submenu. Byte-compatible with the pre-phase output.
   if (activeChildren.length === 0) {
     return (
@@ -131,6 +147,16 @@ export const NavLink = ({
           the existing mobile nav panel already relies on to clear the section
           below the header. */}
       <div className="mt-2 flex flex-col gap-2 pl-3 lg:absolute lg:left-0 lg:top-full lg:z-50 lg:mt-3 lg:min-w-56 lg:gap-2 lg:rounded-xl lg:border lg:border-white/10 lg:bg-brand-navy lg:p-4 lg:pl-4 lg:shadow-xl">
+        {/* The parent destination, first in the panel (CR-02). Rendered only
+            when `url` is a real destination — never for the `#` default. */}
+        {parentUrl && (
+          <a
+            href={parentUrl}
+            className="font-opensans text-sm font-bold text-white whitespace-nowrap hover:text-brand-yellow focus-visible:outline-2 focus-visible:outline-brand-yellow focus-visible:outline-offset-2"
+          >
+            {label ?? "Enlace"}
+          </a>
+        )}
         {activeChildren.map((entry, idx) => (
           <a
             key={idx}
@@ -159,6 +185,7 @@ export const navLinkSettingsSchema = [
     label: "Enlace URL",
     type: "url",
     default: "#",
+    info: "Si agregas submenús, este enlace se muestra como la primera opción del submenú. Déjalo en # si el elemento no debe navegar.",
   },
   {
     id: "hasCaret",
