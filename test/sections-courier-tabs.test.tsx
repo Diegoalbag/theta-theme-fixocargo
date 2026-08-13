@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, it, expect } from "vitest";
@@ -8,6 +11,13 @@ import {
   resolveCourierTab,
 } from "@/lib/courier-tabs";
 import { RateRow, rateRowSettingsSchema } from "@/blocks/RateRow";
+import {
+  CourierTabs,
+  courierTabsSettingsSchema,
+} from "@/sections/CourierTabs";
+
+const countMatches = (html: string, needle: string): number =>
+  html.split(needle).length - 1;
 
 // Behavioral contract for the Phase 11 courier-tabs tracer slice (CUR-01/02/03).
 // The vitest environment is `node` (no global document), so we render DOM-free
@@ -118,5 +128,143 @@ describe("RateRow", () => {
     expect(weight?.default).toBe("");
     expect(rate?.type).toBe("text");
     expect(rate?.default).toBe("");
+  });
+});
+
+describe("CourierTabs", () => {
+  it("renders all four default tab labels", () => {
+    const html = renderToStaticMarkup(<CourierTabs />);
+    expect(html).toContain("Estados Unidos");
+    expect(html).toContain("Europa");
+    expect(html).toContain("China");
+    expect(html).toContain("Exportación a EE.UU.");
+  });
+
+  it("emits exactly 4 tab inputs and 4 panels keyed by COURIER_TABS", () => {
+    const html = renderToStaticMarkup(<CourierTabs />);
+    expect(countMatches(html, "data-courier-input=")).toBe(4);
+    expect(countMatches(html, "data-courier-panel=")).toBe(4);
+    COURIER_TABS.forEach((key) => {
+      expect(html).toContain(`data-courier-input="${key}"`);
+      expect(html).toContain(`data-courier-panel="${key}"`);
+    });
+  });
+
+  it("pre-selects exactly one tab", () => {
+    const html = renderToStaticMarkup(<CourierTabs />);
+    expect(countMatches(html, 'checked=""')).toBe(1);
+  });
+
+  it("keeps every radio sr-only (focusable) and never `hidden`", () => {
+    const html = renderToStaticMarkup(<CourierTabs />);
+    expect(countMatches(html, 'class="sr-only"')).toBe(4);
+    expect(html).not.toContain('type="radio" hidden');
+    expect(html).not.toContain("hidden=");
+  });
+
+  it("scopes the radio group per instance so two sections cannot blank each other", () => {
+    const html = renderToStaticMarkup(
+      <>
+        <CourierTabs />
+        <CourierTabs />
+      </>,
+    );
+    const names = [...html.matchAll(/name="([^"]+)"/g)].map((m) => m[1]);
+    expect(names.length).toBe(8);
+    expect(new Set(names).size).toBe(2);
+  });
+
+  it("renders NOTHING for a blank panel body — never the sink's placeholder", () => {
+    const html = renderToStaticMarkup(<CourierTabs />);
+    expect(html).not.toContain("Sin contenido");
+    expect(html).not.toContain("article-body");
+  });
+
+  it("renders a filled panel body through the RichText sink", () => {
+    const html = renderToStaticMarkup(<CourierTabs tab1Body="<p>Hola</p>" />);
+    expect(html).toContain("Hola");
+    expect(html).toContain("article-body");
+    expect(html).not.toContain("Sin contenido");
+  });
+
+  it("shows the EmptyState marker when it has zero rate-row blocks", () => {
+    const html = renderToStaticMarkup(<CourierTabs />);
+    expect(html).toContain("Sin elementos");
+  });
+
+  it("renders the rate-row blocks it is given inside the courier-rates slot", () => {
+    const html = renderToStaticMarkup(
+      <CourierTabs
+        renderBlocks={() => [
+          <RateRow key="a" tab="europa" weight="1 lb" rate="US$ 5" />,
+        ]}
+      />,
+    );
+    expect(html).toContain("courier-rates");
+    expect(html).toContain('data-courier-row="europa"');
+    expect(html).not.toContain("Sin elementos");
+  });
+
+  it("announces one radiogroup and never the JS-only WAI-ARIA tab roles", () => {
+    const html = renderToStaticMarkup(<CourierTabs />);
+    expect(countMatches(html, 'role="radiogroup"')).toBe(1);
+    expect(html).not.toContain('role="tab"');
+    expect(html).not.toContain('role="tablist"');
+  });
+
+  it("exposes exactly 10 editable fields with the expected ids", () => {
+    expect(courierTabsSettingsSchema.length).toBe(10);
+    expect(courierTabsSettingsSchema.map((s) => s.id)).toEqual([
+      "eyebrow",
+      "heading",
+      "tab1Label",
+      "tab1Body",
+      "tab2Label",
+      "tab2Body",
+      "tab3Label",
+      "tab3Body",
+      "tab4Label",
+      "tab4Body",
+    ]);
+  });
+
+  it("declares every panel body as richtext with an empty default", () => {
+    const bodies = courierTabsSettingsSchema.filter((s) =>
+      /^tab\d+Body$/.test(s.id),
+    );
+    expect(bodies.length).toBe(4);
+    bodies.forEach((entry) => {
+      expect(entry.type).toBe("richtext");
+      expect(entry.default).toBe("");
+    });
+  });
+});
+
+describe("courier-tabs scoped CSS (src/index.css)", () => {
+  const css = readFileSync(
+    resolve(process.cwd(), "src/index.css"),
+    "utf8",
+  );
+
+  it("ships a .courier-tabs rule block covering all four tab keys", () => {
+    expect(css).toContain(".courier-tabs");
+    COURIER_TABS.forEach((key) => {
+      expect(css).toContain(`[data-courier-input="${key}"]:checked`);
+      expect(css).toContain(`[data-courier-panel]:not([data-courier-panel="${key}"])`);
+      expect(css).toContain(`[data-courier-row]:not([data-courier-row="${key}"])`);
+    });
+  });
+
+  it("collapses the customizer per-block wrapper once per tab", () => {
+    expect(countMatches(css, ".courier-rates *:has(> [data-courier-row]")).toBe(
+      4,
+    );
+  });
+
+  it("drives the visible label from the sr-only radio via the sibling combinator", () => {
+    expect(css).toContain(".courier-tabs [data-courier-input]:checked + label");
+    expect(css).toContain(
+      ".courier-tabs [data-courier-input]:focus-visible + label",
+    );
   });
 });
