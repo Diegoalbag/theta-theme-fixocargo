@@ -32,8 +32,11 @@ import { safeHref } from "@/lib/safe-href";
 // branch. In the disclosure branch the caret is unconditional and reflects real
 // submenu state, rotating with the open state.
 //
-// Child slots are a FIXED count of 8 (7 services + 1 spare) with empty labels
-// filtered out — the FooterColumn fixed-slot precedent (D-05). Provisioning is
+// Child slots are a FIXED count of 8 (7 services + 1 spare) with blank labels
+// filtered out — the FooterColumn fixed-slot precedent (D-05). "Blank" means
+// whitespace-trimmed-empty, not just empty string (WR-07): this filter selects
+// the BRANCH, so a stray space in child1Label would otherwise convert a saved
+// plain anchor into a disclosure with a blank focusable entry. Provisioning is
 // grow-only: adding a slot later is additive, removing one orphans saved values.
 //
 // No exclusivity-forcing attribute is set on the disclosure. FaqItem documents
@@ -119,7 +122,12 @@ export const NavLink = ({
     { label: child8Label, url: child8Url },
   ];
 
-  const activeChildren = allChildren.filter((entry) => !!entry.label);
+  // `.trim()` is load-bearing here, not tidiness (WR-07). This filter does not
+  // merely decide whether a link is drawn — it decides WHICH BRANCH renders. A
+  // single stray space typed into child1Label (easy to do in a 19-field
+  // sidebar) would otherwise flip a saved nav item from a plain anchor to a
+  // disclosure and add a blank, focusable submenu entry.
+  const activeChildren = allChildren.filter((entry) => !!entry.label?.trim());
 
   // The parent's own destination stays reachable in the disclosure branch
   // (CR-02). A <summary> only toggles the disclosure, so without this the saved

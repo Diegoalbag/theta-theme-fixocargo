@@ -274,6 +274,36 @@ describe("NavLink — CSS-only submenu (NAV-01)", () => {
     expect(html).toContain("group-open:rotate-180");
   });
 
+  // WR-07. This filter picks the BRANCH, so a whitespace-only label is not a
+  // cosmetic blank — it silently converts a saved plain anchor into a
+  // disclosure with a blank, focusable submenu entry, and (before CR-02) took
+  // the parent's destination with it.
+  it("treats a whitespace-only child label as empty and stays a bare anchor (WR-07)", () => {
+    const html = renderToStaticMarkup(
+      <NavLink label="Inicio" url="/" child1Label="   " child1Url="/uno" />,
+    );
+    expect(html).not.toContain("<details");
+    expect(html).not.toContain("<summary");
+    expect(html).toContain('href="/"');
+    expect(html).not.toContain('href="/uno"');
+  });
+
+  it("drops a whitespace-only slot from a submenu that has real entries (WR-07)", () => {
+    const html = renderToStaticMarkup(
+      <NavLink
+        label="Servicios"
+        child1Label="Uno"
+        child1Url="/uno"
+        child2Label=" "
+        child2Url="/vacio"
+      />,
+    );
+    expect(html).toContain("<details");
+    const anchors = html.match(/<a\s/g) ?? [];
+    expect(anchors).toHaveLength(1);
+    expect(html).not.toContain('href="/vacio"');
+  });
+
   it("renders only the filled child slots — an empty slot contributes nothing", () => {
     const html = renderToStaticMarkup(
       <NavLink
