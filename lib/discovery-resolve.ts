@@ -166,16 +166,27 @@ export function buildSitemapEntries(
  *      would directly contradict the canonical the post itself emits —
  *      exactly the split-link-authority problem criterion 1's byte-identity
  *      claim exists to close (T-23-03).
+ *   4. `slug` must be a non-empty string. Strapi's `slug` is NULLABLE and the
+ *      generated response type declares it `string`, so nothing upstream
+ *      catches a published-but-slugless row. Without this gate
+ *      `resolvePostCanonical` coerces the missing slug to `""` and emits
+ *      `{origin}/blog/` — a bogus entry that duplicates the blog index's own
+ *      URL under a post's authority. A slugless post has no reachable URL at
+ *      all, so it is not merely un-indexable, it is un-addressable; excluding
+ *      it loses nothing that could ever have been crawled.
  */
 export function isPostSitemapEligible(
   post:
     | Pick<SitemapArticleRecord, "publishedAt" | "seo" | "canonicalUrl">
+    | { slug?: string | null }
     | null
     | undefined
 ): boolean {
   if (!post?.publishedAt) return false;
   if (post?.seo?.noindex === true) return false;
   if (resolveCanonicalOverride(post?.canonicalUrl) !== null) return false;
+  const slug = (post as { slug?: string | null })?.slug;
+  if (typeof slug !== "string" || slug.trim() === "") return false;
   return true;
 }
 

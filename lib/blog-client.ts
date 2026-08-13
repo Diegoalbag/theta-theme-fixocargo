@@ -732,7 +732,20 @@ export const fetchPublishedArticleSlugs = cache(async (limit = 1000): Promise<st
         (article) =>
           typeof article.publishedAt === "string" && article.publishedAt.trim() !== ""
       )
-      .map((article) => article.slug);
+      .map((article) => article.slug)
+      // A published row is NOT guaranteed to carry a slug -- Strapi's `slug` is
+      // nullable and the generated response type says `string`, so nothing above
+      // catches it. Without this guard a single slugless post yields
+      // `[{ slug: null }]` from `generateStaticParams`, and Next fails the WHOLE
+      // tenant build with "A required parameter (slug) was not provided as a
+      // string received object" (`typeof null === "object"`). One incomplete
+      // draft must never be able to break a tenant's deploy, so a slugless row
+      // is dropped here rather than propagated: it has no reachable URL anyway
+      // (`postHref` returns null for a blank slug, and the sitemap skips it),
+      // so dropping it loses nothing that was ever addressable.
+      .filter(
+        (slug): slug is string => typeof slug === "string" && slug.trim() !== ""
+      );
   } catch (error) {
     console.warn(
       "Failed to fetch published article slugs from Strapi:",

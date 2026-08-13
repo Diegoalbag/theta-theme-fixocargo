@@ -438,6 +438,37 @@ describe("blog-client.ts — fetchBlogPageTemplates / fetchPublishedArticleBySlu
     expect(variables).toEqual({ limit: 250 });
   });
 
+  // Regression: a published row whose `slug` is null must be dropped, never
+  // propagated. Strapi's `slug` is nullable while the generated response type
+  // declares it `string`, so nothing upstream catches it. Propagating one
+  // yields `[{ slug: null }]` from `generateStaticParams`, and Next fails the
+  // WHOLE tenant build with "A required parameter (slug) was not provided as a
+  // string received object" (`typeof null === "object"`). Observed on a real
+  // tenant deploy 2026-08-13; one incomplete draft must never be able to break
+  // a tenant's build.
+  it("fetchPublishedArticleSlugs drops published rows with a null or blank slug", async () => {
+    const strapiClientMod = await import("../strapi-client");
+    const mod = await import("../blog-client");
+    vi.spyOn(strapiClientMod.strapiClient, "request").mockImplementation(async () => ({
+      articles: [
+        { slug: "published-1", publishedAt: "2026-08-01T00:00:00.000Z" },
+        { slug: null, publishedAt: "2026-08-01T00:00:00.000Z" },
+        { slug: "   ", publishedAt: "2026-08-01T00:00:00.000Z" },
+        { slug: "published-2", publishedAt: "2026-08-01T00:00:00.000Z" },
+      ],
+    }));
+
+    const slugs = await mod.fetchPublishedArticleSlugs();
+
+    expect(slugs).toEqual(["published-1", "published-2"]);
+    // Every survivor must be a usable route segment — this is the property
+    // generateStaticParams depends on.
+    for (const slug of slugs) {
+      expect(typeof slug).toBe("string");
+      expect(slug.trim()).not.toBe("");
+    }
+  });
+
   it("fetchPublishedArticleSlugs(limit) resolves [] on a thrown request", async () => {
     const strapiClientMod = await import("../strapi-client");
     const mod = await import("../blog-client");

@@ -297,6 +297,29 @@ describe("isPostSitemapEligible — D-6/T-23-06 three-signal filter", () => {
     expect(isPostSitemapEligible(sitemapPost({ publishedAt: undefined }))).toBe(false);
   });
 
+  // Regression: `slug` is nullable in Strapi while the generated type declares
+  // it `string`. Without a gate here, `resolvePostCanonical` coerces the
+  // missing slug to "" and the sitemap emits `{origin}/blog/` — a bogus entry
+  // duplicating the blog index's own URL under a post's authority. A slugless
+  // post has no reachable URL at all, so it can never legitimately be listed.
+  it("is false when the slug is null, undefined or blank", () => {
+    expect(isPostSitemapEligible(sitemapPost({ slug: null }))).toBe(false);
+    expect(isPostSitemapEligible(sitemapPost({ slug: undefined }))).toBe(false);
+    expect(isPostSitemapEligible(sitemapPost({ slug: "" }))).toBe(false);
+    expect(isPostSitemapEligible(sitemapPost({ slug: "   " }))).toBe(false);
+  });
+
+  it("never emits a bare /blog/ entry for a slugless published post", () => {
+    const entries = buildBlogPostSitemapEntries(
+      [sitemapPost({ slug: null }), sitemapPost({ slug: "real-post" })],
+      "https://tenant.example"
+    );
+    expect(entries.map((e) => e.url)).toEqual([
+      "https://tenant.example/blog/real-post",
+    ]);
+    expect(entries.some((e) => e.url.endsWith("/blog/"))).toBe(false);
+  });
+
   it("is false when seo.noindex is strictly true", () => {
     expect(isPostSitemapEligible(sitemapPost({ seo: { noindex: true } }))).toBe(false);
   });
