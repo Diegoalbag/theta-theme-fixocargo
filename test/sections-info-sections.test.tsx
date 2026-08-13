@@ -259,6 +259,24 @@ describe("Branch", () => {
     expect(html).toContain('data-branch-address="Santiago"');
   });
 
+  it("emits data-branch-query on the card root (map/click/selection keystone)", () => {
+    // WR-06: this single attribute is what the section's click delegation
+    // closest() matches, what the default selection enumerates, and what tells
+    // the filter a match is mappable. Renaming or conditionally dropping it
+    // breaks the whole section with a fully green suite unless it is pinned.
+    // Runtime filtering is UAT-only here (effects never run under
+    // renderToStaticMarkup), so this markup contract is its only automated
+    // protection.
+    expect(
+      renderToStaticMarkup(<Branch name="SD" mapQuery="Santo Domingo" />),
+    ).toContain('data-branch-query="Santo Domingo"');
+    // Falls back to the name so branches saved before mapQuery existed stay
+    // mappable.
+    expect(renderToStaticMarkup(<Branch name="SD" mapQuery="" />)).toContain(
+      'data-branch-query="SD"',
+    );
+  });
+
   it("branchSettingsSchema has 7 entries incl. horario + address + mapQuery; mapUrl is url", () => {
     expect(branchSettingsSchema).toHaveLength(7);
     const ids = branchSettingsSchema.map((s) => s.id);
