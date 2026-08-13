@@ -1,0 +1,55 @@
+{
+  "name": "theta-theme-fixocargo",
+  "version": "0.1.0",
+  "description": "Fixocargo courier theme — marketing, services, branches and company sections plus a working blog (article and archive templates).",
+  "entry": "dist/theme.bundle.js",
+  "sections": [
+    { "key": "announcement-bar", "name": "Barra de anuncios" },
+    { "key": "site-header", "name": "Encabezado" },
+    { "key": "footer", "name": "Pie de página" },
+    { "key": "hero", "name": "Hero" },
+    { "key": "direccion-cards", "name": "Tarjetas de dirección" },
+    { "key": "tools-bar", "name": "Barra de herramientas" },
+    { "key": "servicios", "name": "Servicios" },
+    { "key": "beneficios", "name": "Beneficios" },
+    { "key": "descarga-app", "name": "Descarga la app" },
+    { "key": "sucursales", "name": "Sucursales" },
+    { "key": "envios-nacionales", "name": "Envíos nacionales" },
+    { "key": "blogs", "name": "Blogs (destacados)" },
+    { "key": "article-body", "name": "Contenido del artículo" },
+    { "key": "archive-list", "name": "Listado de artículos" },
+    { "key": "blog-hero", "name": "Hero del blog" },
+    { "key": "blog-list", "name": "Índice del blog (manual)" },
+    { "key": "nosotros-hero", "name": "Nosotros — Hero" },
+    { "key": "nosotros-mission", "name": "Nosotros — Misión" },
+    { "key": "nosotros-stats", "name": "Nosotros — Cifras" },
+    { "key": "nosotros-values", "name": "Nosotros — Valores" },
+    { "key": "nosotros-timeline", "name": "Nosotros — Historia" },
+    { "key": "faq", "name": "Preguntas frecuentes" },
+    { "key": "beneficios-grid", "name": "Beneficios (cuadrícula)" },
+    { "key": "app-features", "name": "Funciones de la app" },
+    { "key": "plan-referimiento", "name": "Plan de referimiento" },
+    { "key": "lista-regalos", "name": "Lista de regalos" },
+    { "key": "servicios-hero", "name": "Servicios — Hero" },
+    { "key": "servicios-list", "name": "Servicios — Listado" },
+    { "key": "proceso-envio", "name": "Proceso de envío" },
+    { "key": "servicios-cta", "name": "Servicios — CTA" },
+    { "key": "fixolidario", "name": "Fixolidario" },
+    { "key": "franquicias-internacionales", "name": "Franquicias internacionales" },
+    { "key": "decorative-backdrop", "name": "Fondo decorativo" }
+  ],
+  "templates": [
+    {
+      "key": "article",
+      "name": "Artículo",
+      "description": "Una entrada del blog.",
+      "sections": ["site-header", "article-body", "footer"]
+    },
+    {
+      "key": "archive",
+      "name": "Archivo",
+      "description": "El índice del blog y los archivos por categoría y etiqueta.",
+      "sections": ["site-header", "archive-list", "footer"]
+    }
+  ]
+}

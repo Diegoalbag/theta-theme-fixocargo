@@ -12,6 +12,7 @@ import { Sucursales, sucursalesSettingsSchema } from "./sections/Sucursales";
 import { EnviosNacionales, enviosNacionalesSettingsSchema } from "./sections/EnviosNacionales";
 import { Blogs, blogsSettingsSchema } from "./sections/Blogs";
 import { ArticleBody, articleBodySettingsSchema } from "./sections/ArticleBody";
+import { ArchiveList, archiveListSettingsSchema } from "./sections/ArchiveList";
 import { BlogHero, blogHeroSettingsSchema } from "./sections/BlogHero";
 import { BlogList, blogListSettingsSchema } from "./sections/BlogList";
 import { NosotrosHero, nosotrosHeroSettingsSchema } from "./sections/NosotrosHero";
@@ -84,6 +85,7 @@ export const sectionsComponents: Record<
   "envios-nacionales": EnviosNacionales as React.ComponentType<Record<string, unknown>>,
   "blogs": Blogs as React.ComponentType<Record<string, unknown>>,
   "article-body": ArticleBody as React.ComponentType<Record<string, unknown>>,
+  "archive-list": ArchiveList as React.ComponentType<Record<string, unknown>>,
   "blog-hero": BlogHero as React.ComponentType<Record<string, unknown>>,
   "blog-list": BlogList as React.ComponentType<Record<string, unknown>>,
   "nosotros-hero": NosotrosHero as React.ComponentType<Record<string, unknown>>,
@@ -120,6 +122,7 @@ export const sectionSettingsSchemas = {
   "envios-nacionales": enviosNacionalesSettingsSchema,
   "blogs": blogsSettingsSchema,
   "article-body": articleBodySettingsSchema,
+  "archive-list": archiveListSettingsSchema,
   "blog-hero": blogHeroSettingsSchema,
   "blog-list": blogListSettingsSchema,
   "nosotros-hero": nosotrosHeroSettingsSchema,

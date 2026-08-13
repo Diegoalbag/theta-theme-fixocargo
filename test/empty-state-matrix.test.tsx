@@ -48,6 +48,13 @@ const CHROME_NULL_EMPTY = new Set<string>([
 const NO_BLOCK_SECTIONS = new Set<string>([
   "article-body",
   "blog-hero",
+  // archive-list (blog contract migration) has no child-block slot: its post
+  // list arrives as the platform-injected `archive.posts` prop, not as authored
+  // child blocks, so there is no zero-block EmptyState to assert. It states its
+  // own empty case ("Todavía no hay artículos publicados.") — the same shape as
+  // article-body delegating to RichText's "Sin contenido". Exempt the marker,
+  // not the no-throw.
+  "archive-list",
   // The two Phase 9 About-page content sections (09-01/09-02) accept NO child
   // blocks (Pattern 4 — no sectionBlocksConfig entry). nosotros-hero paints its
   // hero chrome; nosotros-mission delegates its empty case to RichText's "Sin
@@ -179,11 +186,16 @@ const sectionEntries = Object.entries(sectionsComponents);
 // unchanged (this task registers zero new blocks). decorative-backdrop has
 // no child-block slot at all and is added to NO_BLOCK_SECTIONS.
 //
-// If the live registry ever diverges from 32/23, reconcile these guards to the
+// Blog contract migration (+1 section / +0 blocks): adds archive-list, the
+// reserved `archive-list` slot of the platform's `archive` template → 33
+// sections, 23 blocks unchanged (this change registers zero new blocks).
+// archive-list has no child-block slot and is added to NO_BLOCK_SECTIONS.
+//
+// If the live registry ever diverges from 33/23, reconcile these guards to the
 // TRUE count with a comment — never delete a guard, never weaken a loop.
 describe("empty-state matrix — drift guards (census)", () => {
-  it("collects exactly 32 sections", () => {
-    expect(sectionEntries.length).toBe(32);
+  it("collects exactly 33 sections", () => {
+    expect(sectionEntries.length).toBe(33);
   });
 
   it("collects exactly 23 block components (4 global + 19 section-local)", () => {
