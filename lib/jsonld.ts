@@ -53,12 +53,14 @@
 import {
   resolveLocale,
   resolvePageCanonical,
+  resolvePostCanonical,
   resolveShareImage,
   resolveSiteDefaults,
   resolveSiteOrigin,
 } from "./seo-resolve";
 import type { SeoEnv } from "./seo-resolve";
 import type { StrapiPage, StrapiSite } from "./strapi-client";
+import type { BlogArticleRecord } from "./blog-client";
 
 /** What `buildJsonLdGraph` returns: a JSON-LD document, or `null` for "emit
  * nothing" (see `buildJsonLdGraph`'s three null cases). */
@@ -79,6 +81,60 @@ function validDate(candidate: string | null | undefined): string | null {
   const trimmed = candidate?.trim();
   if (!trimmed) return null;
   return Number.isNaN(Date.parse(trimmed)) ? null : trimmed;
+}
+
+/**
+ * The `Organization` and `WebSite` nodes shared by both a page's graph and a
+ * post's graph (Phase 23, Plan 02, Task 1 — extracted from `buildJsonLdGraph`
+ * when `buildArticleJsonLdGraph` became the second consumer). Module-private:
+ * `buildJsonLdGraph` and `buildArticleJsonLdGraph` are the only two callers,
+ * so the two graphs assemble their shared half through exactly one place and
+ * cannot drift apart.
+ *
+ * Preserves every gate exactly as `buildJsonLdGraph` applied it inline before
+ * this extraction: `Organization` is emitted only when a non-blank site name
+ * resolves, and `WebSite` gains its `name`/`publisher` members only under
+ * that same condition. Node order and key order are unchanged.
+ */
+function buildSiteWideNodes(
+  site: StrapiSite | null | undefined,
+  origin: string,
+  locale: string
+): {
+  organizationId: string;
+  websiteId: string;
+  nodes: Record<string, unknown>[];
+} {
+  const { siteName } = resolveSiteDefaults(site);
+  const organizationId = `${origin}/#organization`;
+  const websiteId = `${origin}/#website`;
+  const nodes: Record<string, unknown>[] = [];
+
+  // Organization — emitted only when the tenant has a name to put on it. A
+  // nameless Organization node is pure noise: nothing else in the graph
+  // becomes more legible for having a publisher with no identity.
+  if (siteName) {
+    nodes.push({
+      "@type": "Organization",
+      "@id": organizationId,
+      name: siteName,
+      url: origin,
+    });
+  }
+
+  const website: Record<string, unknown> = {
+    "@type": "WebSite",
+    "@id": websiteId,
+    url: origin,
+    inLanguage: locale,
+  };
+  if (siteName) {
+    website.name = siteName;
+    website.publisher = { "@id": organizationId };
+  }
+  nodes.push(website);
+
+  return { organizationId, websiteId, nodes };
 }
 
 /**
@@ -127,35 +183,14 @@ export function buildJsonLdGraph(
     resolveShareImage(page.seo?.shareImage, env?.NEXT_PUBLIC_STRAPI_URL) ??
     resolveShareImage(site?.seo?.shareImage, env?.NEXT_PUBLIC_STRAPI_URL);
 
-  const organizationId = `${origin}/#organization`;
-  const websiteId = `${origin}/#website`;
+  const { websiteId, nodes: siteWideNodes } = buildSiteWideNodes(
+    site,
+    origin,
+    locale
+  );
   const webPageId = `${canonical}#webpage`;
 
-  const graph: Record<string, unknown>[] = [];
-
-  // Organization — emitted only when the tenant has a name to put on it. A
-  // nameless Organization node is pure noise: nothing else in the graph
-  // becomes more legible for having a publisher with no identity.
-  if (siteName) {
-    graph.push({
-      "@type": "Organization",
-      "@id": organizationId,
-      name: siteName,
-      url: origin,
-    });
-  }
-
-  const website: Record<string, unknown> = {
-    "@type": "WebSite",
-    "@id": websiteId,
-    url: origin,
-    inLanguage: locale,
-  };
-  if (siteName) {
-    website.name = siteName;
-    website.publisher = { "@id": organizationId };
-  }
-  graph.push(website);
+  const graph: Record<string, unknown>[] = [...siteWideNodes];
 
   const webPage: Record<string, unknown> = {
     "@type": "WebPage",
@@ -208,6 +243,143 @@ export function buildJsonLdGraph(
           "@type": "ListItem",
           position: 2,
           name,
+          item: canonical,
+        },
+      ],
+    });
+  }
+
+  return { "@context": "https://schema.org", "@graph": graph };
+}
+
+/**
+ * Build a published post's JSON-LD document, or `null` to emit no script at
+ * all (Phase 23, Plan 02, Task 2, BLOG-09).
+ *
+ * D-9: `Article` REPLACES the `WebPage` node a page would emit — the rest of
+ * the graph (`Organization`, `WebSite`, `BreadcrumbList`) stays, built
+ * through the SAME `buildSiteWideNodes` helper `buildJsonLdGraph` uses, so
+ * the two graphs cannot drift. A post's graph therefore never carries a
+ * `WebPage` node, and a page's graph never carries an `Article` node.
+ *
+ * Same three null cases as `buildJsonLdGraph`, restated for a post: no
+ * article, an article whose `publishedAt` is not a non-blank string (a 404
+ * must not claim to be an `Article` any more than it may claim to be a
+ * `WebPage`), no resolvable origin, or no resolvable headline.
+ *
+ * The canonical is resolved through `resolvePostCanonical` — the SAME
+ * function the post's rendered `<link rel="canonical">` comes from
+ * (`buildPostMetadataFrom`) — so this graph's `@id`/`url` can never
+ * contradict the head (T-23-08).
+ *
+ * D-2: every degrade branch still emits a VALID `Article` node. A post with
+ * no author, no image, or no parseable dates simply omits those members —
+ * never `null`, `undefined`, or an empty object. Invalid structured data is
+ * worse than absent structured data: a crawler penalises the former and
+ * merely ignores the latter.
+ */
+export function buildArticleJsonLdGraph(
+  article: BlogArticleRecord | null | undefined,
+  site: StrapiSite | null | undefined,
+  env: SeoEnv | null | undefined
+): JsonLdGraph | null {
+  if (!article || !article.publishedAt) return null;
+
+  const origin = resolveSiteOrigin(site, env);
+  if (origin === null) return null;
+
+  const canonical = resolvePostCanonical(article, origin);
+  const locale = resolveLocale(site);
+  const { siteName, description: siteDefaultDescription } =
+    resolveSiteDefaults(site);
+
+  // Same page-tier-then-record-title asymmetry buildJsonLdGraph documents,
+  // with no site tier for the headline.
+  const headline = article.seo?.title?.trim() || article.title?.trim();
+  if (!headline) return null;
+  const description =
+    article.seo?.description?.trim() || siteDefaultDescription;
+
+  // Image tier: the post's own SEO share image first, then its featured
+  // image, then the site's share image — all resolved against the CMS host,
+  // never the site origin, exactly as buildJsonLdGraph resolves a page's.
+  const image =
+    resolveShareImage(article.seo?.shareImage, env?.NEXT_PUBLIC_STRAPI_URL) ??
+    resolveShareImage(
+      article.featuredImage,
+      env?.NEXT_PUBLIC_STRAPI_URL
+    ) ??
+    resolveShareImage(site?.seo?.shareImage, env?.NEXT_PUBLIC_STRAPI_URL);
+
+  const { websiteId, nodes: siteWideNodes } = buildSiteWideNodes(
+    site,
+    origin,
+    locale
+  );
+  const articleId = `${canonical}#article`;
+
+  const graph: Record<string, unknown>[] = [...siteWideNodes];
+
+  const articleNode: Record<string, unknown> = {
+    "@type": "Article",
+    "@id": articleId,
+    url: canonical,
+    headline,
+    inLanguage: locale,
+    isPartOf: { "@id": websiteId },
+    mainEntityOfPage: canonical,
+  };
+  if (description) articleNode.description = description;
+
+  const datePublished = validDate(article.publishedAt);
+  if (datePublished) articleNode.datePublished = datePublished;
+  const dateModified = validDate(article.updatedAt);
+  if (dateModified) articleNode.dateModified = dateModified;
+
+  // A Person with no name is exactly the stub D-2 forbids — attach only when
+  // a non-blank author name exists.
+  const authorName = article.author?.name?.trim();
+  if (authorName) {
+    articleNode.author = { "@type": "Person", name: authorName };
+  }
+
+  if (image) {
+    const imageObject: Record<string, unknown> = {
+      "@type": "ImageObject",
+      url: image.url,
+    };
+    // Real dimensions only, never guessed — resolveShareImage already drops
+    // non-positive/absent sizes, so an absent key here means Strapi had no
+    // dimensions, not that they were dropped in transit.
+    if (image.width !== undefined) imageObject.width = image.width;
+    if (image.height !== undefined) imageObject.height = image.height;
+    articleNode.image = imageObject;
+  }
+
+  graph.push(articleNode);
+
+  // BreadcrumbList — same two-crumb shape and same siteName gate
+  // buildJsonLdGraph uses. Deliberately NO listing crumb (e.g. "Blog")
+  // between the root and this post: naming it would require inventing a
+  // literal English label string, precisely the invented-data defect this
+  // module's header rejects (rule 1) — a post's own path is never the site
+  // root, so the `canonical !== origin` gate is here for shape-parity with
+  // buildJsonLdGraph, not because a post can ever equal the origin.
+  if (canonical !== origin && siteName) {
+    graph.push({
+      "@type": "BreadcrumbList",
+      "@id": `${canonical}#breadcrumb`,
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: siteName,
+          item: origin,
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: headline,
           item: canonical,
         },
       ],

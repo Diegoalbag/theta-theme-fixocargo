@@ -20,6 +20,7 @@ import {
   resolveSiteTitleTemplate,
   resolveVerification,
   normalizeVerificationToken,
+  resolvePostCanonical,
 } from "../seo-resolve";
 import type { StrapiPage, StrapiSite } from "../strapi-client";
 // Phase 14, Plan 06 (G-14-4): the rendered-head-tag harness. Drives Next's
@@ -352,6 +353,50 @@ describe("resolveCanonicalOverride — SEOED-05 emission-side re-validation (D-1
   it("never throws, even for a pathological input", () => {
     const pathological = "https://" + "a".repeat(10000) + ".com/" + "x".repeat(10000);
     expect(() => resolveCanonicalOverride(pathological)).not.toThrow();
+  });
+});
+
+// Phase 23, Plan 01, Task 2 (D-1): the single producer of a post's canonical
+// URL — structurally identical to resolvePageCanonical, composing via
+// resolvePostPath rather than a second inline path.
+describe("resolvePostCanonical — the D-1 single producer for a post's URL", () => {
+  it("composes the absolute post URL from the slug when no override is present", () => {
+    expect(resolvePostCanonical({ slug: "hello-world" }, "https://acme.com")).toBe(
+      "https://acme.com/blog/hello-world"
+    );
+  });
+
+  it("percent-encodes a slug containing a slash on the way into the composed URL", () => {
+    expect(resolvePostCanonical({ slug: "a/b" }, "https://acme.com")).toBe(
+      "https://acme.com/blog/a%2Fb"
+    );
+  });
+
+  it("a valid absolute https canonicalUrl override wins over the composed URL", () => {
+    expect(
+      resolvePostCanonical(
+        { slug: "hello-world", canonicalUrl: "https://elsewhere.example/canonical-post" },
+        "https://acme.com"
+      )
+    ).toBe("https://elsewhere.example/canonical-post");
+  });
+
+  it("a non-https canonicalUrl override is ignored in favour of the composed URL", () => {
+    expect(
+      resolvePostCanonical(
+        { slug: "hello-world", canonicalUrl: "http://elsewhere.example/canonical-post" },
+        "https://acme.com"
+      )
+    ).toBe("https://acme.com/blog/hello-world");
+  });
+
+  it("treats a null/undefined slug as an empty segment rather than throwing", () => {
+    expect(resolvePostCanonical({ slug: null }, "https://acme.com")).toBe(
+      "https://acme.com/blog/"
+    );
+    expect(resolvePostCanonical(undefined, "https://acme.com")).toBe(
+      "https://acme.com/blog/"
+    );
   });
 });
 

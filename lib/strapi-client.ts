@@ -2,6 +2,7 @@ import { cache } from "react";
 import { GraphQLClient } from "graphql-request";
 import { gql } from "graphql-request";
 import { resolvePageForLiveTheme } from "./live-resolve";
+import type { TemplateSupportManifest } from "./article-contract";
 
 // Helper function to normalize URLs - ensures they have a protocol
 // Exported (no behavior change) so `lib/seo-resolve.ts` reuses this one
@@ -28,7 +29,12 @@ const STRAPI_BASE_URL = rawStrapiUrl ? normalizeUrl(rawStrapiUrl) : "";
 const STRAPI_ACCESS_TOKEN = process.env.NEXT_PUBLIC_STRAPI_TOKEN || "";
 
 // Create GraphQL client
-const graphqlEndpoint = STRAPI_BASE_URL ? `${STRAPI_BASE_URL}/graphql` : "";
+// Exported (Phase 22, BLOG-07) so `lib/blog-client.ts` reuses this SAME
+// unconfigured-endpoint short-circuit check rather than re-reading
+// NEXT_PUBLIC_STRAPI_URL itself -- a second env-var read (and therefore a
+// second, potentially divergent, token/endpoint resolution) is exactly the
+// drift this codebase collapses into single seams (see that file's header).
+export const graphqlEndpoint = STRAPI_BASE_URL ? `${STRAPI_BASE_URL}/graphql` : "";
 
 export const strapiClient = new GraphQLClient(graphqlEndpoint, {
   headers: {
@@ -230,6 +236,29 @@ const getPageBySlugUnfilteredQuery = gql`
 // plus `titleTemplate`/`verification*`) now comes from the single
 // `SITE_SCALAR_FIELDS` const above rather than four inline lines, so the
 // Site scalar names appear once in this file, not twice.
+//
+// Phase 22 (BLOG-07): `liveTheme`'s COMMON sub-selection (the fields both the
+// manifest-bearing and manifest-less queries carry) is factored into
+// `SITE_LIVE_THEME_LIVETHEME_FIELDS` — the same one-definition convention
+// `SEO_FIELDS`/`SITE_SCALAR_FIELDS`/`PAGE_SCALAR_AND_SEO_FIELDS` already
+// establish — so a future field addition on `liveTheme` cannot land on one
+// query and silently miss the other.
+const SITE_LIVE_THEME_LIVETHEME_FIELDS = `
+  documentId
+  name
+  builtAssetUrl
+  # Theme.lastDeployedAt (datetime, written by the platform's deploy
+  # status callback at the moment a rebuild lands) is the D-06
+  # cache-bust token consumed by resolveLiveBundle (17-05, PERF-04).
+  # LIVE-SCHEMA RISK (documented, not mitigated): a field the tenant
+  # schema does not expose fails the WHOLE query, so a tenant on an
+  # older Strapi schema loses the live-theme read entirely.
+  # lastDeployedAt has existed on the Theme content type since before
+  # this milestone, so the risk is accepted rather than guarded with a
+  # second query.
+  lastDeployedAt
+`;
+
 const getSiteLiveThemeQuery = gql`
   query GetSiteLiveTheme {
     site {
@@ -238,19 +267,39 @@ const getSiteLiveThemeQuery = gql`
         ${SEO_FIELDS}
       }
       liveTheme {
-        documentId
-        name
-        builtAssetUrl
-        # Theme.lastDeployedAt (datetime, written by the platform's deploy
-        # status callback at the moment a rebuild lands) is the D-06
-        # cache-bust token consumed by resolveLiveBundle (17-05, PERF-04).
-        # LIVE-SCHEMA RISK (documented, not mitigated): a field the tenant
-        # schema does not expose fails the WHOLE query, so a tenant on an
-        # older Strapi schema loses the live-theme read entirely.
-        # lastDeployedAt has existed on the Theme content type since before
-        # this milestone, so the risk is accepted rather than guarded with a
-        # second query.
-        lastDeployedAt
+        ${SITE_LIVE_THEME_LIVETHEME_FIELDS}
+        # Phase 22 (BLOG-07): the theme's declared templates/sections manifest
+        # (JSON scalar, same shape treatment as Page.metafields), typed as
+        # TemplateSupportManifest. Without this selection
+        # resolveBlogSurfaceSupport (Phase 21) sees undefined and reports
+        # every tenant as unsupported -- see RESEARCH Pitfall 1. A tenant whose
+        # Theme schema predates this field fails the WHOLE document (Strapi
+        # rejects unknown fields), which is why fetchSite below retries with
+        # a manifest-less legacy operation rather than letting that failure
+        # blank the tenant's entire site.
+        sectionsManifest
+      }
+    }
+  }
+`;
+
+// Manifest-less fallback (Phase 22, BLOG-07): byte-identical to
+// `getSiteLiveThemeQuery` MINUS `sectionsManifest`, built from the SAME
+// `SITE_SCALAR_FIELDS`/`SEO_FIELDS`/`SITE_LIVE_THEME_LIVETHEME_FIELDS`
+// consts. `fetchSite` sends this only after the primary query throws — a
+// schema-safety net for a tenant whose Theme content type does not yet
+// expose `sectionsManifest`, so that tenant still gets its site (minus the
+// manifest) instead of `fetchSite` returning `null` and blanking the whole
+// site (the 2026-08-04 incident recorded above).
+const getSiteLiveThemeLegacyQuery = gql`
+  query GetSiteLiveThemeLegacy {
+    site {
+      ${SITE_SCALAR_FIELDS}
+      seo {
+        ${SEO_FIELDS}
+      }
+      liveTheme {
+        ${SITE_LIVE_THEME_LIVETHEME_FIELDS}
       }
     }
   }
@@ -352,6 +401,14 @@ export interface StrapiSite {
     builtAssetUrl?: string | null;
     /** D-06 cache-bust token; see the comment above the query selection. */
     lastDeployedAt?: string | null;
+    /**
+     * Phase 22 (BLOG-07): the theme's declared templates/sections manifest,
+     * read via `getSiteLiveThemeQuery`. Absent (`undefined`) whenever the
+     * `GetSiteLiveThemeLegacy` fallback served the response instead — a
+     * tenant on an older Theme schema still gets `liveTheme`, just without
+     * this field, rather than losing `fetchSite` entirely.
+     */
+    sectionsManifest?: TemplateSupportManifest | null;
   } | null;
 }
 
@@ -950,13 +1007,23 @@ export async function resolveImageFormats(page: StrapiPage): Promise<StrapiPage>
 
 /**
  * Fetch the Site singleton's liveTheme pointer (D-04). Returns the live theme's
- * documentId / name / builtAssetUrl, or null when unset (D-09 ambiguous tenant) or
- * unconfigured. Read-only path: uses the public NEXT_PUBLIC_STRAPI_TOKEN (V4).
+ * documentId / name / builtAssetUrl / sectionsManifest, or null when unset (D-09
+ * ambiguous tenant) or unconfigured. Read-only path: uses the public
+ * NEXT_PUBLIC_STRAPI_TOKEN (V4).
  *
  * Wrapped in React `cache()` so the multiple call sites that need this per request
  * (generateMetadata's fetchPageBySlug, Page()'s fetchPageBySlug, Page()'s explicit
  * resolveLiveBundle call) share ONE network round-trip instead of 3 — request-scoped
  * only, so "always fetch fresh data" across requests is unaffected.
+ *
+ * Phase 22 (BLOG-07): primary-then-fallback ladder mirroring `fetchPageBySlug`'s
+ * A2 ladder. `fetchSite` is on the critical path of EVERY page on the tenant, and
+ * Strapi fails the WHOLE document on one unknown field — an unguarded widening of
+ * `getSiteLiveThemeQuery` to select `liveTheme.sectionsManifest` would blank a
+ * tenant's entire site on any Theme schema that predates the field (the exact
+ * 2026-08-04 incident recorded above `getSiteLiveThemeQuery`). On a primary throw,
+ * retry once with the manifest-less `getSiteLiveThemeLegacyQuery`; only on a
+ * SECOND throw fall back to today's `console.error` + `return null`.
  */
 export const fetchSite = cache(async (): Promise<StrapiSite | null> => {
   if (!graphqlEndpoint) {
@@ -967,10 +1034,21 @@ export const fetchSite = cache(async (): Promise<StrapiSite | null> => {
   try {
     const response = await strapiClient.request<StrapiSiteResponse>(getSiteLiveThemeQuery);
     return response.site ?? null;
-  } catch (error) {
-    console.error("Failed to fetch site liveTheme from Strapi:", error);
-    // Build-time-safe: never throw, let callers fall back to env.
-    return null;
+  } catch (primaryError) {
+    console.warn(
+      "Manifest-bearing site query failed; falling back to GetSiteLiveThemeLegacy.",
+      primaryError instanceof Error ? primaryError.message : String(primaryError)
+    );
+    try {
+      const response = await strapiClient.request<StrapiSiteResponse>(
+        getSiteLiveThemeLegacyQuery
+      );
+      return response.site ?? null;
+    } catch (legacyError) {
+      console.error("Failed to fetch site liveTheme from Strapi:", legacyError);
+      // Build-time-safe: never throw, let callers fall back to env.
+      return null;
+    }
   }
 });
 

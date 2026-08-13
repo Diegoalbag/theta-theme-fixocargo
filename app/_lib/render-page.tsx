@@ -92,7 +92,15 @@ export async function buildPageMetadata(slug: string | null): Promise<Metadata> 
   );
 }
 
-function ConfigurationError({
+/**
+ * Exported (Phase 22, Plan 02) so `app/_lib/render-blog.tsx` reuses this SAME
+ * error screen rather than a second copy -- the post-detail render tail
+ * reproduces `RenderPage`'s own bundle-url-missing branch verbatim, and a
+ * duplicated component is exactly the kind of drift this template's other
+ * shared seams (`section-resolver.tsx`, `seo-resolve.ts`) already collapse
+ * away.
+ */
+export function ConfigurationError({
   themeBundleUrl,
   themeName,
 }: {

@@ -55,6 +55,7 @@
 import type { Metadata } from "next";
 import { normalizeUrl } from "./strapi-client";
 import type { StrapiPage, StrapiSite, StrapiSeoImage } from "./strapi-client";
+import { resolvePostPath } from "./blog-pagination";
 
 /** The documented locale default (D-11: never blank, never a throw). */
 export const DEFAULT_LOCALE = "en";
@@ -619,6 +620,33 @@ export function resolvePageCanonical(
     resolveCanonicalPath(page ?? {}, homepageSlug)
   );
   return resolveCanonicalOverride(page?.canonicalUrl) ?? computed;
+}
+
+/**
+ * THE canonical URL for a blog post -- the D-1 single producer this phase's
+ * tracer plan exists to establish (Phase 23, Plan 01, Task 2). Structurally
+ * identical to `resolvePageCanonical` immediately above: composes the
+ * absolute URL from `resolvePostPath` (`./blog-pagination`, dependency-free,
+ * so no import cycle is possible), then lets a valid
+ * `resolveCanonicalOverride` win.
+ *
+ * Consumers: `lib/blog-metadata.ts`'s `buildPostMetadataFrom` (the rendered
+ * `<link rel="canonical">`) and `lib/discovery-resolve.ts`'s
+ * `buildBlogPostSitemapEntries` (the sitemap `<loc>`) -- ONE function, TWO
+ * consumers, so the sitemap entry and the rendered canonical for the same
+ * post can never disagree. A second inline composition of a post's URL
+ * anywhere in this app is the exact defect D-1 exists to prevent.
+ *
+ * `origin` is a RESOLVED, non-null origin from `resolveSiteOrigin` -- same
+ * contract as `resolvePageCanonical`.
+ */
+export function resolvePostCanonical(
+  post: { slug?: string | null; canonicalUrl?: string | null } | null | undefined,
+  origin: string
+): string {
+  const slug = post?.slug ?? "";
+  const computed = absoluteUrl(origin, resolvePostPath(slug));
+  return resolveCanonicalOverride(post?.canonicalUrl) ?? computed;
 }
 
 /**
