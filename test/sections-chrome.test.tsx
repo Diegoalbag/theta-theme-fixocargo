@@ -6,6 +6,7 @@ import { AnnouncementBar, announcementBarSettingsSchema } from "@/sections/Annou
 import { SiteHeader, siteHeaderSettingsSchema } from "@/sections/SiteHeader";
 import { Footer, footerSettingsSchema } from "@/sections/Footer";
 import { NavLink, navLinkSettingsSchema } from "@/blocks/NavLink";
+import { sectionBlocksConfig } from "@/registry";
 
 // Render-smoke tests for the Phase 2 chrome sections.
 // The vitest environment is `node` (no global document), so we render DOM-free
@@ -115,6 +116,18 @@ describe("SiteHeader", () => {
       />,
     );
     expect(html).toContain("Inicio");
+  });
+
+  // Phase 11 regression guard: the nav-link submenu exists precisely SO THAT
+  // the seven-service menu fits under one nav item without raising this cap.
+  // If either assertion drifts, the reason the submenu was built is gone.
+  it("site-header still caps at 8 blocks", () => {
+    expect(sectionBlocksConfig["site-header"].maxBlocks).toBe(8);
+  });
+
+  it("site-header still accepts nav-link blocks", () => {
+    const types = sectionBlocksConfig["site-header"].blocks.map((b) => b.type);
+    expect(types).toContain("nav-link");
   });
 
   it("siteHeaderSettingsSchema has exactly 4 entries", () => {
