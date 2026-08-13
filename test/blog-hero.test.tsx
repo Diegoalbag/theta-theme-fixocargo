@@ -11,7 +11,12 @@ import { BlogHero, blogHeroSettingsSchema } from "@/sections/BlogHero";
 // Blog-article / Legal headers (search OFF → article-header date line) from a
 // single stateless section. The `showSearch` toggle switches between a
 // decorative (inert) search pill and a date line. No state, no handlers — the
-// search input is readOnly/aria-hidden/tabIndex=-1 (Sucursales precedent).
+// search input is readOnly/aria-hidden/tabIndex=-1.
+//
+// This is now an INTENTIONAL DIVERGENCE from Sucursales, not a shared precedent:
+// the Sucursales search became a real, labelled, focusable control because it
+// has a branch list to filter live. BlogHero has no results surface to filter,
+// so its search stays deliberately inert — the assertions below pin that intent.
 //
 // The vitest env is `node`; the section renders under renderToStaticMarkup.
 // ---------------------------------------------------------------------------
