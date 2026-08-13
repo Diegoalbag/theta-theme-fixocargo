@@ -44,16 +44,36 @@ describe("ServiciosHero", () => {
     expect(html).toContain('href="#"');
   });
 
-  it("always renders the 4 fixed tile labels regardless of arbitrary/unrelated props", () => {
-    const html = renderToStaticMarkup(
-      // @ts-expect-error — deliberately passing unrelated/arbitrary props to
-      // prove the tiles are never props-driven.
-      <ServiciosHero unrelatedProp="whatever" kicker="" headline="" body="" />,
+  it("renders the four tile labels from settings, falling back to the defaults (CLN-01)", () => {
+    // No tile props: the four schema defaults reproduce the pre-CLN-01 render
+    // byte-for-byte, which is what keeps every already-saved servicios-hero
+    // (which stores no tile-label values) looking exactly as it does today.
+    const defaults = renderToStaticMarkup(
+      <ServiciosHero kicker="" headline="" body="" />,
     );
-    expect(html).toContain("Carga Aérea");
-    expect(html).toContain("Carga Marítima");
-    expect(html).toContain("Delivery");
-    expect(html).toContain("Aduanas");
+    expect(defaults).toContain("Carga Aérea");
+    expect(defaults).toContain("Carga Marítima");
+    expect(defaults).toContain("Delivery");
+    expect(defaults).toContain("Aduanas");
+
+    // A merchant-supplied label replaces ONLY its own tile; the other three
+    // still fall back to their defaults.
+    const renamed = renderToStaticMarkup(<ServiciosHero tile1Label="Courier" />);
+    expect(renamed).toContain("Courier");
+    expect(renamed).not.toContain("Carga Aérea");
+    expect(renamed).toContain("Carga Marítima");
+    expect(renamed).toContain("Delivery");
+    expect(renamed).toContain("Aduanas");
+
+    // An explicitly emptied label renders an empty tile without throwing —
+    // the tile chrome (outline surface) and its icon still render.
+    let emptied = "";
+    expect(() => {
+      emptied = renderToStaticMarkup(<ServiciosHero tile1Label="" />);
+    }).not.toThrow();
+    expect(emptied).not.toContain("Carga Aérea");
+    expect(emptied).toContain("bg-white/5");
+    expect(emptied).toContain("<svg");
   });
 
   it("has no renderBlocks prop and never renders the EmptyState marker", () => {
@@ -110,8 +130,8 @@ describe("ServiciosHero", () => {
     expect(html).toContain("bg-white/5");
   });
 
-  it("serviciosHeroSettingsSchema has exactly 8 entries with backgroundImage first", () => {
-    expect(serviciosHeroSettingsSchema).toHaveLength(8);
+  it("serviciosHeroSettingsSchema has exactly 12 entries with backgroundImage first and the 4 tile labels last", () => {
+    expect(serviciosHeroSettingsSchema).toHaveLength(12);
     const ids = serviciosHeroSettingsSchema.map((s) => s.id);
     expect(ids).toEqual([
       "backgroundImage",
@@ -122,12 +142,31 @@ describe("ServiciosHero", () => {
       "primaryCtaUrl",
       "secondaryCtaLabel",
       "secondaryCtaUrl",
+      "tile1Label",
+      "tile2Label",
+      "tile3Label",
+      "tile4Label",
     ]);
     const bgSetting = serviciosHeroSettingsSchema.find(
       (s) => s.id === "backgroundImage",
     );
     expect(bgSetting?.type).toBe("image_picker");
     expect(bgSetting?.label).toBe("Imagen de fondo");
+  });
+
+  it("each tile-label setting is a text field defaulting to the literal that tile renders today (CLN-01)", () => {
+    const byId = (id: string) =>
+      serviciosHeroSettingsSchema.find((s) => s.id === id);
+    const expected: Array<[string, string]> = [
+      ["tile1Label", "Carga Aérea"],
+      ["tile2Label", "Carga Marítima"],
+      ["tile3Label", "Delivery"],
+      ["tile4Label", "Aduanas"],
+    ];
+    for (const [id, value] of expected) {
+      expect(byId(id)?.type).toBe("text");
+      expect(byId(id)?.default).toBe(value);
+    }
   });
 });
 
