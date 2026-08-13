@@ -111,6 +111,10 @@ export const setHidden = (el: HTMLElement, hidden: boolean): void => {
   priorDisplay.delete(el);
 };
 
+// The WeakMap doubles as the authoritative "is this hidden BY US" predicate:
+// an entry exists from the moment we hide an element until we restore it.
+const isFilteredOut = (el: HTMLElement): boolean => priorDisplay.has(el);
+
 const MAPS_EMBED = (q: string) =>
   `https://maps.google.com/maps?q=${encodeURIComponent(q)}&output=embed`;
 const MAPS_DIRECTIONS = (q: string) =>
@@ -222,7 +226,19 @@ export const Sucursales = ({
 
       // Re-center on the first surviving match only while a query is active:
       // clearing the box restores every card WITHOUT moving the map.
-      if (recenter && q !== "" && first) applyBranch(first);
+      //
+      // WR-01: and only when the visitor's own selection did NOT survive the
+      // query. The stated policy of this module (see the applyFilter header) is
+      // that a pass must never yank the map off a branch the visitor
+      // deliberately clicked; that protection was applied to the re-render path
+      // but not to the typing path, where every keystroke was stealing a still-
+      // matching selection — and rewriting iframe.src for each new first match.
+      const sel = selectedElRef.current;
+      const selSurvives =
+        !!sel &&
+        list.contains(sel) &&
+        !isFilteredOut(resolveHideTarget(sel, list));
+      if (recenter && q !== "" && first && !selSurvives) applyBranch(first);
     },
     [applyBranch],
   );
