@@ -3,6 +3,7 @@ import { Search } from "lucide-react";
 
 import { SectionHeading } from "@/components/ui/section-heading";
 import { BlocksSlot } from "@/lib/blocks-slot";
+import { safeHref } from "@/lib/safe-href";
 
 // Sucursales (INF-01) — the light "find a branch" section. A light SectionHeading
 // over a two-column row (stacked on mobile): LEFT = a REAL search input that
@@ -156,7 +157,16 @@ export const Sucursales = ({
       lastSrcRef.current = src;
     }
     if (directionsRef.current) {
-      directionsRef.current.href = mapurl || MAPS_DIRECTIONS(q);
+      // CR-02: `mapurl` is the merchant-editable `mapUrl` setting, written
+      // IMPERATIVELY into a live href — no JSX-level handling applies, so a
+      // `javascript:` value would execute in the page origin (in the customizer
+      // that origin is the platform editor, not the merchant's own site). Route
+      // it through the theme's shared scheme guard. safeHref returns "#" for an
+      // empty OR blocked value; both degrade to the generated directions URL,
+      // which is a live destination instead of the inert "#" the schema default
+      // used to produce.
+      const safe = safeHref(mapurl);
+      directionsRef.current.href = safe === "#" ? MAPS_DIRECTIONS(q) : safe;
     }
     if (contactRef.current) {
       if (phone) {

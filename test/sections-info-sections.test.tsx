@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, it, expect } from "vitest";
@@ -113,6 +115,20 @@ describe("Sucursales", () => {
     expect(html).toContain("flex-col");
     expect(html).not.toContain("grid-cols-1");
     expect(html).toContain("child");
+  });
+
+  it("routes the merchant mapUrl through safeHref before it reaches a live href", () => {
+    // CR-02: the directions href is assigned IMPERATIVELY from the merchant's
+    // `mapUrl` setting, so no JSX-level handling protects it and no render can
+    // observe it. Source scan (same idiom as test/richtext-sink-audit.test.ts):
+    // the raw attribute value must never reach `.href` unguarded.
+    const src = readFileSync(
+      resolve(__dirname, "../src/sections/Sucursales/Sucursales.tsx"),
+      "utf-8",
+    );
+    expect(src).toContain('import { safeHref } from "@/lib/safe-href"');
+    expect(src).toMatch(/safeHref\(mapurl\)/);
+    expect(src).not.toMatch(/\.href\s*=\s*mapurl\b/);
   });
 
   it("sucursalesSettingsSchema has exactly 3 entries [heading,subtitle,mapQuery]", () => {
