@@ -121,6 +121,23 @@ describe("RateRow", () => {
     expect(tabSetting?.options?.map((o) => o.value)).toEqual([...COURIER_TABS]);
   });
 
+  // WR-02. CourierTabs' panel titles are free text; this select's values are
+  // fixed keys. The mapping is positional, so the option labels must say so —
+  // otherwise renaming panel 3 to "Asia" leaves the merchant picking "China"
+  // with no explanation, and mis-routed rows land in a silently blank tab.
+  it("labels the Panel select positionally so a renamed panel cannot desync it (WR-02)", () => {
+    const tabSetting = rateRowSettingsSchema.find((s) => s.id === "tab");
+    expect(tabSetting?.options?.map((o) => o.label)).toEqual([
+      "Panel 1 — Estados Unidos",
+      "Panel 2 — Europa",
+      "Panel 3 — China",
+      "Panel 4 — Exportación a EE.UU.",
+    ]);
+    // And the editor states the positional rule outright.
+    expect(tabSetting?.info).toBeTruthy();
+    expect(tabSetting?.info).toContain("POSICIÓN");
+  });
+
   it("keeps weight/rate defaults empty — tarifa values are customizer content", () => {
     const weight = rateRowSettingsSchema.find((s) => s.id === "weight");
     const rate = rateRowSettingsSchema.find((s) => s.id === "rate");

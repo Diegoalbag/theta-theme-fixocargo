@@ -60,6 +60,21 @@ export const RateRow = ({
   );
 };
 
+// The routing select is labelled POSITIONALLY (WR-02). CourierTabs' four panel
+// titles are free-text settings (tab1Label…tab4Label) while this select's values
+// are the fixed COURIER_TABS keys — the mapping between them is purely
+// positional. Showing only the canonical Spanish names here meant a merchant who
+// renamed panel 3 to e.g. "Asia" still had to pick "China" to route rows into
+// it, with nothing in the editor explaining why. Prefixing each option with its
+// panel position ties the option to the thing that actually cannot drift (the
+// slot), and matches how CourierTabs already labels its own settings
+// ("Panel 3 — Título"). The canonical name is kept after the dash so the option
+// stays recognizable on an unrenamed section. Values are untouched.
+const RATE_ROW_TAB_OPTIONS = COURIER_TAB_OPTIONS.map((option, index) => ({
+  value: option.value,
+  label: `Panel ${index + 1} — ${option.label}`,
+}));
+
 // Exactly 3 editable fields, ids → camelCase props. Curated courier-tab enum;
 // the select `value`s equal the COURIER_TABS keys. The weight/rate defaults stay
 // EMPTY on purpose — tarifa values are merchant-entered customizer content
@@ -70,7 +85,8 @@ export const rateRowSettingsSchema = [
     label: "Panel",
     type: "select",
     default: "estados-unidos",
-    options: [...COURIER_TAB_OPTIONS],
+    info: "Corresponde a la POSICIÓN del panel en la sección Courier, no a su título. Si renombras un panel, esta lista no cambia.",
+    options: RATE_ROW_TAB_OPTIONS,
   },
   {
     id: "weight",
