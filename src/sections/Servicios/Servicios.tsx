@@ -102,13 +102,16 @@ export const Servicios = ({
             />
             {/* `!== false` (not a truthy check) so the default-on second banner
                 still shows on sections saved BEFORE this setting existed, where
-                showSecondBanner arrives `undefined`. Explicit FX Logistics
-                fallbacks keep banner 2 distinct from banner 1's franquicias
-                default when a legacy section has no banner-2 values yet. */}
+                showSecondBanner arrives `undefined`. CLN-02: banner 2 ships no
+                default kicker, so a legacy section with no banner-2 kicker
+                value renders no kicker element at all. The `??` fallback is
+                kept and emptied rather than dropped — dropping it would let
+                `undefined` reach PromoBanner, whose own destructured default
+                would then fill banner 2 with an unrelated string. */}
             {showSecondBanner !== false && (
               <PromoBanner
                 backgroundImage={banner2Image}
-                kicker={banner2Kicker ?? "FX Logistics"}
+                kicker={banner2Kicker ?? ""}
                 headline={
                   banner2Headline ??
                   "¿Estás considerando reservar un espacio de almacenamiento?"
@@ -186,7 +189,8 @@ export const serviciosSettingsSchema = [
     id: "banner2Kicker",
     label: "Banner 2 · Etiqueta",
     type: "text",
-    default: "FX Logistics",
+    // CLN-02: banner 2 ships no default kicker (see the render comment above).
+    default: "",
   },
   {
     id: "banner2Headline",

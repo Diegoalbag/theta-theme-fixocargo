@@ -52,7 +52,7 @@ export const ServiciosCta = ({
   banner1CtaLabel = "Haz clic aquí",
   banner1CtaUrl = "#",
   banner2Image,
-  banner2Kicker = "FX Logistics",
+  banner2Kicker = "",
   banner2Headline = "¿Estás considerando reservar un espacio de almacenamiento?",
   banner2CtaLabel = "Haz clic aquí",
   banner2CtaUrl = "#",
@@ -148,7 +148,10 @@ export const serviciosCtaSettingsSchema = [
     id: "banner2Kicker",
     label: "Banner 2 · Etiqueta",
     type: "text",
-    default: "FX Logistics",
+    // CLN-02: banner 2 ships no default kicker. The empty string reaches
+    // PromoBanner explicitly, so its own destructured default (which only
+    // fires for `undefined`) never fills this slot.
+    default: "",
   },
   {
     id: "banner2Headline",
