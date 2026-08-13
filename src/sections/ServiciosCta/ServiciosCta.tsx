@@ -17,6 +17,27 @@ import { PromoBanner } from "@/blocks/PromoBanner";
 // ALWAYS rendered — the design shows a fixed pair of side-by-side cards, not
 // an optional single banner.
 //
+// CLN-02 REACH — WHICH SECTIONS THE EMPTIED banner2Kicker DEFAULT ACTUALLY
+// AFFECTS (WR-03, settled against the platform source, not assumed):
+// project-theta-fe builds Puck `defaultProps` from this schema
+// (lib/themeHelpers.ts getSectionDefaults -> lib/adapters/puck/puckConfig.ts),
+// and Puck MATERIALIZES defaultProps into an item's props at INSERT time, then
+// persists them with the page. So schema defaults are stored, not resolved at
+// render.
+//
+// Consequences, both intended:
+//   * A `servicios-cta` section inserted BEFORE this change stores the
+//     then-current default in its own saved data and KEEPS RENDERING IT. No
+//     shipped merchant page changes appearance because of this edit, which is
+//     what the backward-compatibility rule requires.
+//   * Therefore the code change alone does NOT strip the stale brand name from
+//     already-published pages. Clearing those saved values is customizer work,
+//     tracked in .planning/CONTENT-CHECKLIST.md and checked by UAT item 14 in
+//     .planning/phases/11-courier-tabs-rate-tables/11-UAT-CHECKLIST.md.
+//   * Sections inserted from here on store "" and render no kicker element.
+// The destructured `banner2Kicker = ""` default is kept and emptied (never
+// deleted) so `undefined` can never reach PromoBanner's own unrelated default.
+//
 // No state, no event handlers, no hex literals, @/ imports only.
 interface BannerImage {
   id: string;
