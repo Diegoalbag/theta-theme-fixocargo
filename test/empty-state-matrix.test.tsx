@@ -191,15 +191,24 @@ const sectionEntries = Object.entries(sectionsComponents);
 // sections, 23 blocks unchanged (this change registers zero new blocks).
 // archive-list has no child-block slot and is added to NO_BLOCK_SECTIONS.
 //
-// If the live registry ever diverges from 33/23, reconcile these guards to the
+// Phase 11 tracer, plan 11-01 (+1 section / +1 block): adds courier-tabs, a
+// normal content section WITH a real rate-row blocks slot, and its
+// section-local rate-row block → 34 sections, 24 blocks. courier-tabs is
+// NEITHER chrome NOR no-block: it stays OUT of both CHROME_NULL_EMPTY and
+// NO_BLOCK_SECTIONS and MUST fall through to the "Sin elementos" assertion in
+// the zero-block loop. rate-row is section-local only (never promoted to the
+// global maps, exactly like faq-item / service-card / process-step /
+// partner-card) → net local 19+1=20, plus the 4 global = 24 total blocks.
+//
+// If the live registry ever diverges from 34/24, reconcile these guards to the
 // TRUE count with a comment — never delete a guard, never weaken a loop.
 describe("empty-state matrix — drift guards (census)", () => {
-  it("collects exactly 33 sections", () => {
-    expect(sectionEntries.length).toBe(33);
+  it("collects exactly 34 sections", () => {
+    expect(sectionEntries.length).toBe(34);
   });
 
-  it("collects exactly 23 block components (4 global + 19 section-local)", () => {
-    expect(allBlocks.length).toBe(23);
+  it("collects exactly 24 block components (4 global + 20 section-local)", () => {
+    expect(allBlocks.length).toBe(24);
   });
 });
 

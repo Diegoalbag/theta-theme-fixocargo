@@ -60,6 +60,8 @@ import {
   DecorativeBackdrop,
   decorativeBackdropSettingsSchema,
 } from "./sections/DecorativeBackdrop";
+import { CourierTabs, courierTabsSettingsSchema } from "./sections/CourierTabs";
+import { RateRow, rateRowSettingsSchema } from "./blocks/RateRow";
 
 // ---------------------------------------------------------------------------
 // The registry is the heart of a theme. Five maps, all keyed by the same
@@ -105,6 +107,7 @@ export const sectionsComponents: Record<
   "fixolidario": Fixolidario as React.ComponentType<Record<string, unknown>>,
   "franquicias-internacionales": FranquiciasInternacionales as React.ComponentType<Record<string, unknown>>,
   "decorative-backdrop": DecorativeBackdrop as React.ComponentType<Record<string, unknown>>,
+  "courier-tabs": CourierTabs as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
@@ -142,6 +145,7 @@ export const sectionSettingsSchemas = {
   "fixolidario": fixolidarioSettingsSchema,
   "franquicias-internacionales": franquiciasInternacionalesSettingsSchema,
   "decorative-backdrop": decorativeBackdropSettingsSchema,
+  "courier-tabs": courierTabsSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).
@@ -523,6 +527,25 @@ export const sectionBlocksConfig: Record<
         name: "Aliado",
         component: PartnerCard as React.ComponentType<Record<string, unknown>>,
         settings: partnerCardSettingsSchema,
+      },
+    ],
+  },
+  "courier-tabs": {
+    // ONE ordered slot, ONE section-local block type (D-07): rate-row is
+    // exclusive to CourierTabs and is NOT registered in the global block maps,
+    // so it is never reachable via the `@theme` wildcard. Cap 12 mirrors faq /
+    // nosotros-timeline: all FOUR courier panels share this single flat slot
+    // (CSS routes each row to its panel via the row's own data-courier-row
+    // tag), so four panels x up to five tarifa rows each would be capped far
+    // too low by a per-panel-sized number.
+    blocks: [{ type: "rate-row" }],
+    maxBlocks: 12,
+    localBlocks: [
+      {
+        type: "rate-row",
+        name: "Fila de tarifa",
+        component: RateRow as React.ComponentType<Record<string, unknown>>,
+        settings: rateRowSettingsSchema,
       },
     ],
   },

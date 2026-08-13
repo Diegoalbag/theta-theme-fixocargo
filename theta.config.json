@@ -36,7 +36,8 @@
     { "key": "servicios-cta", "name": "Servicios — CTA" },
     { "key": "fixolidario", "name": "Fixolidario" },
     { "key": "franquicias-internacionales", "name": "Franquicias internacionales" },
-    { "key": "decorative-backdrop", "name": "Fondo decorativo" }
+    { "key": "decorative-backdrop", "name": "Fondo decorativo" },
+    { "key": "courier-tabs", "name": "Courier — Tarifas por destino" }
   ],
   "templates": [
     {
