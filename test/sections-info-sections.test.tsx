@@ -236,6 +236,18 @@ describe("Branch", () => {
     expect(html).not.toContain("data-branch-horario");
   });
 
+  it("always emits data-branch-card, even with no name and no mapQuery (WR-05)", () => {
+    // Content-independent marker. Every other data-branch-* attribute is
+    // conditional on merchant content, so a card with nothing filled in used to
+    // disappear from the filter's enumeration: never hidden for any query, and
+    // it falsified the "exactly one card" count that bounds the hide-target
+    // walk for its siblings.
+    const blank = renderToStaticMarkup(<Branch name="" mapQuery="" />);
+    expect(blank).toContain('data-branch-card=""');
+    expect(blank).not.toContain("data-branch-query");
+    expect(renderToStaticMarkup(<Branch />)).toContain('data-branch-card=""');
+  });
+
   it("emits the name + address attributes the Sucursales search filter reads", () => {
     // Input contract for the section's live filter: the haystack is built from
     // these two card-root attributes. Pinning them here so the filter cannot be
@@ -585,12 +597,13 @@ describe("BlogList registry", () => {
 // ---------------------------------------------------------------------------
 
 // n cards, each in its own host wrapper, inside a display:contents host slot.
-const customizerList = (cards: number) => {
-  const wrappers = Array.from(
-    { length: cards },
-    (_, i) =>
-      `<div data-host-wrapper="${i}"><div data-branch-query="q${i}" data-branch-name="n${i}"></div></div>`,
-  ).join("");
+// `queryless` lists card indexes that carry NO data-branch-query — what a Branch
+// emits when the merchant clears both name and mapQuery (WR-05).
+const customizerList = (cards: number, queryless: number[] = []) => {
+  const wrappers = Array.from({ length: cards }, (_, i) => {
+    const query = queryless.includes(i) ? "" : ` data-branch-query="q${i}"`;
+    return `<div data-host-wrapper="${i}"><div data-branch-card=""${query} data-branch-name="n${i}"></div></div>`;
+  }).join("");
   const dom = new JSDOM(
     `<!doctype html><html><body><div class="fx-branch-list">` +
       `<div data-host-slot style="display: contents">${wrappers}</div>` +
@@ -603,7 +616,8 @@ const customizerList = (cards: number) => {
     list: q(".fx-branch-list") as HTMLElement,
     slot: q("[data-host-slot]") as HTMLElement,
     wrapper: (i: number) => q(`[data-host-wrapper="${i}"]`) as HTMLElement,
-    card: (i: number) => q(`[data-branch-query="q${i}"]`) as HTMLElement,
+    card: (i: number) =>
+      q(`[data-host-wrapper="${i}"] [data-branch-card]`) as HTMLElement,
   };
 };
 
@@ -625,7 +639,8 @@ describe("Sucursales filter helpers (jsdom)", () => {
   it("resolves to the card itself when published (no host wrappers)", () => {
     const dom = new JSDOM(
       `<!doctype html><html><body><div class="fx-branch-list">` +
-        `<div data-branch-query="a"></div><div data-branch-query="b"></div>` +
+        `<div data-branch-card="" data-branch-query="a"></div>` +
+        `<div data-branch-card="" data-branch-query="b"></div>` +
         `</div></body></html>`,
     );
     const doc = dom.window.document;
@@ -634,6 +649,20 @@ describe("Sucursales filter helpers (jsdom)", () => {
       '[data-branch-query="a"]',
     ) as unknown as HTMLElement;
     expect(resolveHideTarget(card, list)).toBe(card);
+  });
+
+  it("counts a content-less sibling card, so the walk cannot over-climb (WR-05)", () => {
+    // Card 1 has no data-branch-query (merchant cleared name AND mapQuery).
+    // Counting query-bearing roots would see "exactly one" inside the SLOT and
+    // send card 0's walk all the way up to it — hiding card 0 would then hide
+    // the whole list. Counting data-branch-card roots keeps it at the wrapper.
+    const { list, slot, wrapper, card } = customizerList(2, [1]);
+    expect(card(1).hasAttribute("data-branch-query")).toBe(false);
+    const target = resolveHideTarget(card(0), list);
+    expect(target).toBe(wrapper(0));
+    expect(target).not.toBe(slot);
+    // …and the content-less card is itself an addressable hide target.
+    expect(resolveHideTarget(card(1), list)).toBe(wrapper(1));
   });
 
   it("setHidden(el, false) writes NOTHING to an element it never hid", () => {

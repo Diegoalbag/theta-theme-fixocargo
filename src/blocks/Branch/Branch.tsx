@@ -50,6 +50,14 @@ export const Branch = ({
   return (
     <div
       className="flex w-full cursor-pointer items-center justify-between gap-4 rounded-lg bg-card px-4 lg:px-7 py-2 lg:py-5 shadow-md"
+      // CONTENT-INDEPENDENT card marker (WR-05). Every other data-branch-*
+      // attribute is conditional on merchant content — clear BOTH name and
+      // mapQuery and even data-branch-query disappears. The section's filter
+      // uses this marker to enumerate cards and to count them while resolving a
+      // hide target, so it MUST be present unconditionally: a card that vanishes
+      // from that count both escapes filtering itself and corrupts the walk for
+      // its siblings.
+      data-branch-card=""
       data-branch-query={query || undefined}
       data-branch-name={name}
       data-branch-phone={phone || undefined}

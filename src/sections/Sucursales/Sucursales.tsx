@@ -37,6 +37,15 @@ import { safeHref } from "@/lib/safe-href";
 // same with its `.blaze-track` marker).
 const BRANCH_LIST_CLASS = "fx-branch-list";
 
+// Content-INDEPENDENT card marker emitted by every Branch block (WR-05). The
+// filter enumerates and counts cards through this, never through
+// `[data-branch-query]`: that attribute disappears when a merchant clears both
+// name and mapQuery, which made such a card unfilterable AND broke the hide-
+// target walk for its siblings by falsifying the "exactly one card" count.
+// `[data-branch-query]` still marks the cards that are MAPPABLE (click target,
+// default selection) — a different question from "is this a card".
+const BRANCH_CARD_SELECTOR = "[data-branch-card]";
+
 // Accent + case folding, module scope, pure, zero dependencies: NFD splits an
 // accented character into base letter + combining mark, the combining-marks
 // range is then stripped, so "independencia" matches "Av. Independéncia" in
@@ -76,7 +85,7 @@ export const resolveHideTarget = (
     parent !== list &&
     list.contains(parent) &&
     parent.style.display !== "contents" &&
-    parent.querySelectorAll("[data-branch-query]").length === 1
+    parent.querySelectorAll(BRANCH_CARD_SELECTOR).length === 1
   ) {
     el = parent;
     parent = el.parentElement;
@@ -214,7 +223,7 @@ export const Sucursales = ({
       let first: HTMLElement | null = null;
       let matched: number = 0;
       list
-        .querySelectorAll<HTMLElement>("[data-branch-query]")
+        .querySelectorAll<HTMLElement>(BRANCH_CARD_SELECTOR)
         .forEach((card) => {
           // Haystack = name + address only (horario is deliberately excluded).
           const haystack = fold(
@@ -226,7 +235,9 @@ export const Sucursales = ({
           setHidden(resolveHideTarget(card, list), !match);
           if (match) {
             matched += 1;
-            if (!first) first = card;
+            // Only a MAPPABLE card can be re-centered on: a card with neither
+            // name nor mapQuery has no query for the embed.
+            if (!first && card.hasAttribute("data-branch-query")) first = card;
           }
         });
 
