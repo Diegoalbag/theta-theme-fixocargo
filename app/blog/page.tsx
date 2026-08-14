@@ -14,7 +14,11 @@ import { RenderArchive, buildArchiveMetadata } from "../_lib/render-blog";
  * `/blog/page/{n}` -- it reads like a conflict and is not one.
  */
 export const runtime = "nodejs";
-export const revalidate = 10;
+// Freshness comes from the /api/revalidate purge-on-save chokepoint (Phase 17),
+// not from a short timer. At 10s every uncached render paid the full cold cost
+// (~3.7s, of which ~2.7s was CMS reads) and entries lapsed constantly on a
+// low-traffic tenant, so a large share of real visitors met the slow path.
+export const revalidate = 300;
 
 export async function generateMetadata() {
   return buildArchiveMetadata({ kind: "index", page: 1 });

@@ -14,7 +14,11 @@ import { RenderPage, buildPageMetadata, resolveHomepageSlug } from "./_lib/rende
 
 // See app/[slug]/page.tsx for why this route explicitly declares the Node.js runtime.
 export const runtime = "nodejs";
-export const revalidate = 10;
+// Freshness comes from the /api/revalidate purge-on-save chokepoint (Phase 17),
+// not from a short timer. At 10s every uncached render paid the full cold cost
+// (~3.7s, of which ~2.7s was CMS reads) and entries lapsed constantly on a
+// low-traffic tenant, so a large share of real visitors met the slow path.
+export const revalidate = 300;
 
 export async function generateMetadata() {
   return buildPageMetadata(await resolveHomepageSlug());

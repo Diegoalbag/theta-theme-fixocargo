@@ -135,25 +135,28 @@ const PAGE_SCALAR_AND_SEO_FIELDS = `
   }
 `;
 
-// GraphQL query for fetching pages
+// GraphQL query for fetching pages — SCALARS ONLY, deliberately.
+//
+// This is the site-wide page LIST. It has exactly two consumers and neither
+// reads a section: `resolveHomepageSlugFrom` (seo-resolve.ts) needs only
+// `isHomepage`/`slug`, and `app/sitemap.ts` needs only `slug`/`updatedAt`/
+// `seo.noindex`. The single-page render path does its own deep read through
+// `getPageBySlugQuery` below — this query never fed a render.
+//
+// It used to select `page_template { sections { ... blocks { ... } } }`, i.e.
+// EVERY section and block of EVERY page on the site, on every uncached render.
+// Measured against the Fixocargo tenant: 144 KB and 2.4-3.4s, versus 2 KB and
+// ~1.1s without it. Because the render path issues this concurrently with
+// `GetPageBySlug` and `GetSite`, it was the long pole setting the floor for the
+// whole parallel block (~2.7s of a ~3.7s cold render).
+//
+// If a future consumer genuinely needs section data for the whole site, give it
+// its own query rather than re-widening this one — every page render pays for
+// anything added here.
 const getPagesQuery = gql`
   query GetPages {
     pages {
       ${PAGE_SCALAR_AND_SEO_FIELDS}
-      page_template {
-        sections {
-          id
-          sectionKey
-          order
-          data
-          blocks {
-            id
-            blockType
-            order
-            data
-          }
-        }
-      }
     }
   }
 `;

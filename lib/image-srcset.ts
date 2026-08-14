@@ -110,20 +110,74 @@ export function resolveIntrinsicSize(
   return { width: largest.width as number, height: largest.height as number };
 }
 
+/**
+ * The full-resolution source image, offered as one more srcset candidate.
+ *
+ * WHY THIS EXISTS (debug session 2026-08-14,
+ * .planning/debug/image-quality-perf-regression.md). Without it, `buildSrcSet`
+ * can only ever offer Strapi's generated `formats` (thumbnail/small/medium/
+ * large), which top out at the `large` breakpoint (1000px by default). Every
+ * full-bleed section in the theme uses `sizesHint="100vw"`, so on any
+ * viewport wider than 1000 CSS px — i.e. virtually all non-mobile traffic,
+ * more so on retina/HiDPI displays — the browser's srcset algorithm has no
+ * candidate above 1000w, selects it, and upscales that 1000px-wide image via
+ * CSS to fill the full viewport width. That upscale is real, visible blur on
+ * every full-bleed image; the plain `src` fallback (which DOES point at the
+ * true original) is never used by a browser that understands `srcset`+
+ * `sizes`, so it cannot rescue this.
+ */
+export interface OriginalImageCandidate {
+  url: string;
+  width: number;
+}
+
 export function buildSrcSet(
   formats: StrapiImageFormats | null | undefined,
-  sizesHint = "100vw"
+  sizesHint = "100vw",
+  original?: OriginalImageCandidate | null
 ): BuiltSrcSet {
-  if (formats == null || typeof formats !== "object") return {};
+  const isValidFormatEntry = (entry: unknown): entry is StrapiImageFormatEntry =>
+    entry != null &&
+    typeof entry === "object" &&
+    typeof (entry as StrapiImageFormatEntry).url === "string" &&
+    typeof (entry as StrapiImageFormatEntry).width === "number";
 
-  const entries = Object.values(formats)
-    .filter(
-      (entry): entry is StrapiImageFormatEntry =>
-        entry != null &&
-        typeof entry === "object" &&
-        typeof entry.url === "string" &&
-        typeof entry.width === "number"
-    )
+  const formatEntries =
+    formats != null && typeof formats === "object"
+      ? Object.values(formats).filter(isValidFormatEntry)
+      : [];
+
+  // Only extend a ladder that actually exists. With no generated formats there
+  // is nothing to cap: the browser falls back to `src`, which already points at
+  // the original at full resolution, so a single-candidate srcset would add no
+  // information and would put a srcset on images (logos, small uploads) that
+  // never had one. The theme's own copy of this contract has chrome tests
+  // pinning exactly that — see theta-theme-fixocargo test/sections-chrome.test.tsx.
+  // The empty-url guard matters because a blank url emits a structurally broken
+  // " 900w" descriptor.
+  const isValidOriginal =
+    formatEntries.length > 0 &&
+    original != null &&
+    typeof original.url === "string" &&
+    original.url !== "" &&
+    typeof original.width === "number" &&
+    Number.isFinite(original.width) &&
+    original.width > 0;
+
+  const candidates = isValidOriginal
+    ? [...formatEntries, { url: original.url, width: original.width }]
+    : formatEntries;
+
+  // srcset requires unique width descriptors — de-dup in case the original's
+  // width happens to coincide with a generated format's width.
+  const seenWidths = new Set<number>();
+  const entries = candidates
+    .filter((entry) => {
+      const width = entry.width as number;
+      if (seenWidths.has(width)) return false;
+      seenWidths.add(width);
+      return true;
+    })
     .sort((a, b) => (a.width as number) - (b.width as number));
 
   if (entries.length === 0) return {};

@@ -34,7 +34,11 @@ import { RenderPage, buildPageMetadata } from "../_lib/render-page";
  * .planning/phases/12-server-side-theme-evaluation-infrastructure/SSR-07-THREAT-MODEL.md.
  */
 export const runtime = "nodejs";
-export const revalidate = 10;
+// Freshness comes from the /api/revalidate purge-on-save chokepoint (Phase 17),
+// not from a short timer. At 10s every uncached render paid the full cold cost
+// (~3.7s, of which ~2.7s was CMS reads) and entries lapsed constantly on a
+// low-traffic tenant, so a large share of real visitors met the slow path.
+export const revalidate = 300;
 
 interface PageProps {
   params: Promise<{ slug: string }>;

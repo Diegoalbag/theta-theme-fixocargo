@@ -68,6 +68,65 @@ describe("buildSrcSet — pure srcset/sizes builder (D-01)", () => {
     expect(buildSrcSet({})).toEqual({});
     expect(Object.keys(buildSrcSet({}))).toHaveLength(0);
   });
+
+  // Debug session 2026-08-14 (image-quality-perf-regression): the `large`
+  // Strapi format caps out at the configured breakpoint (1000px by default),
+  // which is smaller than the display width on most desktop/retina
+  // viewports for a full-bleed (100vw) image — the browser upscales the
+  // capped candidate and the image renders blurry. Folding the true
+  // original in as one more descriptor removes that ceiling.
+  it("Test 7: includes the original as the largest srcset candidate when provided", () => {
+    const formats = {
+      large: { url: "/l.jpg", width: 1000 },
+      small: { url: "/s.jpg", width: 500 },
+    };
+    expect(
+      buildSrcSet(formats, "100vw", { url: "/original.jpg", width: 3840 })
+    ).toEqual({
+      srcSet: "/s.jpg 500w, /l.jpg 1000w, /original.jpg 3840w",
+      sizes: "100vw",
+    });
+  });
+
+  it("Test 8: original alone (no formats) produces NO srcSet", () => {
+    // There is no ladder to extend, so there is nothing to cap: the browser
+    // falls back to `src`, which is already the full-resolution original.
+    // Emitting a one-candidate srcset would add no information and would put a
+    // srcset on logos/small uploads that never carried one — the theme's
+    // sections-chrome tests pin exactly that for SiteHeader/Footer logos.
+    expect(buildSrcSet(null, "100vw", { url: "/original.jpg", width: 3840 })).toEqual(
+      {}
+    );
+    expect(buildSrcSet({}, "100vw", { url: "/original.jpg", width: 3840 })).toEqual(
+      {}
+    );
+  });
+
+  it("Test 9: ignores a malformed original (missing/zero/negative width, blank url) without throwing", () => {
+    const formats = { small: { url: "/s.jpg", width: 500 } };
+    const expected = { srcSet: "/s.jpg 500w", sizes: "100vw" };
+    expect(
+      buildSrcSet(formats, "100vw", { url: "/original.jpg", width: 0 })
+    ).toEqual(expected);
+    expect(
+      buildSrcSet(formats, "100vw", {
+        url: "/original.jpg",
+        width: -10,
+      })
+    ).toEqual(expected);
+    // A blank url would otherwise emit a structurally broken " 900w" descriptor.
+    expect(buildSrcSet(formats, "100vw", { url: "", width: 900 })).toEqual(expected);
+    expect(buildSrcSet(formats, "100vw", null)).toEqual(expected);
+  });
+
+  it("Test 10: de-dups when the original's width collides with an existing format width", () => {
+    const formats = { large: { url: "/l.jpg", width: 1000 } };
+    // Same width as the `large` format — original wins the slot (pushed last
+    // in candidate order, format entries are filtered first).
+    expect(
+      buildSrcSet(formats, "100vw", { url: "/original.jpg", width: 1000 })
+    ).toEqual({ srcSet: "/l.jpg 1000w", sizes: "100vw" });
+  });
 });
 
 // Phase 18 (item 12): the intrinsic-size half of the same theme-facing image
