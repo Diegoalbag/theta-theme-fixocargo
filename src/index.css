@@ -251,6 +251,22 @@
     overflow-x: hidden;
   }
 
+  /* Makes every in-page `#fragment` link animate instead of jumping (quick
+     task 260814-f97). The media guard IS the accessibility contract: a visitor
+     whose system requests reduced motion matches neither `no-preference` nor
+     this rule, so they keep today's instant jump. Written as the opt-in form so
+     it also fails safe to no motion on a UA that reports no preference at all.
+     The scroll container in this document is `html`
+     (document.scrollingElement), so the rule belongs there and not on `body`.
+     Deliberately in @layer base — the lowest-precedence layer — so any future
+     component-level scrolling rule wins without a specificity fight. This is
+     the ONLY such declaration in the theme, and a source scan pins it there. */
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
   button {
     cursor: pointer;
   }

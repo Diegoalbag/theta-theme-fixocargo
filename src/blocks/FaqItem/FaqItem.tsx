@@ -80,8 +80,12 @@ export const FaqItem = ({
       // Only ever opens. Never sets `open` to false, so this can never fight
       // the merchant's "Expandido por defecto" toggle.
       el.open = true;
-      // No arguments: instant, which is what native fragment navigation does,
-      // and it honors the scroll-mt-24 cushion below.
+      // No arguments: the behavior is resolved from the CSS scroll-behavior
+      // property, so as of quick task 260814-f97 (which set `smooth` on html in
+      // @layer base) this deep link ANIMATES — with no change to this effect. A
+      // prefers-reduced-motion: reduce visitor keeps the instant jump for free
+      // through that same CSS guard. It still honors the scroll-mt-24 cushion
+      // below.
       el.scrollIntoView();
     };
 
