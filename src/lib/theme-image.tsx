@@ -99,7 +99,17 @@ export const ThemeImage = ({
 }: ThemeImageProps): React.ReactNode => {
   if (!url) return <>{placeholder}</>;
 
-  const { srcSet, sizes } = buildSrcSet(formats, sizesHint);
+  // `width` is the ORIGINAL's intrinsic width (same source as the `width`
+  // attribute below), so passing it here offers the full-resolution image as a
+  // srcset candidate above Strapi's largest generated breakpoint. Without this
+  // the ladder stops at `large` (1000px) and every full-bleed image is
+  // CSS-upscaled — see buildSrcSet's OriginalImageCandidate docs. Omitted when
+  // `width` is unknown, in which case behavior is exactly as before.
+  const { srcSet, sizes } = buildSrcSet(
+    formats,
+    sizesHint,
+    width != null ? { url, width } : null,
+  );
 
   const objectFitClass = objectFit === "contain" ? "object-contain" : "object-cover";
   const resolvedClassName =

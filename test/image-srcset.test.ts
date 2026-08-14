@@ -60,4 +60,61 @@ describe("buildSrcSet — pure srcset/sizes builder (D-01)", () => {
       sizes: "200px",
     });
   });
+
+  // Test 5-9 (debug session 2026-08-14): the original as a srcset candidate.
+  // Without it the ladder is capped at Strapi's largest generated breakpoint
+  // and every full-bleed image is CSS-upscaled on a wider viewport.
+  it("Test 5: appends the original above the largest generated format", () => {
+    const formats = {
+      large: { url: "/l.jpg", width: 1000 },
+      small: { url: "/s.jpg", width: 500 },
+    };
+    expect(buildSrcSet(formats, "100vw", { url: "/orig.jpg", width: 3840 })).toEqual({
+      srcSet: "/s.jpg 500w, /l.jpg 1000w, /orig.jpg 3840w",
+      sizes: "100vw",
+    });
+  });
+
+  it("Test 6: de-duplicates when the original's width matches a generated format", () => {
+    // srcset requires unique width descriptors; a duplicate is invalid markup.
+    const formats = { large: { url: "/l.jpg", width: 1000 } };
+    expect(buildSrcSet(formats, "100vw", { url: "/orig.jpg", width: 1000 })).toEqual({
+      srcSet: "/l.jpg 1000w",
+      sizes: "100vw",
+    });
+  });
+
+  it("Test 7: emits NO srcSet from the original alone when there are no formats", () => {
+    // Nothing to cap without a generated ladder — the browser falls back to
+    // `src`, which is already the full-resolution original. Emitting a
+    // one-candidate srcset would add no information and would put a srcset on
+    // logos/small uploads that never had one (see sections-chrome.test.tsx).
+    expect(buildSrcSet(null, "100vw", { url: "/orig.jpg", width: 800 })).toEqual({});
+    expect(buildSrcSet({}, "100vw", { url: "/orig.jpg", width: 800 })).toEqual({});
+  });
+
+  it("Test 8: ignores a malformed original rather than emitting a broken candidate", () => {
+    const formats = { small: { url: "/s.jpg", width: 500 } };
+    const expected = { srcSet: "/s.jpg 500w", sizes: "100vw" };
+    for (const bad of [
+      { url: "/o.jpg", width: 0 },
+      { url: "/o.jpg", width: -1 },
+      { url: "/o.jpg", width: Number.NaN },
+      { url: "", width: 900 },
+    ]) {
+      expect(
+        buildSrcSet(formats, "100vw", bad as unknown as Parameters<typeof buildSrcSet>[2]),
+      ).toEqual(expected);
+    }
+  });
+
+  it("Test 9: omitting the original preserves the previous behavior exactly", () => {
+    // The third argument is optional — every pre-existing call site must be
+    // byte-identical in output.
+    const formats = {
+      large: { url: "/l.jpg", width: 1000 },
+      thumbnail: { url: "/t.jpg", width: 245 },
+    };
+    expect(buildSrcSet(formats)).toEqual(buildSrcSet(formats, "100vw", null));
+  });
 });
