@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, it, expect } from "vitest";
@@ -93,15 +95,104 @@ describe("FaqItem", () => {
     expect(html).not.toContain("Sin contenido");
   });
 
-  it("faqItemSettingsSchema has 3 entries [question, answer, isExpanded]", () => {
-    expect(faqItemSettingsSchema).toHaveLength(3);
+  it("faqItemSettingsSchema has 4 entries [question, answer, isExpanded, anchorId]", () => {
+    expect(faqItemSettingsSchema).toHaveLength(4);
     const ids = faqItemSettingsSchema.map((s) => s.id);
-    expect(ids).toEqual(["question", "answer", "isExpanded"]);
+    expect(ids).toEqual(["question", "answer", "isExpanded", "anchorId"]);
     const answer = faqItemSettingsSchema.find((s) => s.id === "answer");
     expect(answer?.type).toBe("richtext");
     const isExpanded = faqItemSettingsSchema.find((s) => s.id === "isExpanded");
     expect(isExpanded?.type).toBe("checkbox");
     expect(isExpanded?.default).toBe(false);
+    const anchorId = faqItemSettingsSchema.find((s) => s.id === "anchorId");
+    expect(anchorId?.type).toBe("text");
+    expect(anchorId?.default).toBe("");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FAQ deep links (quick task 260814-a07).
+//
+// The open-on-hash BEHAVIOR is UAT-only and stated plainly rather than
+// pretended away: effects never run under renderToStaticMarkup in the `node`
+// test env, so nothing here executes the scroll, the auto-open, the sibling
+// auto-close or the hashchange path. What IS covered is everything that
+// behavior depends on — the rendered id, the normalizer being wired into the
+// render path, and the structural proof that no selector is ever built.
+// ---------------------------------------------------------------------------
+
+describe("FaqItem — anchor id (260814-a07)", () => {
+  it("renders NO id attribute at all on blank props (back-compat)", () => {
+    // The single most important assertion in this task: it is what proves
+    // every already-saved faq-item renders exactly as it does today.
+    // safeAnchorId returns `undefined`, so React drops the attribute — an
+    // empty-string anchor would emit id="" and this would go red.
+    const html = renderToStaticMarkup(<FaqItem question="Q" />);
+    expect(html).not.toContain("id=");
+  });
+
+  it("treats a whitespace-only anchor as absent", () => {
+    const html = renderToStaticMarkup(<FaqItem question="Q" anchorId="   " />);
+    expect(html).not.toContain("id=");
+  });
+
+  it("renders the anchor as an id on the root <details>", () => {
+    const html = renderToStaticMarkup(<FaqItem question="Q" anchorId="q4" />);
+    expect(html).toContain('id="q4"');
+  });
+
+  it("normalizes a messy merchant value on the way to the DOM", () => {
+    // Proves safeAnchorId is wired into the RENDER path, not merely unit-tested
+    // in isolation over in test/safe-anchor.test.ts.
+    const html = renderToStaticMarkup(
+      <FaqItem question="Q" anchorId="#  Envío 4 " />,
+    );
+    expect(html).toContain('id="envio-4"');
+  });
+
+  it("adds the scroll cushion only when anchored", () => {
+    const anchored = renderToStaticMarkup(
+      <FaqItem question="Q" anchorId="q4" />,
+    );
+    expect(anchored).toContain("scroll-mt-24");
+
+    const plain = renderToStaticMarkup(<FaqItem question="Q" />);
+    expect(plain).not.toContain("scroll-mt-24");
+  });
+
+  it("leaves an un-anchored item's class string byte-identical to today", () => {
+    const html = renderToStaticMarkup(<FaqItem question="Q" />);
+    expect(html).toContain(
+      'class="group rounded-2xl border-2 border-transparent bg-card shadow-sm px-6 py-4 transition-colors open:border-brand-yellow"',
+    );
+  });
+
+  it("builds no selector and no HTML sink from the merchant anchor", () => {
+    // Structural, not aspirational: the effect resolves its target through its
+    // OWN useRef, so the CR-02 class of bug (a merchant string interpolated
+    // into a live selector) is impossible rather than merely avoided.
+    //
+    // Comment-stripping FIRST is mandatory — the file's own header prose
+    // explains the convention using these very words, so a raw scan would
+    // false-positive on the documentation of the rule. Same two-replace `strip`
+    // idiom as test/static-audit.test.tsx.
+    const strip = (code: string): string =>
+      code.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+    const code = strip(
+      readFileSync(
+        resolve(__dirname, "../src/blocks/FaqItem/FaqItem.tsx"),
+        "utf-8",
+      ),
+    );
+
+    expect(code).not.toMatch(/querySelector|getElementById|getElementsBy/);
+    expect(code).not.toMatch(/CSS\.escape/);
+    expect(code).not.toMatch(/innerHTML|outerHTML|insertAdjacentHTML/);
+    // Blocks are stateless — React state stays forbidden.
+    expect(code).not.toMatch(/useState/);
+    // And the normalizer really is the thing standing between the merchant
+    // value and the DOM.
+    expect(code).toMatch(/safeAnchorId/);
   });
 });
 
