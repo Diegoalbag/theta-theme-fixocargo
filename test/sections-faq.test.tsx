@@ -42,11 +42,34 @@ describe("Faq section", () => {
     expect(html).not.toContain("Resolvemos tus dudas");
   });
 
-  it("faqSettingsSchema has 2 entries [eyebrow, heading], both text", () => {
-    expect(faqSettingsSchema).toHaveLength(2);
+  it("faqSettingsSchema has 3 entries [eyebrow, heading, anchorId], all text", () => {
+    expect(faqSettingsSchema).toHaveLength(3);
     const ids = faqSettingsSchema.map((s) => s.id);
-    expect(ids).toEqual(["eyebrow", "heading"]);
+    expect(ids).toEqual(["eyebrow", "heading", "anchorId"]);
     expect(faqSettingsSchema.every((s) => s.type === "text")).toBe(true);
+    const anchorId = faqSettingsSchema.find((s) => s.id === "anchorId");
+    expect(anchorId?.default).toBe("");
+  });
+
+  it("renders NO id attribute at all on blank props (back-compat)", () => {
+    const html = renderToStaticMarkup(<Faq />);
+    expect(html).not.toContain("id=");
+  });
+
+  it("renders the anchor as an id on the <section>, with the scroll cushion", () => {
+    // No effect here on purpose: a <section id="faq"> is a plain fragment
+    // target the browser scrolls to natively, and there is no disclosure
+    // widget to force open.
+    const html = renderToStaticMarkup(<Faq anchorId="faq" />);
+    expect(html).toContain('id="faq"');
+    expect(html).toContain("scroll-mt-24");
+  });
+
+  it("normalizes a messy section anchor on the way to the DOM", () => {
+    const html = renderToStaticMarkup(
+      <Faq anchorId="  Preguntas Frecuentes " />,
+    );
+    expect(html).toContain('id="preguntas-frecuentes"');
   });
 });
 
