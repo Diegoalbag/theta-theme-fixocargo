@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, it, expect } from "vitest";
@@ -178,12 +181,68 @@ describe("SiteHeader", () => {
   });
 });
 
-// NAV-01 (phase 11, D-11-01 / D-11-06): `nav-link` grows a CSS-only submenu so
-// the seven-service menu fits under ONE nav item without breaching
-// site-header's maxBlocks: 8. The load-bearing assertions here are the
+// NAV-01 (phase 11, D-11-01 / D-11-06): `nav-link` grows a native-disclosure
+// submenu so the seven-service menu fits under ONE nav item without breaching
+// site-header's maxBlocks: 8. It shipped CSS-only in phase 11; quick task
+// 260814-f97 added one guarded dismissal effect on top of the SAME markup —
+// the pins at the top of this block are what prove the markup did not move.
+// The load-bearing assertions here are the
 // BARE-ANCHOR ones — this block already carries saved merchant content, so the
 // zero-child branch must stay byte-compatible with its pre-phase output.
-describe("NavLink — CSS-only submenu (NAV-01)", () => {
+describe("NavLink — native submenu (NAV-01)", () => {
+  // D-04 byte-identity contract (quick task 260814-f97). This block already
+  // carries saved merchant nav items, and the dismissal effect added by that
+  // task must be invisible to every one of them. The literal below was
+  // captured from the UNTOUCHED component and is pinned with `toBe`, never a
+  // substring match: if this goes red the COMPONENT changed and the component
+  // is what gets fixed — the assertion is never relaxed.
+  it("renders a byte-identical bare anchor when no child label is filled (D-04)", () => {
+    const html = renderToStaticMarkup(<NavLink label="Inicio" url="/" />);
+    expect(html).toBe(
+      '<a href="/" class="inline-flex items-center gap-1 font-opensans text-sm text-white whitespace-nowrap hover:text-brand-yellow focus-visible:outline-2 focus-visible:outline-brand-yellow focus-visible:outline-offset-2">Inicio</a>',
+    );
+  });
+
+  // The dismissal wiring is imperative and lives entirely inside one guarded
+  // effect, so nothing handler-shaped may ever leak into the served markup —
+  // in EITHER branch. An `on*=` attribute in the SSR string would mean a JSX
+  // handler was added instead.
+  it("emits no scripted attribute in the served markup of either branch", () => {
+    const bare = renderToStaticMarkup(<NavLink label="Inicio" url="/" />);
+    const submenu = renderToStaticMarkup(
+      <NavLink
+        label="Servicios"
+        url="/servicios"
+        child1Label="Uno"
+        child1Url="/uno"
+        child2Label="Dos"
+        child2Url="/dos"
+      />,
+    );
+    expect(bare).not.toMatch(/\son[a-z]+=/i);
+    expect(submenu).not.toMatch(/\son[a-z]+=/i);
+  });
+
+  // D-05 structural proof. The effect must resolve its own elements by ref and
+  // test containment — never build a selector, never walk outward from the
+  // block root (the CR-01/CR-02 scars from quick task 260813-fe3, where a walk
+  // from a block root claimed the customizer's injected `display: contents`
+  // host slot). Comments are stripped first: this file's own header prose names
+  // the forbidden patterns, so a raw scan would false-positive on the
+  // documentation. Same strip pair test/static-audit.test.tsx uses.
+  it("has no React state, no document query and no outward DOM walk in source (D-05)", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/blocks/NavLink/NavLink.tsx"),
+      "utf-8",
+    )
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/\/\/[^\n]*/g, "");
+    expect(source).not.toMatch(/useState/);
+    expect(source).not.toMatch(/querySelector/);
+    expect(source).not.toMatch(/getElementById/);
+    expect(source).not.toMatch(/\.closest\(/);
+  });
+
   it("renders a bare anchor (no disclosure) when no child label is filled", () => {
     const html = renderToStaticMarkup(<NavLink label="Inicio" url="/" />);
     expect(html).toContain("<a");

@@ -18,10 +18,21 @@ import { safeHref } from "@/lib/safe-href";
 // "Enlace URL" value would be orphaned and a nav item that used to navigate
 // would silently stop, with no other route to it on desktop or mobile.
 //
-// The disclosure is CSS-only: no React state, no event handlers. The native
-// element owns the open state, and summary is natively focusable, toggles on
-// Enter/Space, and carries an implicit button role plus a real aria-expanded —
-// correct semantics with zero scripted ARIA.
+// The disclosure has NO React state and NO event handler in the markup. The
+// native element still owns the open state, and summary is natively focusable,
+// toggles on Enter/Space, and carries an implicit button role plus a real
+// aria-expanded — correct semantics with zero scripted ARIA. What it now also
+// carries is ONE guarded effect (below), which only ever sets `open` to false:
+// the native summary toggle keeps sole ownership of OPENING. Branch A
+// subscribes to nothing at all, because it never attaches the ref, so the
+// effect's `if (!el) return` guard — not the branch itself — is the mechanism.
+//
+// The effect resolves its own <details>, <summary> and panel BY REF and tests
+// membership with `el.contains(target)`. That is load-bearing, not stylistic:
+// with no lookup there is no selector for a merchant string to be interpolated
+// into (the CR-02 scar from quick task 260813-fe3) and nothing walks outward
+// from the block root into the customizer's injected wrapper (CR-01). Same
+// shape FaqItem's effect uses.
 //
 // ONE MARKUP, TWO LAYOUTS: the panel is an inline accordion by default (inside
 // SiteHeader's mobile hamburger panel) and becomes a dropdown on lg: via
@@ -51,10 +62,20 @@ import { safeHref } from "@/lib/safe-href";
 // regardless of the inherited padding override. Same bar the project already
 // applied to the Blaze pagination dots in src/index.css.
 //
-// ACCEPTED CSS-ONLY LIMITS: no Escape-to-dismiss and no click-outside-to-close;
-// the panel stays open until re-clicked. These are not WCAG 1.4.13 failures —
-// that criterion governs HOVER-triggered content, and a click/Enter disclosure
-// is not hover-triggered.
+// DISMISSAL (quick task 260814-f97). The panel now closes on a pointerdown
+// outside the disclosure, on Escape, and on a click inside the panel itself
+// (every interactive thing in there is a link, and an in-page #fragment link no
+// longer navigates away, so it would otherwise hang open over the destination).
+// This REVERSES the stance phase 11 recorded deliberately in 11-04, which
+// accepted "no Escape-to-dismiss and no click-outside-to-close" as a permanent
+// CSS-only limit; the phase-11 records carry dated notes pointing here. The
+// WCAG 1.4.13 reasoning quoted alongside that stance was never its cause — that
+// criterion governs HOVER-triggered content and a click/Enter disclosure is not
+// hover-triggered, so it is unaffected either way.
+//
+// A second nav item's summary click also closes the first, since that press
+// lands outside the first disclosure. That free mutual exclusivity is wanted
+// here (unlike FaqItem, which declines it) and is not a bug.
 //
 // All content arrives as props from the platform. Anchors render href only —
 // no link-target attribute anywhere, so no submenu link ever opens a new
@@ -138,6 +159,67 @@ export const NavLink = ({
   // real URL gets no duplicate dead entry.
   const parentUrl = url && url.trim() && url.trim() !== "#" ? url : undefined;
 
+  // Hooks are called UNCONDITIONALLY and before the Branch A early return —
+  // Rules of Hooks require a stable call order. `hasSubmenu` is the dependency
+  // so that a merchant filling or clearing the last child label in the
+  // customizer, which flips the rendered branch, re-runs the effect.
+  const hasSubmenu = activeChildren.length > 0;
+  const detailsRef = React.useRef<HTMLDetailsElement>(null);
+  const summaryRef = React.useRef<HTMLElement>(null);
+  const panelRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const el = detailsRef.current;
+    // THIS is D-04: in Branch A the ref was never attached, so an un-submenued
+    // nav link returns here having subscribed to nothing at all.
+    if (!el) return;
+    const panel = panelRef.current;
+
+    // `pointerdown`, not `click`: it fires before the click, so the panel is
+    // already gone by the time a click lands on whatever was underneath, and it
+    // covers touch and pen without a second listener. A press that starts on
+    // the summary or inside the panel is INSIDE the element and is a no-op, so
+    // the native toggle is never fought.
+    const onPointerDown = (event: Event) => {
+      // Cost bound for up to 8 nav items (site-header's maxBlocks): a closed
+      // menu costs one boolean read per press, so always-attached is cheaper
+      // than an add/remove state machine.
+      if (!el.open) return;
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      // Covers summary AND panel in one check, reading strictly INWARD from an
+      // element this component itself rendered.
+      if (el.contains(target)) return;
+      el.open = false;
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!el.open || event.key !== "Escape") return;
+      // Captured BEFORE closing: once the panel is un-rendered the browser has
+      // already dropped a focused child link to <body>, so this order is
+      // load-bearing. Escape pressed from elsewhere on the page still closes
+      // the menu but must never yank focus across the page.
+      const hadFocusInside = el.contains(document.activeElement);
+      el.open = false;
+      if (hadFocusInside) summaryRef.current?.focus();
+    };
+
+    // Scoped to the PANEL element via its own ref, not a document listener and
+    // not a JSX handler — so the summary is untouched and opening stays native.
+    const onPanelClick = () => {
+      el.open = false;
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    panel?.addEventListener("click", onPanelClick);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+      panel?.removeEventListener("click", onPanelClick);
+    };
+  }, [hasSubmenu]);
+
   // Branch A — no submenu. Byte-compatible with the pre-phase output.
   if (activeChildren.length === 0) {
     return (
@@ -155,10 +237,10 @@ export const NavLink = ({
     );
   }
 
-  // Branch B — CSS-only disclosure. lg:relative anchors the desktop panel.
+  // Branch B — native disclosure. lg:relative anchors the desktop panel.
   return (
-    <details className="group lg:relative">
-      <summary className="list-none cursor-pointer inline-flex items-center gap-1 font-opensans text-sm text-white whitespace-nowrap hover:text-brand-yellow [&::-webkit-details-marker]:hidden marker:content-[''] focus-visible:outline-2 focus-visible:outline-brand-yellow focus-visible:outline-offset-2">
+    <details ref={detailsRef} className="group lg:relative">
+      <summary ref={summaryRef} className="list-none cursor-pointer inline-flex items-center gap-1 font-opensans text-sm text-white whitespace-nowrap hover:text-brand-yellow [&::-webkit-details-marker]:hidden marker:content-[''] focus-visible:outline-2 focus-visible:outline-brand-yellow focus-visible:outline-offset-2">
         {label ?? "Enlace"}
         <ChevronDown
           aria-hidden="true"
@@ -170,7 +252,9 @@ export const NavLink = ({
           inside the hamburger panel), dropdown panel on lg: only. z-50 is what
           the existing mobile nav panel already relies on to clear the section
           below the header. */}
-      <div className="mt-2 flex flex-col gap-2 pl-3 lg:absolute lg:left-0 lg:top-full lg:z-50 lg:mt-3 lg:min-w-56 lg:gap-2 lg:rounded-xl lg:border lg:border-white/10 lg:bg-brand-navy lg:p-4 lg:pl-4 lg:shadow-xl">
+      <div
+        ref={panelRef}
+        className="mt-2 flex flex-col gap-2 pl-3 lg:absolute lg:left-0 lg:top-full lg:z-50 lg:mt-3 lg:min-w-56 lg:gap-2 lg:rounded-xl lg:border lg:border-white/10 lg:bg-brand-navy lg:p-4 lg:pl-4 lg:shadow-xl">
         {/* The parent destination, first in the panel (CR-02). Rendered only
             when `url` is a real destination — never for the `#` default. */}
         {parentUrl && (
