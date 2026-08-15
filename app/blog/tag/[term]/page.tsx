@@ -12,11 +12,19 @@ import { RenderArchive, buildArchiveMetadata } from "../../../_lib/render-blog";
  * Node.js runtime required: same `node:vm` reason as every other blog route.
  */
 export const runtime = "nodejs";
-// Freshness comes from the /api/revalidate purge-on-save chokepoint (Phase 17),
-// not from a short timer. At 10s every uncached render paid the full cold cost
-// (~3.7s, of which ~2.7s was CMS reads) and entries lapsed constantly on a
-// low-traffic tenant, so a large share of real visitors met the slow path.
-export const revalidate = 300;
+// MUST STAY SHORT until the empty-prerender bug is fixed. This was briefly
+// raised to 300 to cut regeneration load (an uncached render costs ~3.7s), and
+// that was WRONG: build-time prerendering currently emits a contentless shell,
+// because the tenant cannot fetch its own theme bundle during its own build and
+// `evaluateThemeServerSide` fails open. A short window is what silently repairs
+// that -- the empty shell is replaced by a real request-time render within
+// seconds. At 300 the blank page was served for five minutes after every deploy,
+// and a crawler arriving in that window indexes nothing. Verified live
+// 2026-08-14: prerendered `/` returned 20 visible characters and zero images,
+// while request-rendered pages returned 2.4-4.2k characters and 7-9 images.
+// Raise this only once a page that fails theme evaluation is no longer written
+// to the prerender cache at all.
+export const revalidate = 10;
 
 interface TagArchivePageProps {
   params: Promise<{ term: string }>;
