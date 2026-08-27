@@ -107,10 +107,56 @@ describe("ServiceItem", () => {
     expect(html).toContain('href="/servicio"');
   });
 
-  it("serviceItemSettingsSchema has 5 entries [title,icon,body,linkUrl,isExpanded] with icon as select", () => {
-    expect(serviceItemSettingsSchema).toHaveLength(5);
+  // customIcon (quick task 260827) — the merchant-uploaded SVG/PNG path.
+  it("renders an uploaded customIcon INSTEAD of the selected Lucide glyph", () => {
+    const html = renderToStaticMarkup(
+      <ServiceItem
+        icon="plane"
+        customIcon={{ id: "9", url: "/icons/courier.svg", alt: "Courier" }}
+      />,
+    );
+    expect(html).toContain('src="/icons/courier.svg"');
+    expect(html).toContain('alt="Courier"');
+    // The Lucide glyph is gone — no inline <svg> is emitted for the chip.
+    expect(html).not.toContain("lucide-plane");
+  });
+
+  it("falls back to the selected glyph when customIcon carries no url", () => {
+    const html = renderToStaticMarkup(
+      <ServiceItem icon="plane" customIcon={{ id: "9" }} />,
+    );
+    expect(html).not.toContain("<img");
+    expect(html).toContain("<svg");
+  });
+
+  it("an unknown icon value degrades to the package glyph instead of crashing", () => {
+    const html = renderToStaticMarkup(<ServiceItem icon="not-a-real-icon" />);
+    expect(html).toContain("<svg");
+  });
+
+  it("exposes the new copy-revision icons in the shared option list", () => {
+    const iconSetting = serviceItemSettingsSchema.find((s) => s.id === "icon");
+    const values = (iconSetting?.options ?? []).map((o) => o.value);
+    for (const v of ["percent", "referrals", "gift", "returns"]) {
+      expect(values).toContain(v);
+    }
+  });
+
+  it("serviceItemSettingsSchema has 6 entries [title,icon,customIcon,body,linkUrl,isExpanded] with icon as select", () => {
+    expect(serviceItemSettingsSchema).toHaveLength(6);
     const ids = serviceItemSettingsSchema.map((s) => s.id);
-    expect(ids).toEqual(["title", "icon", "body", "linkUrl", "isExpanded"]);
+    expect(ids).toEqual([
+      "title",
+      "icon",
+      "customIcon",
+      "body",
+      "linkUrl",
+      "isExpanded",
+    ]);
+    const customIcon = serviceItemSettingsSchema.find(
+      (s) => s.id === "customIcon",
+    );
+    expect(customIcon?.type).toBe("image_picker");
     const iconSetting = serviceItemSettingsSchema.find((s) => s.id === "icon");
     expect(iconSetting?.type).toBe("select");
     const isExpandedSetting = serviceItemSettingsSchema.find(
@@ -269,10 +315,39 @@ describe("BenefitCard", () => {
     expect(html).toContain('href="/beneficio"');
   });
 
-  it("benefitCardSettingsSchema has 5 entries [icon,title,body,linkUrl,variant] with icon as select and variant defaulting to dark", () => {
-    expect(benefitCardSettingsSchema).toHaveLength(5);
+  it("renders an uploaded customIcon INSTEAD of the selected Lucide glyph", () => {
+    const html = renderToStaticMarkup(
+      <BenefitCard
+        icon="truck"
+        customIcon={{ id: "9", url: "/icons/gift.svg", alt: "Regalo" }}
+      />,
+    );
+    expect(html).toContain('src="/icons/gift.svg"');
+    expect(html).toContain('alt="Regalo"');
+    expect(html).not.toContain("lucide-truck");
+  });
+
+  it("BenefitCard and ServiceItem share one icon option list (no drift)", () => {
+    const a = benefitCardSettingsSchema.find((s) => s.id === "icon")?.options;
+    const b = serviceItemSettingsSchema.find((s) => s.id === "icon")?.options;
+    expect(a).toEqual(b);
+  });
+
+  it("benefitCardSettingsSchema has 6 entries [icon,customIcon,title,body,linkUrl,variant] with icon as select and variant defaulting to dark", () => {
+    expect(benefitCardSettingsSchema).toHaveLength(6);
     const ids = benefitCardSettingsSchema.map((s) => s.id);
-    expect(ids).toEqual(["icon", "title", "body", "linkUrl", "variant"]);
+    expect(ids).toEqual([
+      "icon",
+      "customIcon",
+      "title",
+      "body",
+      "linkUrl",
+      "variant",
+    ]);
+    const customIcon = benefitCardSettingsSchema.find(
+      (s) => s.id === "customIcon",
+    );
+    expect(customIcon?.type).toBe("image_picker");
     const iconSetting = benefitCardSettingsSchema.find((s) => s.id === "icon");
     expect(iconSetting?.type).toBe("select");
     const variantSetting = benefitCardSettingsSchema.find(
