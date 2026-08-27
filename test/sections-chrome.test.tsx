@@ -133,13 +133,38 @@ describe("SiteHeader", () => {
     expect(types).toContain("nav-link");
   });
 
-  it("siteHeaderSettingsSchema has exactly 4 entries", () => {
-    expect(siteHeaderSettingsSchema).toHaveLength(4);
+  it("siteHeaderSettingsSchema has exactly 5 entries", () => {
+    expect(siteHeaderSettingsSchema).toHaveLength(5);
   });
 
-  it("siteHeaderSettingsSchema ids are logo, logoUrl, accountLabel, accountUrl", () => {
+  it("siteHeaderSettingsSchema ids are logo, logoUrl, logoSize, accountLabel, accountUrl", () => {
     const ids = siteHeaderSettingsSchema.map((s) => s.id);
-    expect(ids).toEqual(["logo", "logoUrl", "accountLabel", "accountUrl"]);
+    expect(ids).toEqual([
+      "logo",
+      "logoUrl",
+      "logoSize",
+      "accountLabel",
+      "accountUrl",
+    ]);
+  });
+
+  it("logoSize drives the logo height class and defaults to md (h-12)", () => {
+    const img = { id: "1", url: "/logo.png" };
+    expect(renderToStaticMarkup(<SiteHeader logo={img} />)).toContain("h-12");
+    expect(
+      renderToStaticMarkup(<SiteHeader logo={img} logoSize="sm" />),
+    ).toContain("h-10");
+    expect(
+      renderToStaticMarkup(<SiteHeader logo={img} logoSize="lg" />),
+    ).toContain("h-14");
+  });
+
+  it("an unknown logoSize degrades to the md height instead of dropping the class", () => {
+    const html = renderToStaticMarkup(
+      // @ts-expect-error — deliberately arbitrary value, mirrors a stale saved prop
+      <SiteHeader logo={{ id: "1", url: "/logo.png" }} logoSize="bogus" />,
+    );
+    expect(html).toContain("h-12");
   });
 
   it("wraps the logo image in a link to logoUrl (defaulting to /)", () => {

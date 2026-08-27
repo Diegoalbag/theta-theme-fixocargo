@@ -36,6 +36,7 @@ export interface SiteHeaderProps {
     formats?: ImageFormats | null;
   };
   logoUrl?: string;
+  logoSize?: "sm" | "md" | "lg";
   accountLabel?: string;
   accountUrl?: string;
   renderBlocks?: () => React.ReactNode;
@@ -43,13 +44,29 @@ export interface SiteHeaderProps {
   sectionName?: string;
 }
 
+// Logo height ladder. `sm` (h-10) is the ORIGINAL header logo, kept so any
+// merchant who wants the previous proportions can restore it exactly. `md` is
+// the new default — the "aumentar ligeramente el tamaño del logo" request,
+// +8px of glyph with the header's own py-7 padding untouched, so the bar grows
+// by 8px total rather than "de forma excesiva". Width stays `w-auto` in every
+// step, so the logo's aspect ratio is never distorted.
+const logoHeightClasses: Record<string, string> = {
+  sm: "h-10",
+  md: "h-12",
+  lg: "h-14",
+};
+
 export const SiteHeader = ({
   logo,
   logoUrl,
+  logoSize = "md",
   accountLabel,
   accountUrl,
   renderBlocks,
 }: SiteHeaderProps): React.ReactNode => {
+  // Defensive default — an unknown/arbitrary select value degrades to `md`.
+  const logoHeightClass = logoHeightClasses[logoSize] ?? logoHeightClasses.md;
+
   // Rendered in both the desktop header bar and the mobile menu; `extra` makes
   // the mobile copy full-width. Pure render — no state, no handlers.
   const accountButton = (extra?: string) => (
@@ -84,11 +101,11 @@ export const SiteHeader = ({
                 formats={logo.formats}
                 sizesHint="200px"
                 positioning="custom"
-                className="h-10 w-auto object-contain"
+                className={cn(logoHeightClass, "w-auto object-contain")}
               />
             </a>
           ) : (
-            <div className="h-10 w-[120px] rounded border-2 border-dashed border-white/30 flex items-center justify-center text-white/30 text-xs">
+            <div className={cn(logoHeightClass, "w-[120px] rounded border-2 border-dashed border-white/30 flex items-center justify-center text-white/30 text-xs")}>
               Logo
             </div>
           )}
@@ -136,7 +153,7 @@ export const SiteHeader = ({
 };
 
 // Settings schema for the SiteHeader section.
-// Three settings: logo image picker, account button text, account button URL.
+// Logo image picker + logo link + logo size, then account button text/URL.
 export const siteHeaderSettingsSchema = [
   {
     id: "logo",
@@ -149,6 +166,17 @@ export const siteHeaderSettingsSchema = [
     label: "Enlace del logo",
     type: "url",
     default: "/",
+  },
+  {
+    id: "logoSize",
+    label: "Tamaño del logo",
+    type: "select",
+    default: "md",
+    options: [
+      { value: "sm", label: "Pequeño" },
+      { value: "md", label: "Mediano" },
+      { value: "lg", label: "Grande" },
+    ],
   },
   {
     id: "accountLabel",
