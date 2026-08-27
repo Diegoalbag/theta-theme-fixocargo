@@ -13,9 +13,17 @@ import { PromoBanner } from "@/blocks/PromoBanner";
 // BlocksSlot — mirrors PlanReferimiento's no-block pattern — reusing
 // PromoBanner (src/blocks/PromoBanner) as a plain presentational component
 // (same acyclic import already used by src/sections/Servicios/Servicios.tsx).
-// Unlike Servicios.tsx's optional second banner, BOTH banners here are
-// ALWAYS rendered — the design shows a fixed pair of side-by-side cards, not
-// an optional single banner.
+// `showSecondBanner` (quick task 260827) makes the SECOND banner optional,
+// mirroring Servicios.tsx. The original design showed a fixed pair of
+// side-by-side cards; the FX Logistics card must now be removable from this
+// band entirely, leaving only Franquicias. Two deliberate details:
+//   * The guard is `!== false`, NOT a truthy check, so a `servicios-cta`
+//     section saved BEFORE this setting existed (where the prop arrives
+//     `undefined`) still renders both banners — no shipped merchant page
+//     changes appearance because of this edit.
+//   * When the second banner is hidden the grid drops to ONE column, so the
+//     surviving Franquicias card spans the full band instead of sitting at
+//     half width with dead space beside it.
 //
 // CLN-02 REACH — WHICH SECTIONS THE EMPTIED banner2Kicker DEFAULT ACTUALLY
 // AFFECTS (WR-03, settled against the platform source, not assumed):
@@ -55,6 +63,7 @@ export interface ServiciosCtaProps {
   banner1Headline?: string;
   banner1CtaLabel?: string;
   banner1CtaUrl?: string;
+  showSecondBanner?: boolean;
   banner2Image?: BannerImage;
   banner2Kicker?: string;
   banner2Headline?: string;
@@ -72,12 +81,15 @@ export const ServiciosCta = ({
   banner1Headline = "Si te interesa ser parte de nuestra red de franquicias",
   banner1CtaLabel = "Haz clic aquí",
   banner1CtaUrl = "#",
+  showSecondBanner,
   banner2Image,
   banner2Kicker = "",
   banner2Headline = "¿Estás considerando reservar un espacio de almacenamiento?",
   banner2CtaLabel = "Haz clic aquí",
   banner2CtaUrl = "#",
 }: ServiciosCtaProps): React.ReactNode => {
+  const secondBannerVisible = showSecondBanner !== false;
+
   return (
     <section className="bg-transparent section-padding-y">
       <div className="container mx-auto container-padding-x">
@@ -94,7 +106,13 @@ export const ServiciosCta = ({
           )}
         </div>
 
-        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div
+          className={
+            secondBannerVisible
+              ? "mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2"
+              : "mt-8 grid grid-cols-1 gap-6"
+          }
+        >
           <PromoBanner
             backgroundImage={banner1Image}
             kicker={banner1Kicker}
@@ -102,20 +120,23 @@ export const ServiciosCta = ({
             ctaLabel={banner1CtaLabel}
             ctaUrl={banner1CtaUrl}
           />
-          <PromoBanner
-            backgroundImage={banner2Image}
-            kicker={banner2Kicker}
-            headline={banner2Headline}
-            ctaLabel={banner2CtaLabel}
-            ctaUrl={banner2CtaUrl}
-          />
+          {secondBannerVisible && (
+            <PromoBanner
+              backgroundImage={banner2Image}
+              kicker={banner2Kicker}
+              headline={banner2Headline}
+              ctaLabel={banner2CtaLabel}
+              ctaUrl={banner2CtaUrl}
+            />
+          )}
         </div>
       </div>
     </section>
   );
 };
 
-// Exactly 12 editable fields, ids → camelCase props.
+// Thirteen editable fields, ids → camelCase props. `showSecondBanner` gates
+// the whole banner-2 group.
 export const serviciosCtaSettingsSchema = [
   {
     id: "eyebrow",
@@ -158,6 +179,12 @@ export const serviciosCtaSettingsSchema = [
     label: "Banner 1 · Enlace del botón",
     type: "url",
     default: "#",
+  },
+  {
+    id: "showSecondBanner",
+    label: "Mostrar segundo banner",
+    type: "checkbox",
+    default: true,
   },
   {
     id: "banner2Image",

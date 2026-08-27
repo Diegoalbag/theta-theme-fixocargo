@@ -333,8 +333,48 @@ describe("ServiciosCta", () => {
     expect(html).not.toContain("Sin elementos");
   });
 
-  it("serviciosCtaSettingsSchema has exactly 12 entries", () => {
-    expect(serviciosCtaSettingsSchema).toHaveLength(12);
+  // showSecondBanner (quick task 260827): the FX Logistics card must be
+  // removable from this band, leaving only Franquicias.
+  it("renders BOTH banners by default", () => {
+    const html = renderToStaticMarkup(
+      <ServiciosCta
+        banner1Headline="Franquicias"
+        banner2Headline="FX Logistics"
+      />,
+    );
+    expect(html).toContain("Franquicias");
+    expect(html).toContain("FX Logistics");
+    expect(html).toContain("lg:grid-cols-2");
+  });
+
+  it("still renders both banners when showSecondBanner is undefined (section saved before the setting existed)", () => {
+    const html = renderToStaticMarkup(
+      <ServiciosCta
+        showSecondBanner={undefined}
+        banner2Headline="FX Logistics"
+      />,
+    );
+    expect(html).toContain("FX Logistics");
+  });
+
+  it("drops the second banner AND the two-column grid when showSecondBanner is false", () => {
+    const html = renderToStaticMarkup(
+      <ServiciosCta
+        showSecondBanner={false}
+        banner1Headline="Franquicias"
+        banner2Headline="FX Logistics"
+        banner2Kicker="FX"
+        banner2CtaLabel="Conoce FX"
+      />,
+    );
+    expect(html).toContain("Franquicias");
+    expect(html).not.toContain("FX Logistics");
+    expect(html).not.toContain("Conoce FX");
+    expect(html).not.toContain("lg:grid-cols-2");
+  });
+
+  it("serviciosCtaSettingsSchema has exactly 13 entries", () => {
+    expect(serviciosCtaSettingsSchema).toHaveLength(13);
     const ids = serviciosCtaSettingsSchema.map((s) => s.id);
     expect(ids).toEqual([
       "eyebrow",
@@ -344,6 +384,7 @@ describe("ServiciosCta", () => {
       "banner1Headline",
       "banner1CtaLabel",
       "banner1CtaUrl",
+      "showSecondBanner",
       "banner2Image",
       "banner2Kicker",
       "banner2Headline",
