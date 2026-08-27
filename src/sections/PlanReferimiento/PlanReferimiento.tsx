@@ -10,10 +10,20 @@ import { RichText } from "@/lib/rich-text";
 // prop, NO BlocksSlot, NO child-block slot at all — matches the no-block
 // pattern in src/sections/ArticleBody/ArticleBody.tsx.
 //
-// LEFT card ("¿Cómo Funciona?"): a hardcoded heading + TWO hardcoded numbered
-// process-step sentences (locked decision — the design shows exactly 2 fixed
-// steps, so they are literal text, not settings), an editable
-// prizeCalloutTitle/Body callout, and a yellow pill CTA (editable label/url).
+// LEFT card ("¿Cómo Funciona?"): a hardcoded heading + TWO numbered
+// process steps, an editable prizeCalloutTitle/Body callout, and a yellow pill
+// CTA (editable label/url).
+//
+// STEPS (quick task 260827): the two steps were previously LITERAL text on the
+// grounds that the design shows exactly two fixed steps. The count is still
+// fixed at two, but the COPY is now settings (`step1Title`/`step1Body`,
+// `step2Title`/`step2Body`) — the 2026-08 copy revision rewrote both sentences
+// and added a bold lead-in title to each, which literal text made impossible
+// to publish without a code change. Their destructured defaults carry that
+// revised copy: every page rendered the SAME hardcoded sentences before, so
+// there is no per-merchant value to preserve, and a page saved before these
+// settings existed correctly picks up the new wording instead of freezing the
+// superseded text.
 // RIGHT card ("Términos y Condiciones"): a hardcoded heading + a scrollable
 // richtext `terms` field rendered EXCLUSIVELY through RichText — the theme's
 // single audited HTML sink (@/lib/rich-text). No new dangerouslySetInnerHTML
@@ -23,6 +33,10 @@ import { RichText } from "@/lib/rich-text";
 export interface PlanReferimientoProps {
   eyebrow?: string;
   heading?: string;
+  step1Title?: string;
+  step1Body?: string;
+  step2Title?: string;
+  step2Body?: string;
   prizeCalloutTitle?: string;
   prizeCalloutBody?: string;
   ctaLabel?: string;
@@ -34,10 +48,14 @@ export interface PlanReferimientoProps {
 
 export const PlanReferimiento = ({
   eyebrow = "Refiere y gana",
-  heading = "Plan de Referimiento",
+  heading = "Plan de referidos",
+  step1Title = "Comparte tu enlace",
+  step1Body = "Solicita tu enlace de referido y compártelo con amigos y familiares.",
+  step2Title = "Acumula oportunidades para ganar",
+  step2Body = "Cada vez que una persona se registre a través de tu enlace y realice su primer envío, recibirás automáticamente un boleto electrónico para participar.",
   prizeCalloutTitle = "Premios del sorteo",
-  prizeCalloutBody = "AirPods, gift cards, iPads y otros artículos seleccionados por Fixo Cargo.",
-  ctaLabel = "¡Solicita el enlace aquí!",
+  prizeCalloutBody = "AirPods, gift cards, iPads y otros premios seleccionados por Fixo Cargo.",
+  ctaLabel = "¡Solicita tu enlace!",
   ctaUrl = "#",
   terms = "",
 }: PlanReferimientoProps): React.ReactNode => {
@@ -63,29 +81,30 @@ export const PlanReferimiento = ({
               ¿Cómo Funciona?
             </h3>
 
-            <div className="flex items-start gap-4">
-              <IconChip background="yellow" size="md">
-                <span className="font-gotham font-bold text-brand-navy text-lg">
-                  1
-                </span>
-              </IconChip>
-              <p className="font-gill text-white/80 text-lg leading-6">
-                Solicita tu enlace de referidor y compártelo con tus amigos y
-                familiares.
-              </p>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <IconChip background="yellow" size="md">
-                <span className="font-gotham font-bold text-brand-navy text-lg">
-                  2
-                </span>
-              </IconChip>
-              <p className="font-gill text-white/80 text-lg leading-6">
-                Cada vez que alguien se registre y realice un pedido a través
-                de tu enlace, recibirás automáticamente un boleto electrónico.
-              </p>
-            </div>
+            {[
+              { number: "1", title: step1Title, body: step1Body },
+              { number: "2", title: step2Title, body: step2Body },
+            ].map((step) => (
+              <div key={step.number} className="flex items-start gap-4">
+                <IconChip background="yellow" size="md">
+                  <span className="font-gotham font-bold text-brand-navy text-lg">
+                    {step.number}
+                  </span>
+                </IconChip>
+                <div className="flex flex-col gap-1">
+                  {step.title && (
+                    <p className="font-gotham font-bold text-white text-lg leading-6">
+                      {step.title}
+                    </p>
+                  )}
+                  {step.body && (
+                    <p className="font-gill text-white/80 text-lg leading-6">
+                      {step.body}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
 
             <div className="rounded-2xl bg-white/5 p-6 flex flex-col gap-2">
               {prizeCalloutTitle && (
@@ -119,7 +138,8 @@ export const PlanReferimiento = ({
   );
 };
 
-// Exactly 7 editable fields, ids → camelCase props.
+// Eleven editable fields, ids → camelCase props. The step count stays fixed at
+// two; only their copy is editable.
 export const planReferimientoSettingsSchema = [
   {
     id: "eyebrow",
@@ -131,7 +151,33 @@ export const planReferimientoSettingsSchema = [
     id: "heading",
     label: "Título",
     type: "text",
-    default: "Plan de Referimiento",
+    default: "Plan de referidos",
+  },
+  {
+    id: "step1Title",
+    label: "Paso 1 · Título",
+    type: "text",
+    default: "Comparte tu enlace",
+  },
+  {
+    id: "step1Body",
+    label: "Paso 1 · Descripción",
+    type: "textarea",
+    default:
+      "Solicita tu enlace de referido y compártelo con amigos y familiares.",
+  },
+  {
+    id: "step2Title",
+    label: "Paso 2 · Título",
+    type: "text",
+    default: "Acumula oportunidades para ganar",
+  },
+  {
+    id: "step2Body",
+    label: "Paso 2 · Descripción",
+    type: "textarea",
+    default:
+      "Cada vez que una persona se registre a través de tu enlace y realice su primer envío, recibirás automáticamente un boleto electrónico para participar.",
   },
   {
     id: "prizeCalloutTitle",
@@ -144,13 +190,13 @@ export const planReferimientoSettingsSchema = [
     label: "Descripción del premio",
     type: "textarea",
     default:
-      "AirPods, gift cards, iPads y otros artículos seleccionados por Fixo Cargo.",
+      "AirPods, gift cards, iPads y otros premios seleccionados por Fixo Cargo.",
   },
   {
     id: "ctaLabel",
     label: "Texto del botón",
     type: "text",
-    default: "¡Solicita el enlace aquí!",
+    default: "¡Solicita tu enlace!",
   },
   {
     id: "ctaUrl",

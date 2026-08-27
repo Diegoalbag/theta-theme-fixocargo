@@ -128,29 +128,49 @@ describe("PlanReferimiento", () => {
   it("renders the default eyebrow/heading", () => {
     const html = renderToStaticMarkup(<PlanReferimiento />);
     expect(html).toContain("Refiere y gana");
-    expect(html).toContain("Plan de Referimiento");
+    expect(html).toContain("Plan de referidos");
   });
 
-  it("renders the hardcoded '¿Cómo Funciona?' heading and BOTH process steps regardless of props", () => {
+  it("renders the hardcoded '¿Cómo Funciona?' heading and BOTH default process steps", () => {
     const html = renderToStaticMarkup(
       <PlanReferimiento eyebrow="" heading="" />,
     );
     expect(html).toContain("¿Cómo Funciona?");
+    expect(html).toContain("Comparte tu enlace");
     expect(html).toContain(
-      "Solicita tu enlace de referidor y compártelo con tus amigos y familiares.",
+      "Solicita tu enlace de referido y compártelo con amigos y familiares.",
     );
+    expect(html).toContain("Acumula oportunidades para ganar");
     expect(html).toContain(
-      "Cada vez que alguien se registre y realice un pedido a través de tu enlace, recibirás automáticamente un boleto electrónico.",
+      "Cada vez que una persona se registre a través de tu enlace y realice su primer envío, recibirás automáticamente un boleto electrónico para participar.",
     );
+  });
+
+  it("renders BOTH step numbers with merchant-supplied step copy, and omits an emptied step half", () => {
+    const html = renderToStaticMarkup(
+      <PlanReferimiento
+        step1Title="Paso uno"
+        step1Body="Cuerpo uno"
+        step2Title=""
+        step2Body="Cuerpo dos"
+      />,
+    );
+    expect(html).toContain("Paso uno");
+    expect(html).toContain("Cuerpo uno");
+    expect(html).toContain("Cuerpo dos");
+    expect(html).not.toContain("Acumula oportunidades para ganar");
+    // The numbered chips are structural — both survive an emptied title.
+    expect(html).toContain(">1<");
+    expect(html).toContain(">2<");
   });
 
   it("renders the default prizeCalloutTitle/Body and a CTA anchor with the default label/href", () => {
     const html = renderToStaticMarkup(<PlanReferimiento />);
     expect(html).toContain("Premios del sorteo");
     expect(html).toContain(
-      "AirPods, gift cards, iPads y otros artículos seleccionados por Fixo Cargo.",
+      "AirPods, gift cards, iPads y otros premios seleccionados por Fixo Cargo.",
     );
-    expect(html).toContain("¡Solicita el enlace aquí!");
+    expect(html).toContain("¡Solicita tu enlace!");
     expect(html).toContain("<a");
     expect(html).toContain('href="#"');
   });
@@ -164,12 +184,16 @@ describe("PlanReferimiento", () => {
     expect(html).toContain("Contenido de términos");
   });
 
-  it("planReferimientoSettingsSchema has 7 entries with terms as richtext", () => {
-    expect(planReferimientoSettingsSchema).toHaveLength(7);
+  it("planReferimientoSettingsSchema has 11 entries with terms as richtext", () => {
+    expect(planReferimientoSettingsSchema).toHaveLength(11);
     const ids = planReferimientoSettingsSchema.map((s) => s.id);
     expect(ids).toEqual([
       "eyebrow",
       "heading",
+      "step1Title",
+      "step1Body",
+      "step2Title",
+      "step2Body",
       "prizeCalloutTitle",
       "prizeCalloutBody",
       "ctaLabel",
@@ -190,16 +214,31 @@ describe("ListaRegalos", () => {
       "¿Planeando tu baby shower, cumpleaños o boda?",
     );
     expect(html).toContain(
-      "Hazlo aún más especial. Crea tu lista de regalos con nosotros y disfruta de beneficios exclusivos.",
+      "Haz que tu celebración sea aún más especial. Crea tu lista de regalos y disfruta de beneficios exclusivos con Fixo Cargo.",
     );
   });
 
-  it("renders BOTH hardcoded tiles regardless of props", () => {
+  it("renders BOTH promo tiles from their defaults", () => {
     const html = renderToStaticMarkup(<ListaRegalos />);
     expect(html).toContain("20%");
     expect(html).toContain("de descuento en el flete");
-    expect(html).toContain("Gana Amazon Gift Cards");
-    expect(html).toContain("perfectas para consentirte");
+    expect(html).toContain("Amazon Gift Cards");
+    expect(html).toContain("Beneficios especiales para celebrar contigo.");
+  });
+
+  it("renders merchant-supplied tile copy and omits an emptied tile half", () => {
+    const html = renderToStaticMarkup(
+      <ListaRegalos
+        benefit1Value="30%"
+        benefit1Label="de descuento"
+        benefit2Title="Regalo sorpresa"
+        benefit2Body=""
+      />,
+    );
+    expect(html).toContain("30%");
+    expect(html).toContain("de descuento");
+    expect(html).toContain("Regalo sorpresa");
+    expect(html).not.toContain("Beneficios especiales para celebrar contigo.");
   });
 
   it("renders the hardcoded '¿Cómo funciona?' label", () => {
@@ -221,10 +260,19 @@ describe("ListaRegalos", () => {
     expect(html).toContain("lg:grid-cols-3");
   });
 
-  it("listaRegalosSettingsSchema has 4 entries [eyebrow, heading, promoHeading, promoBody]", () => {
-    expect(listaRegalosSettingsSchema).toHaveLength(4);
+  it("listaRegalosSettingsSchema has 8 entries incl. both editable promo tiles", () => {
+    expect(listaRegalosSettingsSchema).toHaveLength(8);
     const ids = listaRegalosSettingsSchema.map((s) => s.id);
-    expect(ids).toEqual(["eyebrow", "heading", "promoHeading", "promoBody"]);
+    expect(ids).toEqual([
+      "eyebrow",
+      "heading",
+      "promoHeading",
+      "promoBody",
+      "benefit1Value",
+      "benefit1Label",
+      "benefit2Title",
+      "benefit2Body",
+    ]);
   });
 });
 

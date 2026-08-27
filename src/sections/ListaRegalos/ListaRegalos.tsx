@@ -20,6 +20,10 @@ export interface ListaRegalosProps {
   heading?: string;
   promoHeading?: string;
   promoBody?: string;
+  benefit1Value?: string;
+  benefit1Label?: string;
+  benefit2Title?: string;
+  benefit2Body?: string;
   renderBlocks?: () => React.ReactNode;
   sectionId?: string;
   sectionName?: string;
@@ -29,7 +33,17 @@ export const ListaRegalos = ({
   eyebrow = "Celebra con Fixo",
   heading = "Lista de Regalos",
   promoHeading = "¿Planeando tu baby shower, cumpleaños o boda?",
-  promoBody = "Hazlo aún más especial. Crea tu lista de regalos con nosotros y disfruta de beneficios exclusivos.",
+  promoBody = "Haz que tu celebración sea aún más especial. Crea tu lista de regalos y disfruta de beneficios exclusivos con Fixo Cargo.",
+  // The two promo tiles (quick task 260827) were literal text until the 2026-08
+  // copy revision rewrote tile 2 and flagged that its wording depends on an
+  // unsettled commercial condition. They are settings now so a copy change --
+  // or the eventual Amazon Gift Card condition -- never needs a code change.
+  // Tile 1 keeps its value/label split because the value renders as the large
+  // display numeral; passing an empty string to either hides that half.
+  benefit1Value = "20%",
+  benefit1Label = "de descuento en el flete",
+  benefit2Title = "Amazon Gift Cards",
+  benefit2Body = "Beneficios especiales para celebrar contigo.",
   renderBlocks,
 }: ListaRegalosProps): React.ReactNode => {
   return (
@@ -67,20 +81,28 @@ export const ListaRegalos = ({
 
           <div className="flex flex-col gap-4 sm:flex-row">
             <div className="flex flex-col items-center justify-center gap-1 rounded-2xl bg-brand-yellow px-6 py-6 text-center text-brand-navy">
-              <span className="font-aku italic text-4xl leading-none">
-                20%
-              </span>
-              <span className="font-gotham font-bold text-sm leading-tight">
-                de descuento en el flete
-              </span>
+              {benefit1Value && (
+                <span className="font-aku italic text-4xl leading-none">
+                  {benefit1Value}
+                </span>
+              )}
+              {benefit1Label && (
+                <span className="font-gotham font-bold text-sm leading-tight">
+                  {benefit1Label}
+                </span>
+              )}
             </div>
             <div className="flex flex-col items-center justify-center gap-1 rounded-2xl px-6 py-6 text-center text-white ring-2 ring-brand-yellow/50">
-              <span className="font-gotham font-bold text-base leading-tight">
-                Gana Amazon Gift Cards
-              </span>
-              <span className="font-gill text-sm text-white/70">
-                perfectas para consentirte
-              </span>
+              {benefit2Title && (
+                <span className="font-gotham font-bold text-base leading-tight">
+                  {benefit2Title}
+                </span>
+              )}
+              {benefit2Body && (
+                <span className="font-gill text-sm text-white/70">
+                  {benefit2Body}
+                </span>
+              )}
             </div>
           </div>
         </Card>
@@ -101,7 +123,7 @@ export const ListaRegalos = ({
   );
 };
 
-// Exactly 4 editable fields, ids → camelCase props.
+// Eight editable fields, ids → camelCase props.
 export const listaRegalosSettingsSchema = [
   {
     id: "eyebrow",
@@ -126,6 +148,30 @@ export const listaRegalosSettingsSchema = [
     label: "Descripción del banner",
     type: "textarea",
     default:
-      "Hazlo aún más especial. Crea tu lista de regalos con nosotros y disfruta de beneficios exclusivos.",
+      "Haz que tu celebración sea aún más especial. Crea tu lista de regalos y disfruta de beneficios exclusivos con Fixo Cargo.",
+  },
+  {
+    id: "benefit1Value",
+    label: "Beneficio 1 · Cifra",
+    type: "text",
+    default: "20%",
+  },
+  {
+    id: "benefit1Label",
+    label: "Beneficio 1 · Texto",
+    type: "text",
+    default: "de descuento en el flete",
+  },
+  {
+    id: "benefit2Title",
+    label: "Beneficio 2 · Título",
+    type: "text",
+    default: "Amazon Gift Cards",
+  },
+  {
+    id: "benefit2Body",
+    label: "Beneficio 2 · Texto",
+    type: "text",
+    default: "Beneficios especiales para celebrar contigo.",
   },
 ];
