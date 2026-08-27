@@ -29,6 +29,8 @@ export interface FranquiciasInternacionalesProps {
   country1?: string;
   country2?: string;
   country3?: string;
+  country4?: string;
+  country5?: string;
   offerHeading?: string;
   offer1Title?: string;
   offer1Body?: string;
@@ -59,6 +61,13 @@ export const FranquiciasInternacionales = ({
   country1 = "República Dominicana",
   country2 = "Puerto Rico",
   country3 = "Paraguay",
+  // country4/country5 (quick task 260827) extend the market pills from three
+  // to five. They default to "" rather than to their real market names so a
+  // section saved BEFORE these settings existed renders exactly the three
+  // pills it always did — the `.filter(Boolean)` below drops the empty slots.
+  // The merchant fills them in the customizer.
+  country4 = "",
+  country5 = "",
   offerHeading = "Lo que ofrecemos a nuestras franquicias",
   offer1Title = "Know-How Integral",
   offer1Body = "Accede a nuestro completo conocimiento y experiencia en el sector logístico y de envíos.",
@@ -113,9 +122,11 @@ export const FranquiciasInternacionales = ({
           )}
         </div>
 
-        {(country1 || country2 || country3) && (
+        {(country1 || country2 || country3 || country4 || country5) && (
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            {[country1, country2, country3].filter(Boolean).map((country) => (
+            {[country1, country2, country3, country4, country5]
+              .filter(Boolean)
+              .map((country) => (
               <span
                 key={country}
                 className="flex h-11 items-center gap-2.5 rounded-full bg-brand-navy px-6"
@@ -244,6 +255,18 @@ export const franquiciasInternacionalesSettingsSchema = [
     label: "País 3",
     type: "text",
     default: "Paraguay",
+  },
+  {
+    id: "country4",
+    label: "País 4",
+    type: "text",
+    default: "",
+  },
+  {
+    id: "country5",
+    label: "País 5",
+    type: "text",
+    default: "",
   },
   {
     id: "offerHeading",

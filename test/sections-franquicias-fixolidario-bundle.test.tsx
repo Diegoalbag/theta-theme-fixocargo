@@ -183,8 +183,30 @@ describe("FranquiciasInternacionales", () => {
     expect(html).not.toContain("Sin elementos");
   });
 
-  it("franquiciasInternacionalesSettingsSchema has exactly 25 entries", () => {
-    expect(franquiciasInternacionalesSettingsSchema).toHaveLength(25);
+  it("franquiciasInternacionalesSettingsSchema has exactly 27 entries", () => {
+    expect(franquiciasInternacionalesSettingsSchema).toHaveLength(27);
+    const ids = franquiciasInternacionalesSettingsSchema.map((s) => s.id);
+    expect(ids).toContain("country4");
+    expect(ids).toContain("country5");
+  });
+
+  it("country4/country5 default to empty so a pre-existing section still shows exactly three pills", () => {
+    const html = renderToStaticMarkup(<FranquiciasInternacionales />);
+    expect(html).toContain("República Dominicana");
+    expect(html).toContain("Puerto Rico");
+    expect(html).toContain("Paraguay");
+    expect(html).not.toContain("España");
+  });
+
+  it("renders five market pills once country4/country5 are filled in", () => {
+    const html = renderToStaticMarkup(
+      <FranquiciasInternacionales
+        country4="Estados Unidos"
+        country5="España"
+      />,
+    );
+    expect(html).toContain("Estados Unidos");
+    expect(html).toContain("España");
   });
 });
 
