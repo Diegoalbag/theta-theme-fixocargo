@@ -6,9 +6,9 @@ import {
   ThemeIcon,
   iconOptions,
   customIconSetting,
+  type CustomIconValue,
 } from "@/components/ui/theme-icon";
 import { Button } from "@/components/ui/button";
-import type { ThemeImageValue } from "@/lib/theme-image";
 
 // ServiceItem (SVC-01) — section-local block for the Servicios band. A no-JS
 // native <details>/<summary> accordion (D-01): its initial expanded state simply
@@ -24,7 +24,7 @@ import type { ThemeImageValue } from "@/lib/theme-image";
 export interface ServiceItemProps {
   title?: string;
   icon?: string;
-  customIcon?: ThemeImageValue;
+  customIcon?: CustomIconValue;
   body?: string;
   linkUrl?: string;
   isExpanded?: boolean;

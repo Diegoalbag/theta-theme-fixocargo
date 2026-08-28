@@ -18,16 +18,23 @@ import {
 } from "lucide-react";
 
 import { ThemeImage, type ThemeImageValue } from "@/lib/theme-image";
+import { safeSvgDataUri } from "@/lib/safe-svg";
 import { cn } from "@/lib/utils";
 
 // ThemeIcon — the single icon seam shared by every block that renders a glyph
 // (ServiceItem, BenefitCard). Two mutually exclusive sources, checked in this
 // order:
 //
-//   1. `customIcon` — a merchant-uploaded image (SVG/PNG) from the media
-//      library. Rendered through ThemeImage, NEVER as inline/raw markup: an
-//      uploaded SVG is served as an <img src> so its contents can never
-//      execute script in the page's origin, and the no-bare-img gate
+//   1. `customIcon` — the merchant's own icon. Accepts TWO shapes, because the
+//      field started life as an image_picker and is now a textarea:
+//        * a STRING of pasted SVG markup (the current setting), encoded to a
+//          data: URI by @/lib/safe-svg;
+//        * an OBJECT from the media library (any icon saved while this was an
+//          image_picker), used for its `url`.
+//      Both render through ThemeImage as an <img src>, NEVER as inline/raw
+//      markup: an SVG behind <img> is in the browser's secure static mode, so
+//      its contents can never execute script in the page's origin, the theme's
+//      one-HTML-sink rule is untouched, and the no-bare-img gate
 //      (test/no-bare-img.test.ts) stays satisfied because the raw <img> lives
 //      only in @/lib/theme-image.
 //   2. `icon` — a value from the curated `iconOptions` select below, mapped to
@@ -83,14 +90,18 @@ export const iconOptions = [
 export const customIconSetting = {
   id: "customIcon",
   label: "Icono personalizado (SVG)",
-  type: "image_picker",
-  default: undefined,
-  info: "Opcional. Si subes una imagen SVG o PNG, sustituye al icono seleccionado arriba.",
+  type: "textarea",
+  default: "",
+  placeholder: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">…</svg>',
+  info: "Opcional. Pega aquí el código SVG completo (debe empezar por <svg). Sustituye al icono seleccionado arriba. El SVG se muestra con sus propios colores.",
 };
+
+// A string is pasted SVG markup; an object is a legacy media-library value.
+export type CustomIconValue = string | ThemeImageValue;
 
 export interface ThemeIconProps {
   icon?: string;
-  customIcon?: ThemeImageValue;
+  customIcon?: CustomIconValue;
   fallback?: string;
   className?: string;
 }
@@ -101,14 +112,22 @@ export const ThemeIcon = ({
   fallback = "package",
   className,
 }: ThemeIconProps): React.ReactNode => {
-  if (customIcon?.url) {
+  // Pasted markup wins; an unparseable/hostile paste yields undefined and falls
+  // through to the curated glyph rather than rendering a broken image.
+  const pastedUrl =
+    typeof customIcon === "string" ? safeSvgDataUri(customIcon) : undefined;
+  const uploaded =
+    customIcon && typeof customIcon !== "string" ? customIcon : undefined;
+  const url = pastedUrl ?? uploaded?.url ?? undefined;
+
+  if (url) {
     return (
       <ThemeImage
-        url={customIcon.url}
-        alt={customIcon.alt ?? ""}
-        width={customIcon.width}
-        height={customIcon.height}
-        formats={customIcon.formats}
+        url={url}
+        alt={uploaded?.alt ?? ""}
+        width={uploaded?.width}
+        height={uploaded?.height}
+        formats={uploaded?.formats}
         sizesHint="48px"
         positioning="custom"
         className={cn("object-contain", className)}

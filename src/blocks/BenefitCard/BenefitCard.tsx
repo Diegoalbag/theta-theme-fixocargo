@@ -5,8 +5,8 @@ import {
   ThemeIcon,
   iconOptions,
   customIconSetting,
+  type CustomIconValue,
 } from "@/components/ui/theme-icon";
-import type { ThemeImageValue } from "@/lib/theme-image";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -30,7 +30,7 @@ import { Button } from "@/components/ui/button";
 // No state, no event handlers, no hex literals, @/ imports only.
 export interface BenefitCardProps {
   icon?: string;
-  customIcon?: ThemeImageValue;
+  customIcon?: CustomIconValue;
   title?: string;
   body?: string;
   linkUrl?: string;
