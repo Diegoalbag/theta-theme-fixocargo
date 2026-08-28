@@ -163,14 +163,62 @@ describe("Sucursales", () => {
     expect(src).not.toMatch(/\.href\s*=\s*mapurl\b/);
   });
 
-  it("sucursalesSettingsSchema has exactly 3 entries [heading,subtitle,mapQuery]", () => {
-    expect(sucursalesSettingsSchema).toHaveLength(3);
+  it("sucursalesSettingsSchema has exactly 4 entries [heading,subtitle,mapQuery,anchorId]", () => {
+    expect(sucursalesSettingsSchema).toHaveLength(4);
     const ids = sucursalesSettingsSchema.map((s) => s.id);
-    expect(ids).toEqual(["heading", "subtitle", "mapQuery"]);
+    expect(ids).toEqual(["heading", "subtitle", "mapQuery", "anchorId"]);
     const mapQuerySetting = sucursalesSettingsSchema.find(
       (s) => s.id === "mapQuery",
     );
     expect(mapQuerySetting?.type).toBe("text");
+    const anchorSetting = sucursalesSettingsSchema.find(
+      (s) => s.id === "anchorId",
+    );
+    expect(anchorSetting?.type).toBe("text");
+    expect(anchorSetting?.default).toBe("");
+  });
+});
+
+// Deep links (quick task 260828) — mirrors the faq section's anchor contract
+// in test/sections-faq.test.tsx.
+describe("Sucursales — anchor id", () => {
+  it("emits NO id attribute when the anchor is blank", () => {
+    // safeAnchorId returns undefined (never ""), which React drops entirely; an
+    // empty-string anchor would emit id="" and this would go red.
+    const html = renderToStaticMarkup(<Sucursales />);
+    expect(html).not.toContain("id=");
+  });
+
+  it("treats a whitespace-only anchor as absent", () => {
+    const html = renderToStaticMarkup(<Sucursales anchorId="   " />);
+    expect(html).not.toContain("id=");
+  });
+
+  it("renders the anchor as an id on the <section>, with the scroll cushion", () => {
+    const html = renderToStaticMarkup(<Sucursales anchorId="sucursales" />);
+    expect(html).toContain('id="sucursales"');
+    expect(html).toContain("scroll-mt-24");
+  });
+
+  it("normalizes a messy anchor on the way to the DOM", () => {
+    // Full normalization rules are covered in test/safe-anchor.test.ts; this
+    // only pins that the section actually routes through the guard.
+    const html = renderToStaticMarkup(
+      <Sucursales anchorId="#  Nuestras Sucursales " />,
+    );
+    expect(html).toContain('id="nuestras-sucursales"');
+  });
+
+  it("leaves an un-anchored section's class string byte-identical to today", () => {
+    const html = renderToStaticMarkup(<Sucursales />);
+    expect(html).toContain('class="bg-transparent section-padding-y"');
+    expect(html).not.toContain("scroll-mt-24");
+  });
+
+  it("keeps the search input and map intact when anchored (the id is inert)", () => {
+    const html = renderToStaticMarkup(<Sucursales anchorId="sucursales" />);
+    expect(html).toContain('type="search"');
+    expect(html).toContain("maps.google.com");
   });
 });
 

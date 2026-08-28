@@ -4,6 +4,8 @@ import { Search } from "lucide-react";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { BlocksSlot } from "@/lib/blocks-slot";
 import { safeHref } from "@/lib/safe-href";
+import { safeAnchorId } from "@/lib/safe-anchor";
+import { cn } from "@/lib/utils";
 
 // Sucursales (INF-01) — the light "find a branch" section. A light SectionHeading
 // over a two-column row (stacked on mobile): LEFT = a REAL search input that
@@ -28,6 +30,18 @@ import { safeHref } from "@/lib/safe-href";
 // jsdom/SSR never runs effects, so renderToStaticMarkup stays safe (matches Hero).
 // The branch cards keep their own tel:/maps anchors as the no-JS fallback, and
 // with JS off every card stays visible: nothing is hidden from JSX.
+//
+// DEEP LINKS (quick task 260828): an optional merchant-typed `anchorId` renders
+// as the `id` on this <section>, so a nav link or CTA can target the whole band
+// — the "Ver sucursales" CTA on Quiénes somos is exactly this case. Same guard
+// (safeAnchorId) and same contract as the faq section: a blank value normalizes
+// to `undefined`, which React drops entirely, so a sucursales section saved
+// before this field existed renders byte-identically.
+//
+// The id goes on the OUTER <section> — the same node rootRef already points at.
+// That is deliberate: an id is inert markup, so it cannot perturb the ref, the
+// delegated click listener, or the filter's querySelector walk, all of which
+// resolve by class/attribute rather than by id.
 //
 // No React state. Brand tokens only — no hex literals (the selected-card outline
 // uses the --brand-yellow CSS var). @/ imports only.
@@ -133,6 +147,7 @@ export interface SucursalesProps {
   heading?: string;
   subtitle?: string;
   mapQuery?: string;
+  anchorId?: string;
   renderBlocks?: () => React.ReactNode;
   sectionId?: string;
   sectionName?: string;
@@ -142,8 +157,10 @@ export const Sucursales = ({
   heading = "Nuestras Sucursales",
   subtitle = "Siempre cerca de ti: tu courier de confianza, estés donde estés",
   mapQuery = "República Dominicana",
+  anchorId = "",
   renderBlocks,
 }: SucursalesProps): React.ReactNode => {
+  const anchor = safeAnchorId(anchorId);
   const rootRef = React.useRef<HTMLDivElement>(null);
   const searchRef = React.useRef<HTMLInputElement>(null);
   const mapRef = React.useRef<HTMLIFrameElement>(null);
@@ -344,7 +361,16 @@ export const Sucursales = ({
   });
 
   return (
-    <section ref={rootRef} className="bg-transparent section-padding-y">
+    <section
+      ref={rootRef}
+      id={anchor}
+      className={cn(
+        "bg-transparent section-padding-y",
+        // Cushion applied ONLY when anchored, so an un-anchored band's class
+        // string is unchanged.
+        anchor && "scroll-mt-24",
+      )}
+    >
       <div className="container mx-auto container-padding-x">
         <SectionHeading variant="light" title={heading} subtitle={subtitle} />
 
@@ -464,8 +490,9 @@ export const Sucursales = ({
   );
 };
 
-// Three editable fields, ids → camelCase props. mapQuery seeds the map's initial
-// (and no-JS) location before a branch is selected.
+// Four editable fields, ids → camelCase props. mapQuery seeds the map's initial
+// (and no-JS) location before a branch is selected. Grow-only: `anchorId` is
+// appended last and defaults to "".
 export const sucursalesSettingsSchema = [
   {
     id: "heading",
@@ -485,5 +512,12 @@ export const sucursalesSettingsSchema = [
     type: "text",
     default: "República Dominicana",
     info: "Dirección o coordenadas que muestra el mapa antes de elegir una sucursal.",
+  },
+  {
+    id: "anchorId",
+    label: "Ancla (enlace directo)",
+    type: "text",
+    default: "",
+    info: "Escribe una palabra corta, por ejemplo sucursales. El enlace directo a esta sección será la dirección de tu página seguida de una almohadilla y esa palabra. Déjalo vacío si no lo necesitas.",
   },
 ];
