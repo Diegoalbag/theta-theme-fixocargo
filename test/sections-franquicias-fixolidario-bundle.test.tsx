@@ -51,8 +51,8 @@ describe("Fixolidario", () => {
     expect(html).toContain("lg:grid-cols-4");
   });
 
-  it("fixolidarioSettingsSchema has exactly 7 entries", () => {
-    expect(fixolidarioSettingsSchema).toHaveLength(7);
+  it("fixolidarioSettingsSchema has exactly 8 entries", () => {
+    expect(fixolidarioSettingsSchema).toHaveLength(8);
     const ids = fixolidarioSettingsSchema.map((s) => s.id);
     expect(ids).toEqual([
       "kicker",
@@ -62,7 +62,46 @@ describe("Fixolidario", () => {
       "statHeadline",
       "statBody",
       "partnersHeading",
+      "anchorId",
     ]);
+    const anchorSetting = fixolidarioSettingsSchema.find(
+      (s) => s.id === "anchorId",
+    );
+    expect(anchorSetting?.type).toBe("text");
+    expect(anchorSetting?.default).toBe("");
+  });
+});
+
+// Deep links (quick task 260828) — same anchor contract as the faq and
+// sucursales sections.
+describe("Fixolidario — anchor id", () => {
+  it("emits NO id attribute when the anchor is blank", () => {
+    const html = renderToStaticMarkup(<Fixolidario />);
+    expect(html).not.toContain("id=");
+  });
+
+  it("treats a whitespace-only anchor as absent", () => {
+    const html = renderToStaticMarkup(<Fixolidario anchorId="   " />);
+    expect(html).not.toContain("id=");
+  });
+
+  it("renders the anchor as an id on the <section>, with the scroll cushion", () => {
+    const html = renderToStaticMarkup(<Fixolidario anchorId="fixolidario" />);
+    expect(html).toContain('id="fixolidario"');
+    expect(html).toContain("scroll-mt-24");
+  });
+
+  it("normalizes a messy anchor on the way to the DOM", () => {
+    const html = renderToStaticMarkup(
+      <Fixolidario anchorId="#  Responsabilidad Social " />,
+    );
+    expect(html).toContain('id="responsabilidad-social"');
+  });
+
+  it("leaves an un-anchored section's class string byte-identical to today", () => {
+    const html = renderToStaticMarkup(<Fixolidario />);
+    expect(html).toContain('class="section-padding-y"');
+    expect(html).not.toContain("scroll-mt-24");
   });
 });
 
@@ -183,11 +222,50 @@ describe("FranquiciasInternacionales", () => {
     expect(html).not.toContain("Sin elementos");
   });
 
-  it("franquiciasInternacionalesSettingsSchema has exactly 27 entries", () => {
-    expect(franquiciasInternacionalesSettingsSchema).toHaveLength(27);
+  it("franquiciasInternacionalesSettingsSchema has exactly 28 entries", () => {
+    expect(franquiciasInternacionalesSettingsSchema).toHaveLength(28);
     const ids = franquiciasInternacionalesSettingsSchema.map((s) => s.id);
     expect(ids).toContain("country4");
     expect(ids).toContain("country5");
+    expect(ids).toContain("anchorId");
+    const anchorSetting = franquiciasInternacionalesSettingsSchema.find(
+      (s) => s.id === "anchorId",
+    );
+    expect(anchorSetting?.type).toBe("text");
+    expect(anchorSetting?.default).toBe("");
+  });
+
+  it("emits NO id attribute when the anchor is blank", () => {
+    const html = renderToStaticMarkup(<FranquiciasInternacionales />);
+    expect(html).not.toContain("id=");
+  });
+
+  it("treats a whitespace-only anchor as absent", () => {
+    const html = renderToStaticMarkup(
+      <FranquiciasInternacionales anchorId="   " />,
+    );
+    expect(html).not.toContain("id=");
+  });
+
+  it("renders the anchor as an id on the <section>, with the scroll cushion", () => {
+    const html = renderToStaticMarkup(
+      <FranquiciasInternacionales anchorId="franquicias" />,
+    );
+    expect(html).toContain('id="franquicias"');
+    expect(html).toContain("scroll-mt-24");
+  });
+
+  it("normalizes a messy anchor on the way to the DOM", () => {
+    const html = renderToStaticMarkup(
+      <FranquiciasInternacionales anchorId="#  Franquicias Internacionales " />,
+    );
+    expect(html).toContain('id="franquicias-internacionales"');
+  });
+
+  it("leaves an un-anchored section's class string byte-identical to today", () => {
+    const html = renderToStaticMarkup(<FranquiciasInternacionales />);
+    expect(html).toContain('class="bg-muted section-padding-y"');
+    expect(html).not.toContain("scroll-mt-24");
   });
 
   it("country4/country5 default to empty so a pre-existing section still shows exactly three pills", () => {

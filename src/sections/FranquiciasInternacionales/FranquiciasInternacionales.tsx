@@ -11,6 +11,8 @@ import {
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { safeAnchorId } from "@/lib/safe-anchor";
+import { cn } from "@/lib/utils";
 
 // FranquiciasInternacionales (quick task 260708-dm3) — a fully self-contained,
 // settings-only section for the FixoCargo homepage: NO renderBlocks prop, NO
@@ -20,6 +22,13 @@ import { Button } from "@/components/ui/button";
 // never hardcoded non-editable text. Each list's icon is fixed decorative
 // JSX (module-scoped arrays pairing a fixed lucide-react component with
 // settings-driven text) — never merchant-selectable.
+//
+// DEEP LINKS (quick task 260828): an optional merchant-typed `anchorId` renders
+// as the `id` on this <section>, so a nav link or CTA can target the whole band.
+// Same guard (safeAnchorId) and same contract as the faq and sucursales
+// sections: a blank value normalizes to `undefined`, which React drops
+// entirely, so a section saved before this field existed renders
+// byte-identically, class string included.
 //
 // No state, no event handlers, no hex literals, @/ imports only.
 export interface FranquiciasInternacionalesProps {
@@ -50,6 +59,7 @@ export interface FranquiciasInternacionalesProps {
   whySupportingText?: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  anchorId?: string;
   sectionId?: string;
   sectionName?: string;
 }
@@ -87,7 +97,10 @@ export const FranquiciasInternacionales = ({
   whySupportingText = "¿Interesado en explorar oportunidades de franquicia? Completa el formulario para iniciar la conversación.",
   ctaLabel = "Llenar el formulario",
   ctaUrl = "#",
+  anchorId = "",
 }: FranquiciasInternacionalesProps): React.ReactNode => {
+  const anchor = safeAnchorId(anchorId);
+
   const offerItems = [
     { Icon: GraduationCap, title: offer1Title, body: offer1Body },
     { Icon: ClipboardCheck, title: offer2Title, body: offer2Body },
@@ -102,7 +115,15 @@ export const FranquiciasInternacionales = ({
   ];
 
   return (
-    <section className="bg-muted section-padding-y">
+    <section
+      id={anchor}
+      className={cn(
+        "bg-muted section-padding-y",
+        // Cushion applied ONLY when anchored, so an un-anchored band's class
+        // string is unchanged.
+        anchor && "scroll-mt-24",
+      )}
+    >
       <div className="container mx-auto container-padding-x">
         <div className="flex flex-col items-start gap-3 max-w-3xl">
           {kicker && (
@@ -388,5 +409,12 @@ export const franquiciasInternacionalesSettingsSchema = [
     type: "url",
     default: "#",
     placeholder: "https://…",
+  },
+  {
+    id: "anchorId",
+    label: "Ancla (enlace directo)",
+    type: "text",
+    default: "",
+    info: "Escribe una palabra corta, por ejemplo franquicias. El enlace directo a esta sección será la dirección de tu página seguida de una almohadilla y esa palabra. Déjalo vacío si no lo necesitas.",
   },
 ];
