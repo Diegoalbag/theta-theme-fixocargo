@@ -25,11 +25,22 @@ import {
  *     reaches Strapi. The definition is fetched with the read-only token this site
  *     already has, so the ingest token needs no read grant.
  *
- * Rate limiting is deliberately NOT implemented here. The obvious approach — an
- * in-memory counter — is per function instance on serverless and barely binds
- * under concurrency. Abuse control belongs at the platform edge (Vercel BotID +
- * WAF rate rules), which runs before this function is invoked at all. The honeypot
- * below is a cheap spam filter, not a security control.
+ * Rate limiting is deliberately NOT implemented here, and that is no longer a gap.
+ * The obvious approach — an in-memory counter — is per function instance on
+ * serverless and barely binds under concurrency, and it would still pay for every
+ * request it rejected. Abuse control therefore lives at the platform edge: the
+ * platform installs a WAF rate-limit rule (POST to this exact path, 20/60s per IP,
+ * then deny) on every tenant Vercel project at creation — see
+ * `ThemeDeployService.configureFormRateLimit`, with
+ * `scripts/backfill-form-rate-limit.ts` covering tenants provisioned earlier. That
+ * runs before this function is invoked at all, so a flood costs neither an
+ * invocation nor bandwidth.
+ *
+ * Do not "helpfully" add a counter here: it would duplicate a control that already
+ * binds harder, in the one place where it binds least.
+ *
+ * The honeypot below is a cheap spam filter, not a security control. Per-request
+ * damage is bounded separately by LIMITS.MAX_PAYLOAD_BYTES and MAX_FILE_BYTES.
  */
 
 // Never prerender or cache — this is a write path.
