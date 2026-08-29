@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
-import { safeSvgDataUri } from "@/lib/safe-svg";
+import { safeSvgDataUri, SVG_MAX_LENGTH } from "@/lib/safe-svg";
+import { customIconSetting } from "@/components/ui/theme-icon";
 
 // safeSvgDataUri (quick task 260828) — the guard behind the "Icono
 // personalizado (SVG)" textarea, where a merchant pastes raw SVG markup.
@@ -110,5 +111,35 @@ describe("safeSvgDataUri — nothing executable survives", () => {
     expect(out).not.toContain("<");
     expect(out).not.toContain(">");
     expect(out).not.toContain('"');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The customizer field must not accept less than this validator will take.
+//
+// customIconSetting is `type: "textarea"`, and the platform's TextareaInput does
+// `setting.max ?? 500` and puts the result on the textarea's `maxLength`. With
+// no explicit `max`, a merchant pasting a real icon (commonly 800-3000 chars)
+// had it silently truncated at 500 by the browser — no error, the counter just
+// reads 500/500. The truncated fragment then fails SVG_ROOT here and renders
+// nothing. Deriving `max` from SVG_MAX_LENGTH is what keeps the two ends honest.
+// ---------------------------------------------------------------------------
+describe("customIconSetting is capped in step with the validator", () => {
+  it("carries an explicit max — without one the platform silently caps at 500", () => {
+    expect(customIconSetting.max).toBeDefined();
+    expect(customIconSetting.max).not.toBe(500);
+  });
+
+  it("caps at exactly the length safeSvgDataUri accepts", () => {
+    expect(customIconSetting.max).toBe(SVG_MAX_LENGTH);
+  });
+
+  it("accepts an SVG far longer than the old 500 default", () => {
+    // A realistic icon: comfortably over 500, well under the cap.
+    const path = "M12 2L2 7l10 5 10-5-10-5z".repeat(40);
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="${path}"/></svg>`;
+    expect(svg.length).toBeGreaterThan(500);
+    expect(svg.length).toBeLessThan(SVG_MAX_LENGTH);
+    expect(safeSvgDataUri(svg)).toBeDefined();
   });
 });

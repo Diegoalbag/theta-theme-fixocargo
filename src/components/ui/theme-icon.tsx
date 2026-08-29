@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 import { ThemeImage, type ThemeImageValue } from "@/lib/theme-image";
-import { safeSvgDataUri } from "@/lib/safe-svg";
+import { safeSvgDataUri, SVG_MAX_LENGTH } from "@/lib/safe-svg";
 import { cn } from "@/lib/utils";
 
 // ThemeIcon — the single icon seam shared by every block that renders a glyph
@@ -92,6 +92,12 @@ export const customIconSetting = {
   label: "Icono personalizado (SVG)",
   type: "textarea",
   default: "",
+  // REQUIRED, not cosmetic. The platform's TextareaInput does
+  // `setting.max ?? 500` and puts it on the textarea's `maxLength`, so without
+  // this a pasted SVG is silently truncated at 500 characters — shorter than
+  // essentially every real icon. Derived from safe-svg.ts so this field can
+  // never accept more markup than the renderer will take.
+  max: SVG_MAX_LENGTH,
   placeholder: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">…</svg>',
   info: "Opcional. Pega aquí el código SVG completo (debe empezar por <svg). Sustituye al icono seleccionado arriba. El SVG se muestra con sus propios colores.",
 };

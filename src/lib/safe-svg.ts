@@ -61,15 +61,25 @@ const ENTITIES = /&#x?[0-9a-f]+;?/gi;
 // splitting the token ("java<TAB>script:").
 const CONTROL_CHARS = /[\u0000-\u001f\u007f]/g;
 
-// Keep the attribute sane if a merchant pastes an entire illustration.
-const MAX_LENGTH = 12_000;
+/**
+ * Keep the attribute sane if a merchant pastes an entire illustration.
+ *
+ * EXPORTED so the customizer field that collects this markup caps itself at the
+ * same number. `customIconSetting` (src/components/ui/theme-icon.tsx) sets `max`
+ * from this: without it the platform's TextareaInput falls back to
+ * `setting.max ?? 500` and puts that on the textarea's `maxLength`, so a pasted
+ * SVG is silently truncated at 500 characters — about 4% of what this validator
+ * accepts, and shorter than essentially every real icon. The truncated fragment
+ * then fails SVG_ROOT below and renders nothing, with no error anywhere.
+ */
+export const SVG_MAX_LENGTH = 12_000;
 
 export const safeSvgDataUri = (value?: string): string | undefined => {
   if (!value) return undefined;
 
   const trimmed = value.trim();
   if (!SVG_ROOT.test(trimmed)) return undefined;
-  if (trimmed.length > MAX_LENGTH) return undefined;
+  if (trimmed.length > SVG_MAX_LENGTH) return undefined;
 
   // Fold the hiding tricks BEFORE the scrub, so the patterns below see the
   // payload in its plain form.
