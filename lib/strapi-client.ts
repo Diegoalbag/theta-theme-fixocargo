@@ -25,7 +25,10 @@ export const normalizeUrl = (url: string): string => {
 // Strapi configuration from environment variables
 // Client-side code uses NEXT_PUBLIC_ prefix, but can fall back to server-side env vars
 const rawStrapiUrl = process.env.NEXT_PUBLIC_STRAPI_URL || "";
-const STRAPI_BASE_URL = rawStrapiUrl ? normalizeUrl(rawStrapiUrl) : "";
+// Exported for the form-ingest route, which talks to Strapi's REST upload and
+// form-submission endpoints directly (with the create-only token) rather than
+// through this module's read-only GraphQL client.
+export const STRAPI_BASE_URL = rawStrapiUrl ? normalizeUrl(rawStrapiUrl) : "";
 const STRAPI_ACCESS_TOKEN = process.env.NEXT_PUBLIC_STRAPI_TOKEN || "";
 
 // Create GraphQL client

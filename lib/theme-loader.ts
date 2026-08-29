@@ -30,6 +30,13 @@ export interface LoadedThemeModule {
       settings: Array<{ id: string; label: string; type: string }>;
     }>;
   }>;
+  /**
+   * Styled inputs per form field type, keyed by type ("text", "email", …).
+   * Optional: a theme built before the form builder simply omits it, and the
+   * renderer falls back to an unstyled input rather than breaking the page.
+   * The platform owns the field vocabulary; a theme owns how each type looks.
+   */
+  formFieldComponents?: Record<string, React.ComponentType<Record<string, unknown>>>;
 }
 
 declare global {
