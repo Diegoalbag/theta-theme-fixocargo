@@ -21,6 +21,7 @@ import { NosotrosStats, nosotrosStatsSettingsSchema } from "./sections/NosotrosS
 import { NosotrosValues, nosotrosValuesSettingsSchema } from "./sections/NosotrosValues";
 import { NosotrosTimeline, nosotrosTimelineSettingsSchema } from "./sections/NosotrosTimeline";
 import { Faq, faqSettingsSchema } from "./sections/Faq";
+import { ContactForm, contactFormSettingsSchema } from "./sections/ContactForm";
 import { HeroSlide, heroSlideSettingsSchema } from "./blocks/HeroSlide";
 import { Branch, branchSettingsSchema } from "./blocks/Branch";
 import { FaqPill, faqPillSettingsSchema } from "./blocks/FaqPill";
@@ -114,6 +115,7 @@ export const sectionsComponents: Record<
   "decorative-backdrop": DecorativeBackdrop as React.ComponentType<Record<string, unknown>>,
   "courier-tabs": CourierTabs as React.ComponentType<Record<string, unknown>>,
   "carga-aerea-rates": CargaAereaRates as React.ComponentType<Record<string, unknown>>,
+  "contact-form": ContactForm as React.ComponentType<Record<string, unknown>>,
 };
 
 // Settings schemas keyed by section type (same keys as sectionsComponents).
@@ -153,6 +155,7 @@ export const sectionSettingsSchemas = {
   "decorative-backdrop": decorativeBackdropSettingsSchema,
   "courier-tabs": courierTabsSettingsSchema,
   "carga-aerea-rates": cargaAereaRatesSettingsSchema,
+  "contact-form": contactFormSettingsSchema,
 };
 
 // Block React components keyed by block type (Shopify-style child blocks).

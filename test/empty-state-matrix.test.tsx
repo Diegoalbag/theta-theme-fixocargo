@@ -88,6 +88,14 @@ const NO_BLOCK_SECTIONS = new Set<string>([
   // the default "Sin elementos" EmptyState marker since it has no
   // child-block slot at all.
   "decorative-backdrop",
+  // contact-form has no child-block slot at all (Pattern 4 — no
+  // sectionBlocksConfig entry): its FIELDS are not authored blocks, they come
+  // from the platform's form definition fetched at runtime by FormRenderer, so
+  // there is nothing for an author to leave empty here. With blank props it
+  // renders its <section> chrome and FormRenderer returns null (no formKey
+  // bound), satisfying the no-throw + non-empty-markup assertions; it never
+  // renders the default "Sin elementos" EmptyState marker.
+  "contact-form",
 ]);
 
 // The EmptyState marker string content sections fall through to at published
@@ -209,11 +217,18 @@ const sectionEntries = Object.entries(sectionsComponents);
 // global maps, exactly like rate-row / faq-item / service-card / process-step /
 // partner-card) → net local 20+1=21, plus the 4 global = 25 total blocks.
 //
-// If the live registry ever diverges from 35/25, reconcile these guards to the
+// Forms (feat/form-builder port, +1 section / +0 blocks): adds contact-form, a
+// no-block section (Pattern 4) that renders a platform-defined form — inline, or
+// behind a button that opens a native <dialog>. It adds NO block component, which
+// is why the section census moves 35 -> 36 while the block census stays at 25.
+// It is listed in NO_BLOCK_SECTIONS above and is exempt from the "Sin elementos"
+// marker assertion for the reason recorded there.
+//
+// If the live registry ever diverges from 36/25, reconcile these guards to the
 // TRUE count with a comment — never delete a guard, never weaken a loop.
 describe("empty-state matrix — drift guards (census)", () => {
-  it("collects exactly 35 sections", () => {
-    expect(sectionEntries.length).toBe(35);
+  it("collects exactly 36 sections", () => {
+    expect(sectionEntries.length).toBe(36);
   });
 
   it("collects exactly 25 block components (4 global + 21 section-local)", () => {
