@@ -222,8 +222,12 @@ describe("FranquiciasInternacionales", () => {
     expect(html).not.toContain("Sin elementos");
   });
 
-  it("franquiciasInternacionalesSettingsSchema has exactly 28 entries", () => {
-    expect(franquiciasInternacionalesSettingsSchema).toHaveLength(28);
+  // 28 -> 30: the CTA gained `ctaAction` (link | openForm) and `ctaFormKey`,
+  // so the button can open a platform form in a dialog instead of navigating.
+  // `ctaUrl` is retained, not replaced — an existing page pointing the CTA at a
+  // URL must keep working untouched.
+  it("franquiciasInternacionalesSettingsSchema has exactly 30 entries", () => {
+    expect(franquiciasInternacionalesSettingsSchema).toHaveLength(30);
     const ids = franquiciasInternacionalesSettingsSchema.map((s) => s.id);
     expect(ids).toContain("country4");
     expect(ids).toContain("country5");
@@ -233,6 +237,56 @@ describe("FranquiciasInternacionales", () => {
     );
     expect(anchorSetting?.type).toBe("text");
     expect(anchorSetting?.default).toBe("");
+  });
+
+  it("defaults ctaAction to link, so an existing page's CTA still navigates", () => {
+    const html = renderToStaticMarkup(
+      <FranquiciasInternacionales ctaLabel="Llenar" ctaUrl="https://example.com" />,
+    );
+    expect(html).toContain('href="https://example.com"');
+    expect(html).not.toContain("<dialog");
+  });
+
+  it("renders a dialog trigger instead of a link when ctaAction is openForm", () => {
+    const html = renderToStaticMarkup(
+      <FranquiciasInternacionales
+        ctaLabel="Llenar"
+        ctaUrl="https://example.com"
+        ctaAction="openForm"
+        ctaFormKey="franquicias"
+      />,
+    );
+    expect(html).toContain("<dialog");
+    // The stale ctaUrl must NOT still render as a link — that would give the
+    // visitor two competing actions.
+    expect(html).not.toContain('href="https://example.com"');
+  });
+
+  it("renders NOTHING for an openForm CTA with no form bound, rather than a dead button", () => {
+    const html = renderToStaticMarkup(
+      <FranquiciasInternacionales ctaLabel="Llenar" ctaAction="openForm" />,
+    );
+    expect(html).not.toContain("<dialog");
+    expect(html).not.toContain("Llenar");
+  });
+
+  it("keeps the CTA's pill styling in both modes", () => {
+    const asLink = renderToStaticMarkup(
+      <FranquiciasInternacionales ctaLabel="Llenar" ctaUrl="https://example.com" />,
+    );
+    const asDialog = renderToStaticMarkup(
+      <FranquiciasInternacionales
+        ctaLabel="Llenar"
+        ctaAction="openForm"
+        ctaFormKey="franquicias"
+      />,
+    );
+    // Same size/variant either way — the button must not visibly change when a
+    // merchant flips the action.
+    for (const cls of ["rounded-full", "w-fit"]) {
+      expect(asLink).toContain(cls);
+      expect(asDialog).toContain(cls);
+    }
   });
 
   it("emits NO id attribute when the anchor is blank", () => {

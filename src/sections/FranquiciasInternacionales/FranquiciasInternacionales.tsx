@@ -11,6 +11,7 @@ import {
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { FormDialog } from "@/forms/FormDialog";
 import { safeAnchorId } from "@/lib/safe-anchor";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +60,10 @@ export interface FranquiciasInternacionalesProps {
   whySupportingText?: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  /** Does the CTA navigate, or open a form in a dialog? */
+  ctaAction?: "link" | "openForm";
+  /** Form bound to the CTA when ctaAction is "openForm". */
+  ctaFormKey?: string;
   anchorId?: string;
   sectionId?: string;
   sectionName?: string;
@@ -97,6 +102,8 @@ export const FranquiciasInternacionales = ({
   whySupportingText = "¿Interesado en explorar oportunidades de franquicia? Completa el formulario para iniciar la conversación.",
   ctaLabel = "Llenar el formulario",
   ctaUrl = "#",
+  ctaAction = "link",
+  ctaFormKey,
   anchorId = "",
 }: FranquiciasInternacionalesProps): React.ReactNode => {
   const anchor = safeAnchorId(anchorId);
@@ -227,9 +234,25 @@ export const FranquiciasInternacionales = ({
                   {whySupportingText}
                 </p>
               )}
-              <Button size="lg" variant="pill" asChild className="w-fit">
-                <a href={ctaUrl || "#"}>{ctaLabel}</a>
-              </Button>
+              {/* The CTA's default label is "Llenar el formulario", so opening
+                  a real form is the behaviour it always implied. Kept as a
+                  SETTING rather than a swap, so an existing page that points
+                  this at a URL keeps working untouched. Same size/variant in
+                  both branches — the button must look identical either way. */}
+              {ctaAction === "openForm" ? (
+                <FormDialog
+                  formKey={ctaFormKey}
+                  triggerLabel={ctaLabel}
+                  heading={ctaLabel}
+                  size="lg"
+                  variant="pill"
+                  className="w-fit"
+                />
+              ) : (
+                <Button size="lg" variant="pill" asChild className="w-fit">
+                  <a href={ctaUrl || "#"}>{ctaLabel}</a>
+                </Button>
+              )}
             </div>
           </Card>
         </div>
@@ -404,11 +427,28 @@ export const franquiciasInternacionalesSettingsSchema = [
     default: "Llenar el formulario",
   },
   {
+    id: "ctaAction",
+    label: "Acción del botón",
+    type: "select",
+    default: "link",
+    options: [
+      { value: "link", label: "Ir a un enlace" },
+      { value: "openForm", label: "Abrir un formulario" },
+    ],
+  },
+  {
     id: "ctaUrl",
     label: "Enlace del botón",
     type: "url",
     default: "#",
     placeholder: "https://…",
+    info: "Solo se usa cuando la acción es «Ir a un enlace».",
+  },
+  {
+    id: "ctaFormKey",
+    label: "Formulario del botón",
+    type: "form_picker",
+    info: "Solo se usa cuando la acción es «Abrir un formulario». Crea formularios en Contenido → Formularios.",
   },
   {
     id: "anchorId",
