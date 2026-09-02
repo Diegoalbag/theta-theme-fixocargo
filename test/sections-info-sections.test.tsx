@@ -149,6 +149,34 @@ describe("Sucursales", () => {
     expect(html).toContain("child");
   });
 
+  it("forces flex-row at lg via the important modifier, keeping flex-col-reverse intact", () => {
+    // Defense-in-depth: `lg:flex-row!` must win the cascade at the `lg`
+    // breakpoint regardless of stylesheet load order (a previously-observed,
+    // now-reverted cascade bug). The bare-column-reverse utility must stay.
+    const html = renderToStaticMarkup(
+      <Sucursales renderBlocks={() => [<span key="a">child</span>]} />,
+    );
+    expect(html).toContain("lg:flex-row!");
+    expect(html).toContain("flex-col-reverse");
+  });
+
+  it("caps the fx-branch-list at a scrollable max-height on the same class attribute as the marker", () => {
+    // Scope to the exact class attribute that carries the fx-branch-list
+    // marker, so this proves the new classes landed on the SAME element, not
+    // merely somewhere in the document.
+    const html = renderToStaticMarkup(
+      <Sucursales renderBlocks={() => [<span key="a">child</span>]} />,
+    );
+    const markerIndex = html.indexOf("fx-branch-list");
+    expect(markerIndex).toBeGreaterThan(-1);
+    const classStart = html.lastIndexOf('class="', markerIndex);
+    const classEnd = html.indexOf('"', classStart + 'class="'.length);
+    const classAttr = html.slice(classStart, classEnd);
+    expect(classAttr).toContain("overflow-y-auto");
+    expect(classAttr).toContain("max-h-[550px]");
+    expect(classAttr).toContain("lg:max-h-[700px]");
+  });
+
   it("routes the merchant mapUrl through safeHref before it reaches a live href", () => {
     // CR-02: the directions href is assigned IMPERATIVELY from the merchant's
     // `mapUrl` setting, so no JSX-level handling protects it and no render can
