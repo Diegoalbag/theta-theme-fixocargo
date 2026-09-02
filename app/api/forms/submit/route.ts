@@ -19,11 +19,19 @@ import {
  *     write credential; STRAPI_FORM_TOKEN is a server-only env var (no
  *     NEXT_PUBLIC_ prefix, which is exactly what would inline it into the bundle).
  *   • The token it writes with is create-only — scoped to form-submission.create
- *     and upload, nothing else. Even if it leaked it could not read, update, or
- *     delete anything.
+ *     and upload, plus READ on Form — nothing else. Even if it leaked it could
+ *     not update or delete anything, and the only thing it can read is form
+ *     definitions, which this site already exposes publicly (they are fetched
+ *     with NEXT_PUBLIC_STRAPI_TOKEN, which ships in the client bundle).
  *   • Every value is validated against the form's OWN stored definition before it
  *     reaches Strapi. The definition is fetched with the read-only token this site
- *     already has, so the ingest token needs no read grant.
+ *     already has — but the ingest token still needs its own read grant on Form,
+ *     which is NOT obvious: the submission carries a `form` relation, and
+ *     Strapi's validateInput runs `throwRestrictedRelations(auth)` over the
+ *     request body, rejecting a relation whose target the token cannot reach
+ *     ("Invalid key form", 400). This route shipped without that grant and every
+ *     submission failed; see FORM_INGEST_PERMISSIONS in project-theta-strapi's
+ *     src/index.ts.
  *
  * Rate limiting is deliberately NOT implemented here, and that is no longer a gap.
  * The obvious approach — an in-memory counter — is per function instance on
