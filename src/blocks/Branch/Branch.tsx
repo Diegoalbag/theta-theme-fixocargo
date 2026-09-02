@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Phone, Mail, Clock, ArrowRight } from "lucide-react";
+import { Phone, Mail, Clock, Calendar, ArrowRight } from "lucide-react";
 
 // Branch (INF-01) — section-local block for the Sucursales section. The design
 // card: a white rounded panel (name in Gotham bold, guarded phone/email rows in
@@ -28,6 +28,10 @@ export interface BranchProps {
    *  branches saved before this field existed have no key and must render
    *  exactly as they did before (no schedule row at all). */
   horario?: string;
+  /** Days open. Optional and intentionally WITHOUT a fallback default —
+   *  branches saved before this field existed have no key and must render
+   *  exactly as they did before (no days-open row at all). */
+  diasAbierto?: string;
   address?: string;
   mapUrl?: string;
   mapQuery?: string;
@@ -40,6 +44,7 @@ export const Branch = ({
   phone,
   email,
   horario,
+  diasAbierto,
   address,
   mapUrl,
   mapQuery,
@@ -107,6 +112,20 @@ export const Branch = ({
             <p data-branch-horario={horario}>{horario}</p>
           </div>
         )}
+
+        {/* Days open. Guarded exactly like the horario row above: an unset or
+            empty value emits NOTHING (no empty row, no stray icon, no gap),
+            which is what keeps pre-diasAbierto saved branches byte-identical.
+            `data-branch-diasabierto` is a test/consumer marker on this INNER
+            node — distinct from the card-root data-branch-* attributes the
+            section's click/filter listeners read. It is deliberately NOT part
+            of the search haystack (search matches name + address only). */}
+        {diasAbierto && (
+          <div className="flex items-center gap-2.5 font-gill text-sm text-brand-navy/80">
+            <Calendar aria-hidden="true" className="size-4 shrink-0" />
+            <p data-branch-diasabierto={diasAbierto}>{diasAbierto}</p>
+          </div>
+        )}
       </div>
 
       {/* Navy circular "show on map" trigger (yellow arrow). A real <button> so
@@ -123,10 +142,10 @@ export const Branch = ({
   );
 };
 
-// Seven editable fields, ids → camelCase props. `address` feeds the Sucursales
-// map overlay; `mapQuery` is where the map centers on selection. `horario`
-// defaults to the EMPTY string on purpose — that empty default is the
-// backward-compat contract for branches saved before the field existed.
+// Eight editable fields, ids → camelCase props. `address` feeds the Sucursales
+// map overlay; `mapQuery` is where the map centers on selection. `horario` and
+// `diasAbierto` default to the EMPTY string on purpose — that empty default is
+// the backward-compat contract for branches saved before the field existed.
 export const branchSettingsSchema = [
   {
     id: "name",
@@ -176,5 +195,13 @@ export const branchSettingsSchema = [
     default: "Av. Independencia, Santo Domingo",
     placeholder: "Dirección o lat,lng",
     info: "Lugar que el mapa centra al seleccionar esta sucursal.",
+  },
+  {
+    id: "diasAbierto",
+    label: "Días de atención",
+    type: "text",
+    default: "",
+    placeholder: "Lunes a Sábado",
+    info: "Días de atención. Déjalo vacío para no mostrar esta línea en la tarjeta.",
   },
 ];

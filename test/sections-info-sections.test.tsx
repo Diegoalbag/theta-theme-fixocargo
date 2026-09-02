@@ -284,6 +284,29 @@ describe("Branch", () => {
     expect(html).not.toContain("data-branch-horario");
   });
 
+  it("renders the diasAbierto days-open text when set", () => {
+    const html = renderToStaticMarkup(<Branch diasAbierto="Lun-Sáb" />);
+    expect(html).toContain("Lun-Sáb");
+  });
+
+  it("marks the days-open row with data-branch-diasabierto when set", () => {
+    const html = renderToStaticMarkup(<Branch diasAbierto="Lun-Sáb" />);
+    expect(html).toContain('data-branch-diasabierto="Lun-Sáb"');
+  });
+
+  it("omits the days-open row entirely when diasAbierto is absent (backward compat)", () => {
+    // Branch instances saved before the diasAbierto field existed have NO
+    // diasAbierto key at all — they must render byte-identically to before:
+    // no empty row, no stray icon, no marker attribute.
+    const html = renderToStaticMarkup(<Branch />);
+    expect(html).not.toContain("data-branch-diasabierto");
+  });
+
+  it("omits the days-open row entirely when diasAbierto is the empty string", () => {
+    const html = renderToStaticMarkup(<Branch diasAbierto="" />);
+    expect(html).not.toContain("data-branch-diasabierto");
+  });
+
   it("always emits data-branch-card, even with no name and no mapQuery (WR-05)", () => {
     // Content-independent marker. Every other data-branch-* attribute is
     // conditional on merchant content, so a card with nothing filled in used to
@@ -325,8 +348,8 @@ describe("Branch", () => {
     );
   });
 
-  it("branchSettingsSchema has 7 entries incl. horario + address + mapQuery; mapUrl is url", () => {
-    expect(branchSettingsSchema).toHaveLength(7);
+  it("branchSettingsSchema has 8 entries incl. horario + address + mapQuery + diasAbierto; mapUrl is url", () => {
+    expect(branchSettingsSchema).toHaveLength(8);
     const ids = branchSettingsSchema.map((s) => s.id);
     expect(ids).toEqual([
       "name",
@@ -336,6 +359,7 @@ describe("Branch", () => {
       "address",
       "mapUrl",
       "mapQuery",
+      "diasAbierto",
     ]);
     const mapUrlSetting = branchSettingsSchema.find((s) => s.id === "mapUrl");
     expect(mapUrlSetting?.type).toBe("url");
@@ -344,6 +368,11 @@ describe("Branch", () => {
     // Empty default IS the backward-compat contract: saved branches without the
     // key render exactly as before.
     expect(horarioSetting?.default).toBe("");
+    const diasAbiertoSetting = branchSettingsSchema.find(
+      (s) => s.id === "diasAbierto",
+    );
+    expect(diasAbiertoSetting?.type).toBe("text");
+    expect(diasAbiertoSetting?.default).toBe("");
   });
 });
 
