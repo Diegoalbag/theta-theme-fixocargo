@@ -1,4 +1,18 @@
-# theta-workflow-version: 1.7.2
+# theta-workflow-version: 1.8.0
+#
+# 1.8.0: DROPPED the `on: push` trigger. It could never succeed. Every value the
+# deploy needs — vercel_token, vercel_project_id, strapi_access_token, theme_id —
+# arrives as a `workflow_dispatch` INPUT supplied by the platform when it
+# dispatches a deploy. On a push those inputs do not exist, so the run reached the
+# Vercel CLI with an empty token and project id and died with
+# `Error: You defined "--token", but it's missing a value`. Three such runs failed
+# on theta-theme-fixocargo on 2026-08-29 alone, one per commit pushed.
+#
+# The trigger was not merely useless, it was misleading: a theme author pushing a
+# commit saw a red X on their repo and no indication that a deploy is supposed to
+# be started FROM THE PLATFORM. Removing the trigger means no run appears at all,
+# which is the honest signal. Deploys are dispatched explicitly; that is the only
+# entry point.
 # Theme Site Deployment Workflow
 #
 # This workflow expects the theme repository (source branch checked out to theme-source/)
@@ -20,19 +34,6 @@
 name: Deploy Theme Site
 
 on:
-  push:
-    branches:
-      - '**'
-      - '!**-build'  # Build branches are deployed via workflow_dispatch only
-    paths-ignore:
-      # The platform WRITES this file to the source branch before dispatching a
-      # deploy (copy-template/route.ts and deploy/route.ts both call
-      # copyWorkflowFile). Without this ignore, each of those writes is a push to
-      # a matched branch and self-triggers a deploy run — so one redeploy fired
-      # three concurrent runs: two from the workflow-file commits, one from the
-      # actual workflow_dispatch. The sync is preparation for a deploy, not a
-      # reason to start one; deploys are always dispatched explicitly.
-      - '.github/workflows/**'
   workflow_dispatch:
     inputs:
       theme_id:
