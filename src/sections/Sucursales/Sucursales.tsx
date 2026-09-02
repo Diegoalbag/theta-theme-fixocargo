@@ -414,7 +414,7 @@ export const Sucursales = ({
                 BRANCH_LIST_CLASS) — layout classes stay Tailwind. */}
             <BlocksSlot
               renderBlocks={renderBlocks}
-              className={`flex flex-col gap-4 overflow-y-auto max-h-[550px] lg:max-h-[700px] ${BRANCH_LIST_CLASS}`}
+              className={`flex flex-col gap-4 overflow-y-auto max-h-[550px] lg:max-h-[700px] px-2 ${BRANCH_LIST_CLASS}`}
             />
 
             {/* FILTER STATUS (WR-04). Two section-owned nodes that are ALWAYS

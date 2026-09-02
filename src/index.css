@@ -623,3 +623,46 @@
   outline: 2px solid var(--brand-yellow);
   outline-offset: 2px;
 }
+
+/* ---------------------------------------------------------------------------
+ * fx-branch-list scrollbar (Sucursales branch list, quick task 260902-jif).
+ *
+ * The branch list becomes scrollable past ~6 branches
+ * (`overflow-y-auto max-h-[550px] lg:max-h-[700px]` in Sucursales.tsx), and at
+ * browser defaults the scrollbar is a wide, opaque, off-brand bar crowding the
+ * card edges. This block restyles it in BOTH engines: Firefox via the
+ * standard `scrollbar-width`/`scrollbar-color` properties (no vendor prefix),
+ * and Chrome/Safari/Edge via the `::-webkit-scrollbar*` pseudo-elements (no
+ * standardized equivalent exists yet for WebKit). Tailwind v4 ships no
+ * scrollbar utilities and this project adds no plugin for a handful of lines
+ * of plain CSS (Don't Hand-Roll a dependency) — every selector is scoped to
+ * `.fx-branch-list` so it can never leak into any other section's scrollbar,
+ * mirroring the `.blaze-slider`/`.article-body`/`.courier-tabs` scoping
+ * precedent above.
+ *
+ * Thumb color is `var(--muted-foreground)` — the SAME brand token this exact
+ * section's search icon and input placeholder already reuse
+ * (`text-muted-foreground` / `placeholder:text-muted-foreground` in
+ * Sucursales.tsx) — never a hex literal (D-09). Both tracks stay transparent
+ * so only the thumb reads as a bar against the card background.
+ *
+ * Kept UNLAYERED (raw selectors, NOT inside @layer base), matching
+ * `.blaze-slider`/`.article-body`/`.courier-tabs` — this is consistency with
+ * that convention, not a cascade requirement: no Tailwind utility targets
+ * scrollbar pseudo-elements, so there is nothing here for `@layer base` to
+ * lose to.
+ * ------------------------------------------------------------------------- */
+.fx-branch-list {
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted-foreground) transparent;
+}
+.fx-branch-list::-webkit-scrollbar {
+  width: 8px;
+}
+.fx-branch-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.fx-branch-list::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: 9999px;
+}

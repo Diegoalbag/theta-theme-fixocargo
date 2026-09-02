@@ -177,6 +177,53 @@ describe("Sucursales", () => {
     expect(classAttr).toContain("lg:max-h-[700px]");
   });
 
+  it("gives .fx-branch-list a thin, transparent-track, brand-colored scrollbar in src/index.css", () => {
+    // Source-scan on the stylesheet (same idiom as the safeHref scan below):
+    // locate the `.fx-branch-list` block and scope every assertion to that
+    // extracted region only — `:root` legitimately contains brand hex values
+    // elsewhere in the file, so a whole-file "no hex" assertion would false-fail.
+    const src = readFileSync(
+      resolve(__dirname, "../src/index.css"),
+      "utf-8",
+    );
+    const markerIndex = src.indexOf(".fx-branch-list");
+    expect(markerIndex).toBeGreaterThan(-1);
+    const rest = src.slice(markerIndex);
+    const bannerIndex = rest.indexOf(
+      "/* ---------------------------------------------------------------------------",
+      1,
+    );
+    const region = bannerIndex === -1 ? rest : rest.slice(0, bannerIndex);
+
+    expect(region).toContain("scrollbar-width: thin");
+    expect(region).toMatch(/scrollbar-color:\s*[^;]*\btransparent\b\s*;/);
+    expect(region).toContain(".fx-branch-list::-webkit-scrollbar");
+    expect(region).toMatch(
+      /\.fx-branch-list::-webkit-scrollbar-track\s*\{[^}]*background:\s*transparent/,
+    );
+    expect(region).toMatch(
+      /\.fx-branch-list::-webkit-scrollbar-thumb\s*\{[^}]*var\(--muted-foreground\)/,
+    );
+    expect(region).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+  });
+
+  it("gives the fx-branch-list container horizontal padding via px-2", () => {
+    // Same class-attribute-scoping technique as the max-height test above,
+    // proving the new utility landed on the SAME element as the marker.
+    const html = renderToStaticMarkup(
+      <Sucursales renderBlocks={() => [<span key="a">child</span>]} />,
+    );
+    const markerIndex = html.indexOf("fx-branch-list");
+    expect(markerIndex).toBeGreaterThan(-1);
+    const classStart = html.lastIndexOf('class="', markerIndex);
+    const classEnd = html.indexOf('"', classStart + 'class="'.length);
+    const classAttr = html.slice(classStart, classEnd);
+    expect(classAttr).toContain("px-2");
+    expect(classAttr).toContain("overflow-y-auto");
+    expect(classAttr).toContain("max-h-[550px]");
+    expect(classAttr).toContain("lg:max-h-[700px]");
+  });
+
   it("routes the merchant mapUrl through safeHref before it reaches a live href", () => {
     // CR-02: the directions href is assigned IMPERATIVELY from the merchant's
     // `mapUrl` setting, so no JSX-level handling protects it and no render can
