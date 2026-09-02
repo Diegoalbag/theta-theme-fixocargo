@@ -374,7 +374,7 @@ export const Sucursales = ({
       <div className="container mx-auto container-padding-x">
         <SectionHeading variant="light" title={heading} subtitle={subtitle} />
 
-        <div className="mt-8 flex flex-col-reverse gap-8 lg:flex-row!">
+        <div className="mt-8 flex flex-col-reverse gap-4 lg:flex-row!">
           {/* LEFT — functional search + branch LIST slot. */}
           <div className="flex flex-col gap-4 lg:flex-1">
             {/* D-03 IS REVERSED FOR THIS ONE ELEMENT. This search used to be
@@ -414,7 +414,7 @@ export const Sucursales = ({
                 BRANCH_LIST_CLASS) — layout classes stay Tailwind. */}
             <BlocksSlot
               renderBlocks={renderBlocks}
-              className={`flex flex-col gap-4 overflow-y-auto max-h-[550px] lg:max-h-[700px] px-2 ${BRANCH_LIST_CLASS}`}
+              className={`flex flex-col gap-4 overflow-y-auto max-h-[550px] lg:max-h-[700px] px-2 py-2 ${BRANCH_LIST_CLASS}`}
             />
 
             {/* FILTER STATUS (WR-04). Two section-owned nodes that are ALWAYS

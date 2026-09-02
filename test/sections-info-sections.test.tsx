@@ -224,6 +224,40 @@ describe("Sucursales", () => {
     expect(classAttr).toContain("lg:max-h-[700px]");
   });
 
+  it("tightens the outer row wrapper gap to gap-4 (from gap-8)", () => {
+    // Scope to the outer row wrapper's own class attribute — the same prefix
+    // the flex-row! test locates its target string with — so this proves the
+    // gap edit landed on that element, not merely somewhere in the document.
+    const html = renderToStaticMarkup(
+      <Sucursales renderBlocks={() => [<span key="a">child</span>]} />,
+    );
+    const markerIndex = html.indexOf("mt-8 flex flex-col-reverse");
+    expect(markerIndex).toBeGreaterThan(-1);
+    const classStart = html.lastIndexOf('class="', markerIndex);
+    const classEnd = html.indexOf('"', classStart + 'class="'.length);
+    const classAttr = html.slice(classStart, classEnd);
+    expect(classAttr).toContain("gap-4");
+    expect(classAttr).not.toContain("gap-8");
+  });
+
+  it("gives the fx-branch-list container vertical padding via py-2 alongside px-2", () => {
+    // Same class-attribute-scoping technique as the px-2 test above, proving
+    // the new utility landed on the SAME element as the marker.
+    const html = renderToStaticMarkup(
+      <Sucursales renderBlocks={() => [<span key="a">child</span>]} />,
+    );
+    const markerIndex = html.indexOf("fx-branch-list");
+    expect(markerIndex).toBeGreaterThan(-1);
+    const classStart = html.lastIndexOf('class="', markerIndex);
+    const classEnd = html.indexOf('"', classStart + 'class="'.length);
+    const classAttr = html.slice(classStart, classEnd);
+    expect(classAttr).toContain("px-2");
+    expect(classAttr).toContain("py-2");
+    expect(classAttr).toContain("overflow-y-auto");
+    expect(classAttr).toContain("max-h-[550px]");
+    expect(classAttr).toContain("lg:max-h-[700px]");
+  });
+
   it("routes the merchant mapUrl through safeHref before it reaches a live href", () => {
     // CR-02: the directions href is assigned IMPERATIVELY from the merchant's
     // `mapUrl` setting, so no JSX-level handling protects it and no render can
