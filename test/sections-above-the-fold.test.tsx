@@ -113,8 +113,8 @@ describe("HeroSlide", () => {
     expect(html).toContain('href="/buscar"');
   });
 
-  it("heroSlideSettingsSchema has exactly 5 entries with the specified ids", () => {
-    expect(heroSlideSettingsSchema).toHaveLength(5);
+  it("heroSlideSettingsSchema has exactly 14 entries with the specified ids", () => {
+    expect(heroSlideSettingsSchema).toHaveLength(14);
     const ids = heroSlideSettingsSchema.map((s) => s.id);
     expect(ids).toEqual([
       "backgroundImage",
@@ -122,7 +122,111 @@ describe("HeroSlide", () => {
       "subtitle",
       "ctaLabel",
       "ctaUrl",
+      "ctaAction",
+      "link1Label",
+      "link1Url",
+      "link2Label",
+      "link2Url",
+      "link3Label",
+      "link3Url",
+      "link4Label",
+      "link4Url",
     ]);
+
+    const ctaAction = heroSlideSettingsSchema.find((s) => s.id === "ctaAction");
+    expect(ctaAction?.type).toBe("select");
+    expect(ctaAction?.default).toBe("link");
+    expect(ctaAction?.options?.map((o) => o.value)).toEqual(["link", "dialog"]);
+
+    for (const i of [1, 2, 3, 4]) {
+      const labelSetting = heroSlideSettingsSchema.find(
+        (s) => s.id === `link${i}Label`,
+      );
+      expect(labelSetting?.type).toBe("text");
+      expect(labelSetting?.default).toBe("");
+
+      const urlSetting = heroSlideSettingsSchema.find(
+        (s) => s.id === `link${i}Url`,
+      );
+      expect(urlSetting?.type).toBe("url");
+      expect(urlSetting?.default).toBe("#");
+    }
+  });
+
+  it("defaults ctaAction to link (absent ctaAction), rendering byte-identically to today", () => {
+    const html = renderToStaticMarkup(
+      <HeroSlide ctaLabel="Buscar" ctaUrl="/buscar" />,
+    );
+    expect(html).toContain('href="/buscar"');
+    expect(html).not.toContain("<dialog");
+  });
+
+  it("renders the same output when ctaAction is explicitly link", () => {
+    const withoutProp = renderToStaticMarkup(
+      <HeroSlide ctaLabel="Buscar" ctaUrl="/buscar" />,
+    );
+    const withProp = renderToStaticMarkup(
+      <HeroSlide ctaLabel="Buscar" ctaUrl="/buscar" ctaAction="link" />,
+    );
+    expect(withProp).toBe(withoutProp);
+  });
+
+  it("renders a dialog trigger instead of a link when ctaAction is dialog", () => {
+    const html = renderToStaticMarkup(
+      <HeroSlide ctaLabel="Regístrate" ctaUrl="/registro" ctaAction="dialog" />,
+    );
+    expect(html).toContain("<dialog");
+    expect(html).toMatch(/<button[^>]*>[\s\S]*?Regístrate/);
+    expect(html).not.toContain('href="/registro"');
+  });
+
+  it("reuses ctaLabel as the dialog heading", () => {
+    const html = renderToStaticMarkup(
+      <HeroSlide ctaLabel="Regístrate" ctaUrl="/registro" ctaAction="dialog" />,
+    );
+    const occurrences = (html.match(/Regístrate/g) ?? []).length;
+    expect(occurrences).toBeGreaterThanOrEqual(2);
+  });
+
+  it("only renders non-blank link slots inside the dialog", () => {
+    const html = renderToStaticMarkup(
+      <HeroSlide
+        ctaLabel="Regístrate"
+        ctaAction="dialog"
+        link1Label="Sitio A"
+        link1Url="/a"
+        link3Label="Sitio C"
+        link3Url="/c"
+      />,
+    );
+    expect(html).toContain("Sitio A");
+    expect(html).toContain("Sitio C");
+    expect(html).toContain('href="/a"');
+    expect(html).toContain('href="/c"');
+    const anchorCount = (html.match(/<a /g) ?? []).length;
+    expect(anchorCount).toBe(2);
+  });
+
+  it("renders an empty dialog shell with zero link anchors when no linkN props are set", () => {
+    const html = renderToStaticMarkup(
+      <HeroSlide ctaLabel="Regístrate" ctaAction="dialog" />,
+    );
+    expect(html).toContain("<dialog");
+    const anchorCount = (html.match(/<a /g) ?? []).length;
+    expect(anchorCount).toBe(0);
+  });
+
+  it("routes link URLs through safeHref, degrading a javascript: scheme to #", () => {
+    const html = renderToStaticMarkup(
+      <HeroSlide
+        ctaLabel="Regístrate"
+        ctaAction="dialog"
+        link1Label="Malo"
+        link1Url="javascript:alert(1)"
+      />,
+    );
+    expect(html).toContain('href="#"');
+    expect(html).not.toContain("javascript:");
   });
 
   // Plan 04 (D-01): background image emits srcset/sizes when formats data is present.
